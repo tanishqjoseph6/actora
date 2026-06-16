@@ -1,13 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Home() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const getCount = async () => {
+      const { count } = await supabase
+        .from("waitlist")
+        .select("*", { count: "exact", head: true });
+
+      setCount(count || 0);
+    };
+
+    getCount();
+  }, []);
 
   const joinWaitlist = async () => {
+    if (!email) {
+      setMessage("Please enter an email.");
+      return;
+    }
+
     const { error } = await supabase
       .from("waitlist")
       .insert([{ email }]);
@@ -16,6 +34,7 @@ export default function Home() {
       setMessage("Email already registered.");
     } else {
       setMessage("🎉 Successfully joined the waitlist!");
+      setCount((prev) => prev + 1);
       setEmail("");
     }
   };
@@ -24,16 +43,17 @@ export default function Home() {
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
       <div className="max-w-2xl text-center">
         <p className="mb-4 text-blue-400 font-semibold">
-          AI Inbox Assistant
+          Join {count}+ founders waiting for early access
         </p>
 
-        <h1 className="text-6xl font-bold mb-6">
-          Actora
+        <h1 className="text-6xl font-bold mb-4">
+          Your AI Chief of Staff for Email
         </h1>
 
-        <p className="text-xl text-gray-300 mb-8">
-          Turn your inbox into an AI employee that reads,
-          prioritizes and takes action automatically.
+        <p className="text-xl text-gray-300 max-w-2xl mb-8">
+         Actora reads, prioritizes, drafts replies,
+         schedules meetings and takes action
+        from your inbox automatically.
         </p>
 
         <div className="flex flex-col items-center gap-4">
@@ -47,9 +67,9 @@ export default function Home() {
 
           <button
             onClick={joinWaitlist}
-            className="bg-blue-500 px-6 py-3 rounded-xl font-semibold"
+            className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold transition"
           >
-            Join Waitlist
+            Get Early Access
           </button>
 
           {message && (
@@ -79,6 +99,18 @@ export default function Home() {
             <p className="text-gray-400">
               Focus on work, not your inbox.
             </p>
+          </div>
+        </div>
+
+        <div className="mt-16">
+          <p className="text-gray-400 text-sm">
+            Trusted by founders, freelancers and startup operators.
+          </p>
+
+          <div className="flex justify-center gap-6 mt-4 text-gray-500">
+            <span>⚡ Faster Inbox</span>
+            <span>🤖 AI Powered</span>
+            <span>📈 Productivity</span>
           </div>
         </div>
       </div>
