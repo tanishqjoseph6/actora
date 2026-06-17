@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+"use client";
+
+import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
+import { supabase } from "@/lib/supabase";
 
 export default function Home() {
   const [email, setEmail] = useState("");
@@ -66,7 +69,7 @@ export default function Home() {
           />
 
           <button
-            onClick={joinWaitlist}
+            onClick={() => signIn("google")}
             className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold transition"
           >
             Get Early Access
