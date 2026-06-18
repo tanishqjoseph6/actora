@@ -69,7 +69,7 @@ export default function Home() {
           />
 
           <button
-            onClick={() => signIn("google")}
+            onClick={() => window.location.href = "/dashboard"}
             className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold transition"
           >
             Get Early Access
