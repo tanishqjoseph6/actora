@@ -103,9 +103,15 @@ export default function Home() {
               <li>✅ Priority support</li>
             </ul>
 
-            <button className="w-full bg-blue-600 py-3 rounded-xl">
-              Upgrade
-            </button>
+            <a
+  href="https://rzp.io/rzp/7efMgDz"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <button className="w-full bg-blue-600 py-3 rounded-xl">
+    Upgrade
+  </button>
+</a>
           </div>
 
           {/* Pro */}
@@ -124,9 +130,15 @@ export default function Home() {
               <li>🔥 Priority support</li>
             </ul>
 
-            <button className="w-full bg-white text-black py-3 rounded-xl font-bold">
-              Upgrade
-            </button>
+            <a
+  href="https://rzp.io/rzp/3HPkOOJH"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <button className="w-full bg-white text-black py-3 rounded-xl font-bold">
+    Upgrade
+  </button>
+</a>
           </div>
 
           {/* Enterprise */}
