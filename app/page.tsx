@@ -1,192 +1,157 @@
-"use client";
-
-import React from "react"
-
-import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
-import { supabase } from "@/lib/supabase";
-
 export default function Home() {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const getCount = async () => {
-      const { count } = await supabase
-        .from("waitlist")
-        .select("*", { count: "exact", head: true });
-
-      setCount(count || 0);
-    };
-
-    getCount();
-  }, []);
-
-  const joinWaitlist = async () => {
-    if (!email) {
-      setMessage("Please enter an email.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("waitlist")
-      .insert([{ email }]);
-
-    if (error) {
-      setMessage("Email already registered.");
-    } else {
-      setMessage("🎉 Successfully joined the waitlist!");
-      setCount((prev) => prev + 1);
-      setEmail("");
-    }
-  };
-
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
-      <div className="max-w-2xl text-center">
-        <p className="mb-4 text-blue-400 font-semibold">
-          Join {count}+ founders waiting for early access
-        </p>
-
-        <h1 className="text-6xl font-bold mb-4">
-          Your AI Chief of Staff for Email
+    <main className="min-h-screen bg-black text-white">
+      {/* Hero Section */}
+      <section className="max-w-6xl mx-auto px-8 py-32 text-center">
+        <h1 className="text-7xl font-bold mb-6">
+          Your AI Employee For Email & Operations
         </h1>
 
-        <p className="text-xl text-gray-300 max-w-2xl mb-8">
-         Actora reads, prioritizes, drafts replies,
-         schedules meetings and takes action
-        from your inbox automatically.
+        <p className="text-xl text-zinc-400 max-w-3xl mx-auto mb-10">
+          Actora reads emails, drafts replies, schedules meetings,
+          follows up with clients and automates repetitive work.
         </p>
 
-        <div className="flex flex-col items-center gap-4">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="px-4 py-3 rounded-xl w-80 text-black"
-          />
-
-          <button
-            onClick={() => window.location.href = "/dashboard"}
-            className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold transition"
-          >
-            Get Early Access
+        <div className="flex justify-center gap-4">
+          <button className="bg-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-500">
+            Start Free
           </button>
 
-          {message && (
-            <p className="text-sm mt-2">
-              {message}
-            </p>
-          )}
+          <button className="border border-zinc-700 px-8 py-4 rounded-xl font-bold">
+            Watch Demo
+          </button>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-          <div>
-            <h3 className="font-bold">📩 Read Emails</h3>
-            <p className="text-gray-400">
-              AI understands incoming emails.
+      {/* Features */}
+      <section className="max-w-6xl mx-auto px-8 pb-24">
+        <div className="grid md:grid-cols-3 gap-8">
+
+          <div className="bg-zinc-900 p-6 rounded-2xl">
+            <h3 className="text-2xl font-bold mb-3">
+              📧 Read Emails
+            </h3>
+            <p className="text-zinc-400">
+              AI understands incoming emails automatically.
             </p>
           </div>
 
-          <div>
-            <h3 className="font-bold">⚡ Take Action</h3>
-            <p className="text-gray-400">
-              Reply, schedule and organize automatically.
+          <div className="bg-zinc-900 p-6 rounded-2xl">
+            <h3 className="text-2xl font-bold mb-3">
+              ⚡ Take Action
+            </h3>
+            <p className="text-zinc-400">
+              Reply, schedule meetings and follow up automatically.
             </p>
           </div>
 
-          <div>
-            <h3 className="font-bold">🚀 Save Time</h3>
-            <p className="text-gray-400">
-              Focus on work, not your inbox.
+          <div className="bg-zinc-900 p-6 rounded-2xl">
+            <h3 className="text-2xl font-bold mb-3">
+              🚀 Save Time
+            </h3>
+            <p className="text-zinc-400">
+              Focus on business while Actora handles busywork.
             </p>
           </div>
+
         </div>
+      </section>
 
-        <div className="mt-16">
-          <p className="text-gray-400 text-sm">
-            Trusted by founders, freelancers and startup operators.
-          </p>
+      {/* Pricing */}
+      <section className="max-w-6xl mx-auto px-8 pb-32">
+        <h2 className="text-5xl font-bold text-center mb-4">
+          Simple Pricing
+        </h2>
 
-          <div className="flex justify-center gap-6 mt-4 text-gray-500">
-            <span>⚡ Faster Inbox</span>
-            <span>🤖 AI Powered</span>
-            <span>📈 Productivity</span>
+        <p className="text-center text-zinc-400 mb-12">
+          Start free. Upgrade when you need more power.
+        </p>
+
+        <div className="grid md:grid-cols-4 gap-6">
+
+          {/* Free */}
+          <div className="bg-zinc-900 p-8 rounded-2xl">
+            <h3 className="text-3xl font-bold">Free</h3>
+
+            <p className="text-5xl font-bold mt-4">$0</p>
+            <p className="text-zinc-400 mb-6">Forever</p>
+
+            <ul className="space-y-3 mb-6">
+              <li>✅ 50 AI actions/month</li>
+              <li>✅ 1 inbox</li>
+              <li>✅ Basic email drafts</li>
+              <li>✅ Community support</li>
+            </ul>
+
+            <button className="w-full bg-zinc-700 py-3 rounded-xl">
+              Start Free
+            </button>
           </div>
+
+          {/* Starter */}
+          <div className="bg-zinc-900 p-8 rounded-2xl">
+            <h3 className="text-3xl font-bold">Starter</h3>
+
+            <p className="text-5xl font-bold mt-4">$19</p>
+            <p className="text-zinc-400 mb-6">per month</p>
+
+            <ul className="space-y-3 mb-6">
+              <li>✅ 1,000 AI actions</li>
+              <li>✅ 3 inboxes</li>
+              <li>✅ Smart drafts</li>
+              <li>✅ Meeting summaries</li>
+              <li>✅ Priority support</li>
+            </ul>
+
+            <button className="w-full bg-blue-600 py-3 rounded-xl">
+              Upgrade
+            </button>
+          </div>
+
+          {/* Pro */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-8 rounded-2xl">
+            <h3 className="text-3xl font-bold">Pro ⭐</h3>
+
+            <p className="text-5xl font-bold mt-4">$49</p>
+            <p className="mb-6">per month</p>
+
+            <ul className="space-y-3 mb-6">
+              <li>🔥 Unlimited AI actions</li>
+              <li>🔥 Unlimited inboxes</li>
+              <li>🔥 AI automations</li>
+              <li>🔥 AI Morning Brief</li>
+              <li>🔥 Team collaboration</li>
+              <li>🔥 Priority support</li>
+            </ul>
+
+            <button className="w-full bg-white text-black py-3 rounded-xl font-bold">
+              Upgrade
+            </button>
+          </div>
+
+          {/* Enterprise */}
+          <div className="bg-zinc-900 p-8 rounded-2xl">
+            <h3 className="text-3xl font-bold">Enterprise</h3>
+
+            <p className="text-5xl font-bold mt-4">$399</p>
+            <p className="text-zinc-400 mb-6">per month</p>
+
+            <ul className="space-y-3 mb-6">
+              <li>🚀 Unlimited AI actions</li>
+              <li>🚀 Unlimited inboxes</li>
+              <li>🚀 Team workspaces</li>
+              <li>🚀 API access</li>
+              <li>🚀 Custom integrations</li>
+              <li>🚀 Dedicated account manager</li>
+            </ul>
+
+            <button className="w-full bg-red-600 py-3 rounded-xl">
+              Contact Sales
+            </button>
+          </div>
+
         </div>
-      </div>
-    {/* Pricing Section */}
-<section className="mt-24 text-center">
-  <h2 className="text-4xl font-bold mb-4">
-    Simple Pricing
-  </h2>
-
-  <p className="text-gray-400 mb-12">
-    Start free. Upgrade when you need more power.
-  </p>
-
-  <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-
-    <div className="border border-gray-800 rounded-2xl p-8">
-      <h3 className="text-2xl font-bold mb-4">Free</h3>
-      <p className="text-5xl font-bold">$0</p>
-      <p className="text-gray-400 mb-6">Forever</p>
-
-      <ul className="space-y-2 text-gray-300">
-        <li>✓ Email summaries</li>
-        <li>✓ Basic AI actions</li>
-        <li>✓ 100 emails/month</li>
-      </ul>
-
-      <button className="mt-6 px-6 py-3 rounded-xl bg-gray-800">
-        Start Free
-      </button>
-    </div>
-
-    <div className="border border-purple-500 rounded-2xl p-8">
-      <h3 className="text-2xl font-bold mb-4">
-        Pro ⭐
-      </h3>
-
-      <p className="text-5xl font-bold">$19</p>
-      <p className="text-gray-400 mb-6">per month</p>
-
-      <ul className="space-y-2 text-gray-300">
-        <li>✓ Unlimited summaries</li>
-        <li>✓ AI replies</li>
-        <li>✓ Calendar scheduling</li>
-        <li>✓ Priority support</li>
-      </ul>
-
-      <button className="mt-6 px-6 py-3 rounded-xl bg-purple-600">
-        Upgrade to Pro
-      </button>
-    </div>
-
-    <div className="border border-gray-800 rounded-2xl p-8">
-      <h3 className="text-2xl font-bold mb-4">
-        Business
-      </h3>
-
-      <p className="text-5xl font-bold">$79</p>
-      <p className="text-gray-400 mb-6">per month</p>
-
-      <ul className="space-y-2 text-gray-300">
-        <li>✓ Team accounts</li>
-        <li>✓ Advanced automations</li>
-        <li>✓ Multiple inboxes</li>
-        <li>✓ Premium support</li>
-      </ul>
-
-      <button className="mt-6 px-6 py-3 rounded-xl bg-gray-800">
-        Contact Sales
-      </button>
-    </div>
-
-  </div>
-</section>
+      </section>
     </main>
   );
 }
