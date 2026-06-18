@@ -1,6 +1,6 @@
 "use client";
 
-"use client";
+import React from "react"
 
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
@@ -117,6 +117,76 @@ export default function Home() {
           </div>
         </div>
       </div>
+    {/* Pricing Section */}
+<section className="mt-24 text-center">
+  <h2 className="text-4xl font-bold mb-4">
+    Simple Pricing
+  </h2>
+
+  <p className="text-gray-400 mb-12">
+    Start free. Upgrade when you need more power.
+  </p>
+
+  <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+
+    <div className="border border-gray-800 rounded-2xl p-8">
+      <h3 className="text-2xl font-bold mb-4">Free</h3>
+      <p className="text-5xl font-bold">$0</p>
+      <p className="text-gray-400 mb-6">Forever</p>
+
+      <ul className="space-y-2 text-gray-300">
+        <li>✓ Email summaries</li>
+        <li>✓ Basic AI actions</li>
+        <li>✓ 100 emails/month</li>
+      </ul>
+
+      <button className="mt-6 px-6 py-3 rounded-xl bg-gray-800">
+        Start Free
+      </button>
+    </div>
+
+    <div className="border border-purple-500 rounded-2xl p-8">
+      <h3 className="text-2xl font-bold mb-4">
+        Pro ⭐
+      </h3>
+
+      <p className="text-5xl font-bold">$19</p>
+      <p className="text-gray-400 mb-6">per month</p>
+
+      <ul className="space-y-2 text-gray-300">
+        <li>✓ Unlimited summaries</li>
+        <li>✓ AI replies</li>
+        <li>✓ Calendar scheduling</li>
+        <li>✓ Priority support</li>
+      </ul>
+
+      <button className="mt-6 px-6 py-3 rounded-xl bg-purple-600">
+        Upgrade to Pro
+      </button>
+    </div>
+
+    <div className="border border-gray-800 rounded-2xl p-8">
+      <h3 className="text-2xl font-bold mb-4">
+        Business
+      </h3>
+
+      <p className="text-5xl font-bold">$79</p>
+      <p className="text-gray-400 mb-6">per month</p>
+
+      <ul className="space-y-2 text-gray-300">
+        <li>✓ Team accounts</li>
+        <li>✓ Advanced automations</li>
+        <li>✓ Multiple inboxes</li>
+        <li>✓ Premium support</li>
+      </ul>
+
+      <button className="mt-6 px-6 py-3 rounded-xl bg-gray-800">
+        Contact Sales
+      </button>
+    </div>
+
+  </div>
+</section>
     </main>
   );
 }
