@@ -13,13 +13,17 @@ export default function Home() {
         </p>
 
         <div className="flex justify-center gap-4">
-          <button className="bg-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-500">
-            Start Free
-          </button>
+        <a href="/signup">
+  <button className="bg-blue-600 px-8 py-4 rounded-xl font-bold">
+    Sign Up
+  </button>
+</a>
 
-          <button className="border border-zinc-700 px-8 py-4 rounded-xl font-bold">
-            Watch Demo
-          </button>
+<a href="/login">
+  <button className="border border-zinc-700 px-8 py-4 rounded-xl font-bold">
+    Login
+  </button>
+</a>
         </div>
       </section>
 
