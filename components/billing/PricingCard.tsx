@@ -4,15 +4,22 @@ import { getDisplayPrice } from "./pricing-data";
 type PricingCardProps = {
   plan: PricingPlan;
   period: BillingPeriod;
+  onUpgrade?: (plan: PricingPlan) => void;
 };
 
-export function PricingCard({ plan, period }: PricingCardProps) {
-  const pricing = getDisplayPrice(plan.monthlyPrice, period);
+export function PricingCard({ plan, period, onUpgrade }: PricingCardProps) {
+  const pricing = getDisplayPrice(plan.id, plan.monthlyPrice, period);
   const isEnterprise = plan.id === "enterprise";
   const showYearlyNote =
     period === "yearly" &&
     plan.monthlyPrice !== null &&
     plan.monthlyPrice > 0;
+
+  const handleCtaClick = () => {
+    if (plan.cta === "Upgrade" && onUpgrade) {
+      onUpgrade(plan);
+    }
+  };
 
   if (plan.recommended) {
     return (
@@ -26,6 +33,7 @@ export function PricingCard({ plan, period }: PricingCardProps) {
             showYearlyNote={showYearlyNote}
             isEnterprise={isEnterprise}
             ctaVariant="gradient"
+            onCtaClick={handleCtaClick}
           />
         </div>
       </div>
@@ -41,6 +49,7 @@ export function PricingCard({ plan, period }: PricingCardProps) {
         showYearlyNote={showYearlyNote}
         isEnterprise={isEnterprise}
         ctaVariant={plan.ctaVariant}
+        onCtaClick={handleCtaClick}
       />
     </div>
   );
@@ -52,12 +61,14 @@ function PlanContent({
   showYearlyNote,
   isEnterprise,
   ctaVariant,
+  onCtaClick,
 }: {
   plan: PricingPlan;
   pricing: ReturnType<typeof getDisplayPrice>;
   showYearlyNote: boolean;
   isEnterprise: boolean;
   ctaVariant: PricingPlan["ctaVariant"];
+  onCtaClick?: () => void;
 }) {
   return (
     <>
@@ -101,7 +112,11 @@ function PlanContent({
         ))}
       </ul>
 
-      <PlanCta label={plan.cta} variant={ctaVariant} />
+      <PlanCta
+        label={plan.cta}
+        variant={ctaVariant}
+        onClick={plan.cta === "Upgrade" ? onCtaClick : undefined}
+      />
     </>
   );
 }
@@ -131,9 +146,11 @@ function PlanBadge({
 function PlanCta({
   label,
   variant,
+  onClick,
 }: {
   label: string;
   variant: PricingPlan["ctaVariant"];
+  onClick?: () => void;
 }) {
   const base =
     "w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98]";
@@ -141,6 +158,7 @@ function PlanCta({
   if (variant === "gradient") {
     return (
       <button
+        onClick={onClick}
         className={`${base} bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:brightness-110`}
       >
         {label}
@@ -151,6 +169,7 @@ function PlanCta({
   if (variant === "primary") {
     return (
       <button
+        onClick={onClick}
         className={`${base} bg-[#3B82F6] text-white hover:bg-[#60A5FA] shadow-md shadow-blue-500/20 hover:shadow-blue-500/30`}
       >
         {label}
