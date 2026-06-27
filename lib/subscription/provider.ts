@@ -14,6 +14,7 @@ export interface SubscriptionProvider {
     billingInterval?: BillingInterval
   ): Promise<UserSubscription>;
   recordAiAction(userId: string): Promise<UserSubscription>;
+  recordInboxConnection(userId: string): Promise<UserSubscription>;
 }
 
 function getNextRenewalDate(billingInterval: BillingInterval = "monthly"): string {
@@ -94,6 +95,20 @@ class MockSubscriptionProvider implements SubscriptionProvider {
       usage: {
         ...current.usage,
         aiActionsUsed: current.usage.aiActionsUsed + 1,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    this.store.set(userId, updated);
+    return updated;
+  }
+
+  async recordInboxConnection(userId: string): Promise<UserSubscription> {
+    const current = await this.getSubscription(userId);
+    const updated: UserSubscription = {
+      ...current,
+      usage: {
+        ...current.usage,
+        inboxesConnected: current.usage.inboxesConnected + 1,
       },
       updatedAt: new Date().toISOString(),
     };

@@ -6,11 +6,11 @@ import {
   formatRenewalDate,
   PlanUsageDisplay,
 } from "@/components/subscription/CurrentPlanBadge";
-import { useSubscription } from "@/hooks/useSubscription";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { formatLimit } from "@/lib/subscription";
 
 export default function SettingsPage() {
-  const { subscription, loading } = useSubscription();
+  const { subscription, loading } = usePlanGate();
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
@@ -18,8 +18,15 @@ export default function SettingsPage() {
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full border border-[rgba(0,255,255,0.25)] text-[#00CFFF] text-sm font-medium bg-[#081226]/60 backdrop-blur-sm">
-            ⚙️ Settings
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-[rgba(0,255,255,0.25)] text-[#00CFFF] text-sm font-medium bg-[#081226]/60 backdrop-blur-sm">
+              ⚙️ Settings
+            </div>
+            <CurrentPlanBadge
+              subscription={subscription}
+              loading={loading}
+              compact
+            />
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold">
             Account <span className="text-cyan-400">Settings</span>

@@ -82,45 +82,8 @@ export const PRICING_PLANS: PricingPlan[] = [
 
 export const YEARLY_DISCOUNT = 0.15;
 
-/** Clean rounded yearly display prices (UI only — not used for payment logic). */
-export const YEARLY_DISPLAY_PRICES: Partial<
-  Record<PlanId, { monthlyRate: number; annualTotal: number }>
-> = {
-  starter: { monthlyRate: 16, annualTotal: 192 },
-  pro: { monthlyRate: 42, annualTotal: 504 },
-};
-
 export function getPlanById(id: PlanId): PricingPlan | undefined {
   return PRICING_PLANS.find((plan) => plan.id === id);
-}
-
-export function getDisplayPrice(
-  planId: PlanId,
-  monthlyPrice: number | null,
-  period: BillingPeriod
-): { amount: string; suffix: string; annualTotal?: string } {
-  if (monthlyPrice === null) {
-    return { amount: "Custom", suffix: "" };
-  }
-
-  if (monthlyPrice === 0) {
-    return { amount: "$0", suffix: "/month" };
-  }
-
-  if (period === "monthly") {
-    return { amount: `$${monthlyPrice}`, suffix: "/month" };
-  }
-
-  const yearly = YEARLY_DISPLAY_PRICES[planId];
-  if (!yearly) {
-    return { amount: `$${monthlyPrice}`, suffix: "/month" };
-  }
-
-  return {
-    amount: `$${yearly.monthlyRate}`,
-    suffix: "/month",
-    annualTotal: `billed annually at $${yearly.annualTotal}/year`,
-  };
 }
 
 export const MOCK_BILLING_HISTORY = [

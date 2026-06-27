@@ -67,3 +67,22 @@ body {
 .animate-scale-in {
   animation: scale-in 0.25s ease-out;
 }
+
+.reply-composer:empty::before {
+  content: attr(data-placeholder);
+  color: #4b5563;
+  pointer-events: none;
+}
+
+.reply-composer ul {
+  list-style-type: disc;
+  margin-left: 1.25rem;
+}
+
+.reply-composer p {
+  margin-bottom: 0.5rem;
+}
+
+.reply-composer p:last-child {
+  margin-bottom: 0;
+}

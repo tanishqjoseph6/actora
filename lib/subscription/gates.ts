@@ -1,9 +1,17 @@
 import type { PlanId, PlanLimits, UsageMetrics } from "./types";
 import { getPlanLimits, isUnlimited } from "./plans";
 
+export type LimitType = "ai_actions" | "inboxes";
+
 export type FeatureGateResult =
   | { allowed: true }
-  | { allowed: false; reason: string };
+  | { allowed: false; reason: string; limitType: LimitType };
+
+export function getUpgradeRecommendation(planId: PlanId): PlanId {
+  if (planId === "free") return "starter";
+  if (planId === "starter") return "pro";
+  return "pro";
+}
 
 export function canUseAiAction(
   planId: PlanId,
@@ -18,7 +26,8 @@ export function canUseAiAction(
   if (usage.aiActionsUsed >= limits.aiActionsPerMonth) {
     return {
       allowed: false,
-      reason: `You've reached your ${limits.aiActionsPerMonth} AI action limit for this month. Upgrade to continue.`,
+      limitType: "ai_actions",
+      reason: `You've used all ${limits.aiActionsPerMonth} AI actions for this month. Upgrade your plan to keep automating your inbox.`,
     };
   }
 
@@ -38,7 +47,8 @@ export function canConnectInbox(
   if (usage.inboxesConnected >= limits.inboxes) {
     return {
       allowed: false,
-      reason: `Your plan allows ${limits.inboxes} inbox. Upgrade to connect more.`,
+      limitType: "inboxes",
+      reason: `Your ${planId === "free" ? "Free" : "Starter"} plan includes ${limits.inboxes} inbox. Upgrade to connect more accounts.`,
     };
   }
 
@@ -62,4 +72,14 @@ export function hasFeatureAccess(
   }
 
   return isUnlimited(limits[feature]) || limits[feature] > 0;
+}
+
+export function isPlanLimitError(
+  payload: unknown
+): payload is { code: "PLAN_LIMIT"; limitType: LimitType; error: string } {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    (payload as { code?: string }).code === "PLAN_LIMIT"
+  );
 }

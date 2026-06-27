@@ -1,8 +1,11 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { isRazorpayCheckoutAvailable } from "@/lib/billing/config";
-import { createRazorpayOrder } from "@/lib/billing/razorpay";
+import { isBillingCurrency } from "@/lib/billing/currency";
+import {
+  getPaymentProviderForCurrency,
+  isCheckoutAvailable,
+} from "@/lib/billing/providers";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isPaidPlan } from "@/lib/billing/pricing";
 
@@ -14,19 +17,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  if (!isRazorpayCheckoutAvailable()) {
-    return NextResponse.json(
-      { error: "Razorpay is not configured." },
-      { status: 503 }
-    );
-  }
-
   try {
     const body = await request.json();
-    const { planId, period } = body as {
+    const { planId, period, currency } = body as {
       planId?: PlanId;
       period?: BillingPeriod;
+      currency?: string;
     };
+
+    if (!currency || !isBillingCurrency(currency)) {
+      return NextResponse.json(
+        { error: "Invalid or missing currency." },
+        { status: 400 }
+      );
+    }
+
+    if (!isCheckoutAvailable(currency)) {
+      return NextResponse.json(
+        { error: "Checkout is not configured for this currency." },
+        { status: 503 }
+      );
+    }
 
     if (!planId || !isPaidPlan(planId)) {
       return NextResponse.json(
@@ -42,15 +53,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const order = await createRazorpayOrder({
+    const provider = getPaymentProviderForCurrency(currency);
+    const order = await provider.createOrder({
       userId,
       planId,
       period,
+      currency,
     });
 
-    return NextResponse.json(order);
+    return NextResponse.json({
+      provider: order.provider,
+      orderId: order.orderId,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: order.keyId,
+      description: order.description,
+    });
   } catch (error) {
-    console.error("[razorpay] Failed to create order:", error);
+    console.error("[checkout] Failed to create order:", error);
 
     const message =
       error instanceof Error ? error.message : "Failed to create payment order.";

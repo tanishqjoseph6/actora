@@ -9,8 +9,6 @@ export const RAZORPAY_CONNECTED = Boolean(
 export const RAZORPAY_KEY_ID =
   process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? process.env.RAZORPAY_KEY_ID ?? "";
 
-export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY ?? "USD";
-
 export function isRazorpayCheckoutAvailable(): boolean {
   return RAZORPAY_CONNECTED && Boolean(RAZORPAY_KEY_ID);
 }

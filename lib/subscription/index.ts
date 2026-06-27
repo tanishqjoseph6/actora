@@ -13,6 +13,7 @@ export {
   PLAN_LIMITS,
   PLAN_DISPLAY_NAMES,
   formatLimit,
+  getPlanBadgeStyles,
   getPlanDisplayName,
   getPlanLimits,
   isUnlimited,
@@ -21,11 +22,13 @@ export {
 export {
   canConnectInbox,
   canUseAiAction,
+  getUpgradeRecommendation,
   getUsagePercent,
   hasFeatureAccess,
+  isPlanLimitError,
 } from "./gates";
 
-export type { FeatureGateResult } from "./gates";
+export type { FeatureGateResult, LimitType } from "./gates";
 
 export {
   createDefaultSubscription,

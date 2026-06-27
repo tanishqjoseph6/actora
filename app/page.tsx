@@ -87,9 +87,11 @@ export default function Home() {
               <li>✅ Community support</li>
             </ul>
 
-            <button className="w-full bg-zinc-700 py-3 rounded-xl">
-              Start Free
-            </button>
+            <a href="/signup">
+              <button className="w-full bg-zinc-700 py-3 rounded-xl">
+                Start Free
+              </button>
+            </a>
           </div>
 
           {/* Starter */}
@@ -107,15 +109,11 @@ export default function Home() {
               <li>✅ Priority support</li>
             </ul>
 
-            <a
-  href="https://rzp.io/rzp/7efMgDz"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  <button className="w-full bg-blue-600 py-3 rounded-xl">
-    Upgrade
-  </button>
-</a>
+            <a href="/billing?plan=starter">
+              <button className="w-full bg-blue-600 py-3 rounded-xl">
+                Upgrade
+              </button>
+            </a>
           </div>
 
           {/* Pro */}
@@ -134,23 +132,19 @@ export default function Home() {
               <li>🔥 Priority support</li>
             </ul>
 
-            <a
-  href="https://rzp.io/rzp/3HPkOOJH"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  <button className="w-full bg-white text-black py-3 rounded-xl font-bold">
-    Upgrade
-  </button>
-</a>
+            <a href="/billing?plan=pro">
+              <button className="w-full bg-white text-black py-3 rounded-xl font-bold">
+                Upgrade
+              </button>
+            </a>
           </div>
 
           {/* Enterprise */}
           <div className="bg-zinc-900 p-8 rounded-2xl">
             <h3 className="text-3xl font-bold">Enterprise</h3>
 
-            <p className="text-5xl font-bold mt-4">$399</p>
-            <p className="text-zinc-400 mb-6">per month</p>
+            <p className="text-5xl font-bold mt-4">Custom</p>
+            <p className="text-zinc-400 mb-6">tailored pricing</p>
 
             <ul className="space-y-3 mb-6">
               <li>🚀 Unlimited AI actions</li>
@@ -161,9 +155,11 @@ export default function Home() {
               <li>🚀 Dedicated account manager</li>
             </ul>
 
-            <button className="w-full bg-red-600 py-3 rounded-xl">
-              Contact Sales
-            </button>
+            <a href="mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry">
+              <button className="w-full bg-red-600 py-3 rounded-xl">
+                Contact Sales
+              </button>
+            </a>
           </div>
 
         </div>

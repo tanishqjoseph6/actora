@@ -2,29 +2,40 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { BillingPeriod, PricingPlan } from "./pricing-data";
-import { getDisplayPrice } from "./pricing-data";
+import { getDisplayPrice } from "@/lib/billing/pricing";
 import type { UpgradeSelection } from "@/lib/billing/upgrade";
+import type { BillingCurrency } from "@/lib/billing/currency";
+import {
+  getCheckoutButtonLabel,
+  getCheckoutDescription,
+  isCheckoutAvailable,
+} from "@/lib/billing/providers";
 import type { PlanId } from "@/lib/subscription";
 
 type UpgradeModalProps = {
   selection: UpgradeSelection | null;
+  currency: BillingCurrency;
   onClose: () => void;
   onDevUpgrade?: (planId: PlanId) => Promise<void>;
-  onPayWithRazorpay?: (planId: PlanId, period: BillingPeriod) => Promise<void>;
-  razorpayEnabled?: boolean;
+  onCheckout?: (
+    planId: PlanId,
+    period: BillingPeriod,
+    currency: BillingCurrency
+  ) => Promise<void>;
   currentPlanId?: PlanId;
 };
 
 export function UpgradeModal({
   selection,
+  currency,
   onClose,
   onDevUpgrade,
-  onPayWithRazorpay,
-  razorpayEnabled = false,
+  onCheckout,
   currentPlanId,
 }: UpgradeModalProps) {
   const isOpen = selection !== null;
   const [isProcessing, setIsProcessing] = useState(false);
+  const checkoutAvailable = isCheckoutAvailable(currency);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -45,7 +56,12 @@ export function UpgradeModal({
   if (!selection) return null;
 
   const { plan, period } = selection;
-  const pricing = getDisplayPrice(plan.id, plan.monthlyPrice, period);
+  const pricing = getDisplayPrice(
+    currency,
+    plan.id,
+    plan.monthlyPrice,
+    period
+  );
   const isCurrentPlan = currentPlanId === plan.id;
 
   const handlePrimaryAction = async () => {
@@ -53,8 +69,8 @@ export function UpgradeModal({
 
     setIsProcessing(true);
     try {
-      if (razorpayEnabled && onPayWithRazorpay) {
-        await onPayWithRazorpay(plan.id, period);
+      if (checkoutAvailable && onCheckout) {
+        await onCheckout(plan.id, period, currency);
       } else if (onDevUpgrade) {
         await onDevUpgrade(plan.id);
       }
@@ -64,14 +80,12 @@ export function UpgradeModal({
   };
 
   const primaryLabel = isProcessing
-    ? razorpayEnabled
+    ? checkoutAvailable
       ? "Opening checkout…"
       : "Activating…"
     : isCurrentPlan
       ? "Current Plan"
-      : razorpayEnabled
-        ? "Pay with Razorpay"
-        : "Activate Plan (Dev)";
+      : getCheckoutButtonLabel(currency);
 
   return (
     <>
@@ -101,7 +115,7 @@ export function UpgradeModal({
 
             <div className="mb-6">
               <p className="text-xs font-medium uppercase tracking-wider text-[#00CFFF] mb-2">
-                {period === "yearly" ? "Yearly billing" : "Monthly billing"}
+                {period === "yearly" ? "Yearly billing" : "Monthly billing"} · {currency}
               </p>
               <h2
                 id="upgrade-modal-title"
@@ -141,9 +155,7 @@ export function UpgradeModal({
             </ul>
 
             <p className="text-center text-sm text-gray-500 mb-6">
-              {razorpayEnabled
-                ? "Secure checkout powered by Razorpay."
-                : "Development mode — activate plan without payment."}
+              {getCheckoutDescription(currency)}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">

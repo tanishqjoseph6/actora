@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { threadId, to, subject, replyBody, inReplyTo, references } = body;
+    const { threadId, to, subject, replyBody, replyBodyHtml, inReplyTo, references } =
+      body;
 
     if (!threadId || !to || !subject || !replyBody) {
       return NextResponse.json(
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       to,
       subject: formatReplySubject(subject),
       body: replyBody,
+      htmlBody: replyBodyHtml,
       inReplyTo,
       references,
     });

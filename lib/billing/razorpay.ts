@@ -2,10 +2,10 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import {
   RAZORPAY_CONNECTED,
-  RAZORPAY_CURRENCY,
   RAZORPAY_KEY_ID,
 } from "./config";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
+import type { BillingCurrency } from "./currency";
 import { getChargeAmount, getChargeDescription } from "./pricing";
 
 export function getRazorpayClient(): Razorpay {
@@ -23,12 +23,14 @@ export async function createRazorpayOrder({
   userId,
   planId,
   period,
+  currency,
 }: {
   userId: string;
   planId: PlanId;
   period: BillingPeriod;
+  currency: BillingCurrency;
 }) {
-  const amount = getChargeAmount(planId, period);
+  const amount = getChargeAmount(currency, planId, period);
 
   if (!amount) {
     throw new Error("This plan cannot be purchased via checkout.");
@@ -38,21 +40,22 @@ export async function createRazorpayOrder({
 
   const order = await razorpay.orders.create({
     amount,
-    currency: RAZORPAY_CURRENCY,
-    receipt: `actora_${planId}_${period}_${Date.now()}`,
+    currency,
+    receipt: `actora_${planId}_${period}_${currency}_${Date.now()}`,
     notes: {
       userId,
       planId,
       period,
+      currency,
     },
   });
 
   return {
     orderId: order.id,
-    amount: order.amount,
-    currency: order.currency,
+    amount: Number(order.amount),
+    currency: order.currency as BillingCurrency,
     keyId: RAZORPAY_KEY_ID,
-    description: getChargeDescription(planId, period),
+    description: getChargeDescription(currency, planId, period),
   };
 }
 

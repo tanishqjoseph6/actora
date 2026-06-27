@@ -5,7 +5,7 @@ import type { InboxEmail } from "@/lib/gmail";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
-import { useSubscription } from "@/hooks/useSubscription";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { formatLimit } from "@/lib/subscription";
 
 type FetchState = "loading" | "error" | "success";
@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterChip>("all");
   const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { subscription, loading: subscriptionLoading } = usePlanGate();
 
   const aiActionsDisplay = useMemo(() => {
     if (!subscription) return "—";

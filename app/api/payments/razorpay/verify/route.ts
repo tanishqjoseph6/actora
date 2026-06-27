@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { verifyRazorpayPaymentSignature, getRazorpayClient } from "@/lib/billing/razorpay";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
+import { isBillingCurrency } from "@/lib/billing/currency";
 import { isPaidPlan } from "@/lib/billing/pricing";
 import {
   subscriptionProvider,
@@ -25,12 +26,14 @@ export async function POST(request: NextRequest) {
       razorpay_signature,
       planId,
       period,
+      currency,
     } = body as {
       razorpay_order_id?: string;
       razorpay_payment_id?: string;
       razorpay_signature?: string;
       planId?: PlanId;
       period?: BillingPeriod;
+      currency?: string;
     };
 
     if (
@@ -38,7 +41,9 @@ export async function POST(request: NextRequest) {
       !razorpay_payment_id ||
       !razorpay_signature ||
       !planId ||
-      !period
+      !period ||
+      !currency ||
+      !isBillingCurrency(currency)
     ) {
       return NextResponse.json(
         { error: "Missing payment verification fields." },
@@ -66,13 +71,19 @@ export async function POST(request: NextRequest) {
     const razorpay = getRazorpayClient();
     const order = await razorpay.orders.fetch(razorpay_order_id);
     const notes = order.notes as
-      | { userId?: string; planId?: PlanId; period?: BillingPeriod }
+      | {
+          userId?: string;
+          planId?: PlanId;
+          period?: BillingPeriod;
+          currency?: string;
+        }
       | undefined;
 
     if (
       notes?.userId !== userId ||
       notes?.planId !== planId ||
-      notes?.period !== period
+      notes?.period !== period ||
+      notes?.currency !== currency
     ) {
       return NextResponse.json(
         { error: "Order details do not match checkout." },

@@ -93,27 +93,49 @@ function buildMimeMessage({
   to,
   subject,
   body,
+  htmlBody,
   inReplyTo,
   references,
 }: {
   to: string;
   subject: string;
   body: string;
+  htmlBody?: string;
   inReplyTo?: string;
   references?: string;
 }): string {
-  const headers = [
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    "MIME-Version: 1.0",
+  const baseHeaders = [`To: ${to}`, `Subject: ${subject}`, "MIME-Version: 1.0"];
+
+  if (inReplyTo) baseHeaders.push(`In-Reply-To: ${inReplyTo}`);
+  if (references) baseHeaders.push(`References: ${references}`);
+
+  if (htmlBody) {
+    const boundary = `actora_${Date.now()}`;
+    return [
+      ...baseHeaders,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/plain; charset=utf-8",
+      "Content-Transfer-Encoding: 7bit",
+      "",
+      body,
+      `--${boundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "Content-Transfer-Encoding: 7bit",
+      "",
+      htmlBody,
+      `--${boundary}--`,
+    ].join("\r\n");
+  }
+
+  return [
+    ...baseHeaders,
     "Content-Type: text/plain; charset=utf-8",
     "Content-Transfer-Encoding: 7bit",
-  ];
-
-  if (inReplyTo) headers.push(`In-Reply-To: ${inReplyTo}`);
-  if (references) headers.push(`References: ${references}`);
-
-  return `${headers.join("\r\n")}\r\n\r\n${body}`;
+    "",
+    body,
+  ].join("\r\n");
 }
 
 function encodeMimeForGmail(raw: string): string {
@@ -259,6 +281,7 @@ export async function sendEmailReply(
     to,
     subject,
     body,
+    htmlBody,
     inReplyTo,
     references,
   }: {
@@ -266,6 +289,7 @@ export async function sendEmailReply(
     to: string;
     subject: string;
     body: string;
+    htmlBody?: string;
     inReplyTo?: string;
     references?: string;
   }
@@ -276,6 +300,7 @@ export async function sendEmailReply(
     to,
     subject,
     body,
+    htmlBody,
     inReplyTo,
     references,
   });

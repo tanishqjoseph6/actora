@@ -1,5 +1,5 @@
 import type { SubscriptionSnapshot } from "@/lib/subscription";
-import { formatLimit, getUsagePercent } from "@/lib/subscription";
+import { formatLimit, getPlanBadgeStyles, getUsagePercent } from "@/lib/subscription";
 
 type CurrentPlanBadgeProps = {
   subscription: SubscriptionSnapshot | null;
@@ -20,11 +20,16 @@ export function CurrentPlanBadge({
     );
   }
 
+  const planId = subscription?.planId ?? "free";
   const planName = subscription?.planName ?? "Free";
+  const styles = getPlanBadgeStyles(planId);
 
   if (compact) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-medium">
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${styles.badge}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
         {planName}
       </span>
     );
@@ -33,7 +38,10 @@ export function CurrentPlanBadge({
   return (
     <div className="inline-flex items-center gap-2">
       <span className="text-2xl font-bold text-white">{planName}</span>
-      <span className="px-2.5 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-medium">
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${styles.badge}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
         Active
       </span>
     </div>
@@ -75,6 +83,7 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
       {stats.map((stat) => {
         const percent = getUsagePercent(stat.used, stat.limit);
         const limitLabel = formatLimit(stat.limit);
+        const isAtLimit = percent >= 100;
 
         return (
           <div key={stat.label}>
@@ -87,7 +96,11 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
             </div>
             <div className="h-2 rounded-full bg-[#0d1730] overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isAtLimit
+                    ? "bg-gradient-to-r from-amber-500 to-red-400"
+                    : "bg-gradient-to-r from-[#3B82F6] to-[#00CFFF]"
+                }`}
                 style={{ width: `${percent}%` }}
               />
             </div>

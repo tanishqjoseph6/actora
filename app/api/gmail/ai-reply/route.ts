@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { generateEmailReply } from "@/lib/openai";
+import { generateEmailReplyWithRetry, isReplyTone } from "@/lib/openai";
 import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { sender, subject, emailBody } = body;
+    const { sender, subject, emailBody, tone } = body;
 
     if (!sender || !subject || !emailBody) {
       return NextResponse.json(
@@ -26,22 +26,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const replyTone = tone && isReplyTone(tone) ? tone : "professional";
+
     const subscription = await subscriptionProvider.getSubscription(userId);
     const gate = canUseAiAction(subscription.planId, subscription.usage);
 
     if (!gate.allowed) {
-      return NextResponse.json({ error: gate.reason }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: gate.reason,
+          code: "PLAN_LIMIT",
+          limitType: gate.limitType,
+        },
+        { status: 403 }
+      );
     }
 
-    const reply = await generateEmailReply({
+    const reply = await generateEmailReplyWithRetry({
       sender,
       subject,
       body: emailBody,
+      tone: replyTone,
     });
 
-    await subscriptionProvider.recordAiAction(userId);
+    const updated = await subscriptionProvider.recordAiAction(userId);
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({
+      reply,
+      tone: replyTone,
+      usage: updated.usage,
+    });
   } catch (error) {
     console.error("[ai-reply] Failed to generate reply:", error);
 

@@ -1,8 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { EmailDetail, InboxEmail } from "@/lib/gmail";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { isPlanLimitError } from "@/lib/subscription";
+import {
+  ReplyComposer,
+  type ReplyComposerHandle,
+  type ReplyContent,
+} from "@/components/email/ReplyComposer";
+import { hasRichFormatting, isComposerEmpty } from "@/lib/email/html";
+import {
+  getCachedReply,
+  setCachedReply,
+} from "@/lib/email/reply-cache";
+import {
+  REPLY_TONE_LABELS,
+  REPLY_TONES,
+  type ReplyTone,
+} from "@/lib/openai";
+import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
@@ -11,24 +29,37 @@ type EmailDetailPanelProps = {
 
 type PanelState = "loading" | "ready" | "error";
 
+const EMPTY_REPLY: ReplyContent = { plain: "", html: "" };
+
 export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
+  const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
+  const composerRef = useRef<ReplyComposerHandle>(null);
+
   const [detail, setDetail] = useState<EmailDetail | null>(null);
   const [panelState, setPanelState] = useState<PanelState>("loading");
   const [panelError, setPanelError] = useState<string | null>(null);
 
-  const [replyText, setReplyText] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [reply, setReply] = useState<ReplyContent>(EMPTY_REPLY);
+  const [selectedTone, setSelectedTone] = useState<ReplyTone>("professional");
+  const [showTonePicker, setShowTonePicker] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [sendSuccess, setSendSuccess] = useState(false);
+  const [toast, setToast] = useState<AppToastState>(null);
+
+  const resetComposer = useCallback(() => {
+    setReply(EMPTY_REPLY);
+    composerRef.current?.setContent("");
+    setComposerOpen(false);
+    setShowTonePicker(false);
+    setCopySuccess(false);
+  }, []);
 
   const loadDetail = useCallback(async () => {
     setPanelState("loading");
     setPanelError(null);
-    setReplyText("");
-    setActionError(null);
-    setSendSuccess(false);
+    resetComposer();
 
     try {
       const res = await fetch(`/api/gmail/${email.id}`);
@@ -46,7 +77,7 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
       setPanelState("error");
       setPanelError("Failed to load email. Please try again.");
     }
-  }, [email.id]);
+  }, [email.id, resetComposer]);
 
   useEffect(() => {
     loadDetail();
@@ -64,57 +95,153 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
     };
   }, [onClose]);
 
-  const handleGenerateReply = async () => {
-    if (!detail) return;
+  const openComposerWithContent = useCallback((content: ReplyContent) => {
+    composerRef.current?.setContent(content.plain);
+    setReply(content);
+    setComposerOpen(true);
+  }, []);
 
-    setIsGenerating(true);
-    setActionError(null);
-    setSendSuccess(false);
+  const generateReply = useCallback(
+    async (tone: ReplyTone, options?: { skipCache?: boolean }) => {
+      if (!detail) return false;
+      if (!checkAiAction()) return false;
 
-    try {
-      const res = await fetch("/api/gmail/ai-reply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sender: detail.sender,
-          subject: detail.subject,
-          emailBody: detail.body,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setActionError(data.error ?? "Failed to generate reply");
-        return;
+      if (!options?.skipCache) {
+        const cached = getCachedReply(email.id, tone);
+        if (cached) {
+          setSelectedTone(tone);
+          openComposerWithContent({
+            plain: cached.plain,
+            html: cached.html,
+          });
+          return true;
+        }
       }
 
-      setReplyText(data.reply);
-    } catch {
-      setActionError("Failed to generate reply. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
+      setIsGenerating(true);
+      setShowTonePicker(false);
+      setComposerOpen(true);
+
+      try {
+        const res = await fetch("/api/gmail/ai-reply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: detail.sender,
+            subject: detail.subject,
+            emailBody: detail.body,
+            tone,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (isPlanLimitError(data)) {
+            showLimitModal(data.error, data.limitType);
+            setComposerOpen(false);
+            return false;
+          }
+          setToast({
+            type: "error",
+            title: "Generation failed",
+            message: data.error ?? "Failed to generate reply.",
+          });
+          return false;
+        }
+
+        const content: ReplyContent = {
+          plain: data.reply,
+          html: "",
+        };
+
+        setSelectedTone(tone);
+        openComposerWithContent(content);
+        setCachedReply(email.id, tone, {
+          plain: data.reply,
+          html: composerRef.current?.getContent().html ?? "",
+        });
+        await refreshSubscription();
+        return true;
+      } catch {
+        setToast({
+          type: "error",
+          title: "Generation failed",
+          message: "Failed to generate reply. Please try again.",
+        });
+        return false;
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [
+      detail,
+      checkAiAction,
+      email.id,
+      openComposerWithContent,
+      showLimitModal,
+      refreshSubscription,
+    ]
+  );
+
+  const handleAiReplyClick = () => {
+    setShowTonePicker((prev) => !prev);
+  };
+
+  const handleToneSelect = (tone: ReplyTone) => {
+    void generateReply(tone);
+  };
+
+  const handleManualReply = () => {
+    resetComposer();
+    setComposerOpen(true);
+  };
+
+  const handleRegenerate = () => {
+    void generateReply(selectedTone, { skipCache: true });
+  };
+
+  const handleCancelComposer = () => {
+    resetComposer();
   };
 
   const handleCopy = async () => {
-    if (!replyText) return;
+    const content = composerRef.current?.getContent() ?? reply;
+    if (isComposerEmpty(content.plain, content.html)) return;
 
     try {
-      await navigator.clipboard.writeText(replyText);
+      if (
+        hasRichFormatting(content.html) &&
+        typeof ClipboardItem !== "undefined"
+      ) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/plain": new Blob([content.plain], { type: "text/plain" }),
+            "text/html": new Blob([content.html], { type: "text/html" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(content.plain);
+      }
+
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch {
-      setActionError("Failed to copy to clipboard.");
+      setToast({
+        type: "error",
+        title: "Copy failed",
+        message: "Could not copy to clipboard.",
+      });
     }
   };
 
   const handleSend = async () => {
-    if (!detail || !replyText.trim()) return;
+    if (!detail) return;
+
+    const content = composerRef.current?.getContent() ?? reply;
+    if (isComposerEmpty(content.plain, content.html)) return;
 
     setIsSending(true);
-    setActionError(null);
-    setSendSuccess(false);
 
     try {
       const res = await fetch("/api/gmail/send", {
@@ -124,7 +251,10 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
           threadId: detail.threadId,
           to: detail.senderEmail,
           subject: detail.subject,
-          replyBody: replyText,
+          replyBody: content.plain,
+          replyBodyHtml: hasRichFormatting(content.html)
+            ? content.html
+            : undefined,
           inReplyTo: detail.messageIdHeader || undefined,
           references: detail.messageIdHeader || undefined,
         }),
@@ -133,13 +263,26 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setActionError(data.error ?? "Failed to send email");
+        setToast({
+          type: "error",
+          title: "Send failed",
+          message: data.error ?? "Failed to send email via Gmail.",
+        });
         return;
       }
 
-      setSendSuccess(true);
+      setToast({
+        type: "success",
+        title: "Reply sent",
+        message: "Your email was sent successfully via Gmail.",
+      });
+      resetComposer();
     } catch {
-      setActionError("Failed to send email. Please try again.");
+      setToast({
+        type: "error",
+        title: "Send failed",
+        message: "Failed to send email. Please try again.",
+      });
     } finally {
       setIsSending(false);
     }
@@ -150,6 +293,8 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
 
   return (
     <>
+      <AppToast toast={toast} onDismiss={() => setToast(null)} />
+
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:bg-black/40"
         onClick={onClose}
@@ -162,7 +307,6 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
         aria-modal
         aria-label="Email detail"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-cyan-400/10 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
@@ -184,7 +328,6 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {panelState === "loading" && (
             <div className="p-5 space-y-4 animate-pulse">
@@ -218,97 +361,143 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
               <h2 className="text-xl font-bold text-white mb-1">{detail.subject}</h2>
               <time className="text-sm text-gray-500">{detail.date}</time>
 
+              {/* Reply / Forward / AI Reply actions */}
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <ActionButton onClick={handleManualReply} disabled={isGenerating || isSending}>
+                  <ReplyIcon className="w-4 h-4" />
+                  Reply
+                </ActionButton>
+                <ActionButton
+                  onClick={() =>
+                    setToast({
+                      type: "info",
+                      title: "Forward",
+                      message: "Forward is coming soon.",
+                    })
+                  }
+                  disabled={isGenerating || isSending}
+                >
+                  <ForwardIcon className="w-4 h-4" />
+                  Forward
+                </ActionButton>
+                <ActionButton
+                  variant="primary"
+                  onClick={handleAiReplyClick}
+                  disabled={isGenerating || isSending}
+                >
+                  <SparkleIcon className="w-4 h-4" />
+                  AI Reply
+                </ActionButton>
+              </div>
+
+              {showTonePicker && (
+                <div className="mt-3 p-4 rounded-2xl bg-[#0d1730]/60 border border-cyan-400/15 backdrop-blur-sm animate-fade-in">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#00CFFF] mb-3">
+                    Choose tone
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {REPLY_TONES.map((tone) => (
+                      <button
+                        key={tone}
+                        onClick={() => handleToneSelect(tone)}
+                        disabled={isGenerating}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                          selectedTone === tone
+                            ? "bg-cyan-500/20 border-cyan-400/40 text-cyan-300"
+                            : "border-cyan-400/15 text-gray-400 hover:border-cyan-400/30 hover:text-white"
+                        } disabled:opacity-50`}
+                      >
+                        {REPLY_TONE_LABELS[tone]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-6 p-4 rounded-2xl bg-[#0d1730]/60 border border-cyan-400/10">
                 <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {detail.body || "No content available."}
                 </p>
               </div>
 
-              {/* AI Reply section */}
-              <div className="mt-8 pt-6 border-t border-cyan-400/10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <SparkleIcon className="w-5 h-5 text-cyan-400" />
-                    AI Reply
-                  </h3>
-                  <button
-                    onClick={handleGenerateReply}
-                    disabled={isGenerating}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 text-sm font-medium hover:bg-cyan-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <LoadingSpinner />
-                        Generating…
-                      </>
-                    ) : (
-                      <>
-                        <SparkleIcon className="w-4 h-4" />
-                        AI Reply
-                      </>
+              {composerOpen && (
+                <div className="mt-6 pt-6 border-t border-cyan-400/10 animate-fade-in">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <SparkleIcon className="w-5 h-5 text-cyan-400" />
+                      {isGenerating ? "Generating…" : "Compose Reply"}
+                    </h3>
+                    {selectedTone && !isGenerating && (
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/20 text-cyan-300">
+                        {REPLY_TONE_LABELS[selectedTone]}
+                      </span>
                     )}
-                  </button>
+                  </div>
+
+                  {isGenerating ? (
+                    <ComposerSkeleton />
+                  ) : (
+                    <ReplyComposer
+                      ref={composerRef}
+                      onChange={(content) => {
+                        setReply(content);
+                        if (detail) {
+                          setCachedReply(email.id, selectedTone, content);
+                        }
+                      }}
+                      disabled={isGenerating || isSending}
+                      placeholder="Your reply will appear here…"
+                    />
+                  )}
+
+                  {!isGenerating && (
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      <button
+                        onClick={handleCopy}
+                        disabled={isComposerEmpty(reply.plain, reply.html)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/20 text-gray-300 text-sm font-medium hover:bg-cyan-500/10 hover:text-white transition-all duration-200 disabled:opacity-50"
+                      >
+                        <CopyIcon className="w-4 h-4" />
+                        {copySuccess ? "Copied!" : "Copy"}
+                      </button>
+                      <button
+                        onClick={handleRegenerate}
+                        disabled={isGenerating || isSending}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/20 text-gray-300 text-sm font-medium hover:bg-cyan-500/10 hover:text-white transition-all duration-200 disabled:opacity-50"
+                      >
+                        <RefreshIcon className="w-4 h-4" />
+                        Regenerate
+                      </button>
+                      <button
+                        onClick={handleSend}
+                        disabled={
+                          isSending || isComposerEmpty(reply.plain, reply.html)
+                        }
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] text-[#050816] text-sm font-semibold hover:brightness-110 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-cyan-500/20"
+                      >
+                        {isSending ? (
+                          <>
+                            <LoadingSpinner dark />
+                            Sending…
+                          </>
+                        ) : (
+                          <>
+                            <SendIcon className="w-4 h-4" />
+                            Send
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelComposer}
+                        disabled={isSending}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[rgba(0,255,255,0.15)] text-gray-400 text-sm font-medium hover:border-cyan-400/30 hover:text-white transition-all duration-200 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
-
-                {isGenerating && !replyText && (
-                  <div className="rounded-2xl border border-cyan-400/10 bg-[#0d1730]/40 p-6 flex flex-col items-center justify-center gap-3">
-                    <LoadingSpinner size="lg" />
-                    <p className="text-sm text-gray-400 animate-pulse">
-                      Crafting your professional reply…
-                    </p>
-                  </div>
-                )}
-
-                {(replyText || !isGenerating) && (
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Click AI Reply to generate a response, or write your own…"
-                    rows={8}
-                    className="w-full px-4 py-3 rounded-2xl bg-[#0d1730] border border-cyan-400/10 text-white placeholder:text-gray-600 text-sm leading-relaxed resize-none focus:outline-none focus:border-cyan-400/40 focus:ring-1 focus:ring-cyan-400/20 transition-all"
-                  />
-                )}
-
-                {actionError && (
-                  <p className="mt-3 text-sm text-red-300">{actionError}</p>
-                )}
-
-                {sendSuccess && (
-                  <p className="mt-3 text-sm text-emerald-400">
-                    Reply sent successfully!
-                  </p>
-                )}
-
-                {replyText && (
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    <button
-                      onClick={handleCopy}
-                      disabled={!replyText}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-cyan-400/20 text-gray-300 text-sm font-medium hover:bg-cyan-500/10 hover:text-white transition-all duration-200"
-                    >
-                      <CopyIcon className="w-4 h-4" />
-                      {copySuccess ? "Copied!" : "Copy"}
-                    </button>
-                    <button
-                      onClick={handleSend}
-                      disabled={isSending || !replyText.trim()}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 text-[#050816] text-sm font-semibold hover:bg-cyan-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSending ? (
-                        <>
-                          <LoadingSpinner dark />
-                          Sending…
-                        </>
-                      ) : (
-                        <>
-                          <SendIcon className="w-4 h-4" />
-                          Send
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -317,21 +506,66 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
   );
 }
 
-function LoadingSpinner({
-  size = "sm",
-  dark = false,
+function ComposerSkeleton() {
+  return (
+    <div className="rounded-2xl border border-cyan-400/10 bg-[#0d1730]/60 overflow-hidden animate-pulse">
+      <div className="h-10 border-b border-cyan-400/10 bg-[#081226]/40" />
+      <div className="p-4 space-y-3 min-h-[180px]">
+        <div className="h-3 w-full bg-cyan-400/10 rounded" />
+        <div className="h-3 w-11/12 bg-cyan-400/10 rounded" />
+        <div className="h-3 w-10/12 bg-cyan-400/10 rounded" />
+        <div className="h-3 w-full bg-cyan-400/10 rounded" />
+        <div className="h-3 w-8/12 bg-cyan-400/10 rounded" />
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled,
+  variant = "default",
 }: {
-  size?: "sm" | "lg";
-  dark?: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: "default" | "primary";
 }) {
-  const sizeClass = size === "lg" ? "w-8 h-8" : "w-4 h-4";
+  const base =
+    "inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  if (variant === "primary") {
+    return (
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={`${base} bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] text-[#050816] shadow-md shadow-cyan-500/15 hover:brightness-110`}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${base} border border-cyan-400/20 text-gray-300 hover:bg-cyan-500/10 hover:text-white`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function LoadingSpinner({ dark = false }: { dark?: boolean }) {
   const colorClass = dark
     ? "border-white/30 border-t-[#050816]"
     : "border-cyan-400/30 border-t-cyan-400";
 
   return (
     <span
-      className={`inline-block ${sizeClass} border-2 ${colorClass} rounded-full animate-spin`}
+      className={`inline-block w-4 h-4 border-2 ${colorClass} rounded-full animate-spin`}
     />
   );
 }
@@ -352,10 +586,34 @@ function SparkleIcon({ className }: { className?: string }) {
   );
 }
 
+function ReplyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+    </svg>
+  );
+}
+
+function ForwardIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+    </svg>
+  );
+}
+
 function CopyIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
   );
 }

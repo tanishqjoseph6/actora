@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import type { BillingPeriod } from "@/components/billing/pricing-data";
+import type { BillingCurrency } from "@/lib/billing/currency";
 import type { PlanId } from "@/lib/subscription";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 
@@ -50,12 +51,16 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
   }, [callbacks]);
 
   const openCheckout = useCallback(
-    async (planId: PlanId, period: BillingPeriod) => {
+    async (
+      planId: PlanId,
+      period: BillingPeriod,
+      currency: BillingCurrency
+    ) => {
       try {
         const orderRes = await fetch("/api/payments/razorpay/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId, period }),
+          body: JSON.stringify({ planId, period, currency }),
         });
 
         const orderData = await orderRes.json();
@@ -63,6 +68,13 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
         if (!orderRes.ok) {
           callbacksRef.current?.onFailure?.(
             orderData.error ?? "Failed to start checkout."
+          );
+          return false;
+        }
+
+        if (orderData.provider !== "razorpay") {
+          callbacksRef.current?.onFailure?.(
+            "This currency uses a different payment provider."
           );
           return false;
         }
@@ -98,6 +110,7 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
                       ...response,
                       planId,
                       period,
+                      currency,
                     }),
                   }
                 );

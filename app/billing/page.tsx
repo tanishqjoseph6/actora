@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { BillingToggle } from "@/components/billing/BillingToggle";
+import { CurrencyToggle } from "@/components/billing/CurrencyToggle";
 import { PricingCard } from "@/components/billing/PricingCard";
 import {
   CurrentPlanCard,
@@ -27,14 +28,16 @@ import {
   type BillingPeriod,
   type PricingPlan,
 } from "@/components/billing/pricing-data";
+import { parseBillingCurrency } from "@/lib/billing/currency";
+import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import type { BillingCurrency } from "@/lib/billing/currency";
 import type { PlanId } from "@/lib/subscription";
-
-const razorpayEnabled = Boolean(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
 
 export default function Billing() {
   const { data: session } = useSession();
+  const { currency, setCurrency } = useBillingCurrency();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
   const { subscription, loading, upgradePlan, refresh } = useSubscription();
@@ -105,8 +108,12 @@ export default function Billing() {
     [upgradePlan, period, closeUpgrade, refresh]
   );
 
-  const handlePayWithRazorpay = useCallback(
-    async (planId: PlanId, billingPeriod: BillingPeriod) => {
+  const handleCheckout = useCallback(
+    async (
+      planId: PlanId,
+      billingPeriod: BillingPeriod,
+      billingCurrency: BillingCurrency
+    ) => {
       if (!session) {
         setToast({
           type: "error",
@@ -116,7 +123,7 @@ export default function Billing() {
         return;
       }
 
-      await openCheckout(planId, billingPeriod);
+      await openCheckout(planId, billingPeriod, billingCurrency);
     },
     [session, openCheckout]
   );
@@ -125,8 +132,13 @@ export default function Billing() {
     const params = new URLSearchParams(window.location.search);
     const planParam = params.get("plan");
     const periodParam = params.get("period");
+    const currencyParam = parseBillingCurrency(params.get("currency"));
     const billingPeriod: BillingPeriod =
       periodParam === "yearly" ? "yearly" : "monthly";
+
+    if (currencyParam) {
+      setCurrency(currencyParam);
+    }
 
     if (periodParam === "yearly" || periodParam === "monthly") {
       setPeriod(billingPeriod);
@@ -139,10 +151,10 @@ export default function Billing() {
       }
     }
 
-    if (params.has("plan") || params.has("period")) {
+    if (params.has("plan") || params.has("period") || params.has("currency")) {
       window.history.replaceState({}, "", "/billing");
     }
-  }, [openUpgrade]);
+  }, [openUpgrade, setCurrency]);
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
@@ -169,7 +181,8 @@ export default function Billing() {
             Scale your inbox automation as your business grows
           </p>
 
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <CurrencyToggle currency={currency} onChange={setCurrency} />
             <BillingToggle period={period} onChange={setPeriod} />
           </div>
         </div>
@@ -180,6 +193,7 @@ export default function Billing() {
               key={plan.id}
               plan={plan}
               period={period}
+              currency={currency}
               onUpgrade={handleUpgrade}
               isCurrentPlan={subscription?.planId === plan.id}
             />
@@ -200,10 +214,10 @@ export default function Billing() {
 
       <UpgradeModal
         selection={selection}
+        currency={currency}
         onClose={closeUpgrade}
         onDevUpgrade={handleDevUpgrade}
-        onPayWithRazorpay={handlePayWithRazorpay}
-        razorpayEnabled={razorpayEnabled}
+        onCheckout={handleCheckout}
         currentPlanId={subscription?.planId}
       />
     </main>
