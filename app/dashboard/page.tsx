@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { InboxEmail } from "@/lib/gmail";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
+import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
+import { useSubscription } from "@/hooks/useSubscription";
+import { formatLimit } from "@/lib/subscription";
 
 type FetchState = "loading" | "error" | "success";
 type FilterChip = "all" | "unread" | "starred";
@@ -17,6 +20,14 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterChip>("all");
   const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
+  const { subscription, loading: subscriptionLoading } = useSubscription();
+
+  const aiActionsDisplay = useMemo(() => {
+    if (!subscription) return "—";
+    const { aiActionsUsed } = subscription.usage;
+    const limit = formatLimit(subscription.limits.aiActionsPerMonth);
+    return `${aiActionsUsed}/${limit}`;
+  }, [subscription]);
 
   const loadEmails = useCallback(async (silent = false) => {
     if (!silent) {
@@ -118,7 +129,15 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-auto pt-6 border-t border-cyan-400/20">
+          <div className="mt-auto pt-6 border-t border-cyan-400/20 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Plan</p>
+              <CurrentPlanBadge
+                subscription={subscription}
+                loading={subscriptionLoading}
+                compact
+              />
+            </div>
             <p className="text-cyan-400 font-semibold">Tanishq</p>
             <p className="text-gray-400 text-sm">Founder</p>
           </div>
@@ -126,8 +145,13 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <section className="flex-1 p-5 sm:p-8 lg:p-10 min-w-0">
-          <div className="lg:hidden mb-6">
+          <div className="lg:hidden mb-6 flex items-center justify-between">
             <h1 className="text-2xl font-bold text-cyan-400">Actora</h1>
+            <CurrentPlanBadge
+              subscription={subscription}
+              loading={subscriptionLoading}
+              compact
+            />
           </div>
 
           <div className="mb-8 lg:mb-10">
@@ -156,7 +180,7 @@ export default function Dashboard() {
               title="Unread"
               value={fetchState === "loading" ? "—" : unreadCount}
             />
-            <StatCard title="AI Actions" value={0} />
+            <StatCard title="AI Actions" value={aiActionsDisplay} />
           </div>
 
           <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 mb-8 backdrop-blur-sm">

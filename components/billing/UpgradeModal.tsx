@@ -3,16 +3,28 @@
 import { useCallback, useEffect, useState } from "react";
 import type { BillingPeriod, PricingPlan } from "./pricing-data";
 import { getDisplayPrice } from "./pricing-data";
-import { connectRazorpayPlaceholder } from "@/lib/billing/upgrade";
 import type { UpgradeSelection } from "@/lib/billing/upgrade";
+import type { PlanId } from "@/lib/subscription";
 
 type UpgradeModalProps = {
   selection: UpgradeSelection | null;
   onClose: () => void;
+  onDevUpgrade?: (planId: PlanId) => Promise<void>;
+  onPayWithRazorpay?: (planId: PlanId, period: BillingPeriod) => Promise<void>;
+  razorpayEnabled?: boolean;
+  currentPlanId?: PlanId;
 };
 
-export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
+export function UpgradeModal({
+  selection,
+  onClose,
+  onDevUpgrade,
+  onPayWithRazorpay,
+  razorpayEnabled = false,
+  currentPlanId,
+}: UpgradeModalProps) {
   const isOpen = selection !== null;
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -34,6 +46,32 @@ export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
 
   const { plan, period } = selection;
   const pricing = getDisplayPrice(plan.id, plan.monthlyPrice, period);
+  const isCurrentPlan = currentPlanId === plan.id;
+
+  const handlePrimaryAction = async () => {
+    if (isCurrentPlan) return;
+
+    setIsProcessing(true);
+    try {
+      if (razorpayEnabled && onPayWithRazorpay) {
+        await onPayWithRazorpay(plan.id, period);
+      } else if (onDevUpgrade) {
+        await onDevUpgrade(plan.id);
+      }
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const primaryLabel = isProcessing
+    ? razorpayEnabled
+      ? "Opening checkout…"
+      : "Activating…"
+    : isCurrentPlan
+      ? "Current Plan"
+      : razorpayEnabled
+        ? "Pay with Razorpay"
+        : "Activate Plan (Dev)";
 
   return (
     <>
@@ -50,7 +88,6 @@ export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
           aria-modal
           aria-labelledby="upgrade-modal-title"
         >
-          {/* Glow accent */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-[#00CFFF]/20 blur-3xl pointer-events-none" />
 
           <div className="relative p-6 sm:p-8">
@@ -74,7 +111,6 @@ export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
               </h2>
             </div>
 
-            {/* Plan summary */}
             <div className="rounded-xl bg-[#0d1730]/60 border border-[rgba(0,255,255,0.12)] p-5 mb-5">
               <h3 className="text-xl font-bold text-white">{plan.name}</h3>
               <p className="text-sm text-gray-400 mt-1">{plan.description}</p>
@@ -92,7 +128,6 @@ export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
               )}
             </div>
 
-            {/* Features */}
             <ul className="space-y-2.5 mb-6 max-h-40 overflow-y-auto">
               {plan.features.map((feature) => (
                 <li
@@ -106,16 +141,18 @@ export function UpgradeModal({ selection, onClose }: UpgradeModalProps) {
             </ul>
 
             <p className="text-center text-sm text-gray-500 mb-6">
-              Payments coming soon.
+              {razorpayEnabled
+                ? "Secure checkout powered by Razorpay."
+                : "Development mode — activate plan without payment."}
             </p>
 
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => connectRazorpayPlaceholder()}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all duration-300 active:scale-[0.98]"
+                onClick={handlePrimaryAction}
+                disabled={isCurrentPlan || isProcessing}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Connect Razorpay
+                {primaryLabel}
               </button>
               <button
                 onClick={onClose}

@@ -1,4 +1,5 @@
 import { MOCK_BILLING_HISTORY } from "./pricing-data";
+import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
 
 export function BillingHistoryTable() {
   return (
@@ -55,26 +56,41 @@ export function BillingHistoryTable() {
 }
 
 export function RazorpayPlaceholder() {
+  const isConnected = RAZORPAY_CONNECTED;
+
   return (
-    <div className="rounded-2xl bg-[#081226]/60 backdrop-blur-sm border border-dashed border-[rgba(0,255,255,0.2)] p-6 sm:p-8">
+    <div
+      className={`rounded-2xl backdrop-blur-sm p-6 sm:p-8 ${
+        isConnected
+          ? "bg-[#081226]/80 border border-emerald-400/20"
+          : "bg-[#081226]/60 border border-dashed border-[rgba(0,255,255,0.2)]"
+      }`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#0d1730] border border-[rgba(0,255,255,0.15)] shrink-0">
-          <PaymentIcon className="w-6 h-6 text-[#00CFFF]" />
+          <PaymentIcon
+            className={`w-6 h-6 ${isConnected ? "text-emerald-400" : "text-[#00CFFF]"}`}
+          />
         </div>
         <div className="flex-1">
           <h3 className="text-base font-semibold text-white">
             Razorpay Payment Gateway
           </h3>
           <p className="text-sm text-gray-400 mt-1">
-            Secure payment processing via Razorpay — integration coming soon.
+            {isConnected
+              ? "Secure payments powered by Razorpay. Checkout is active."
+              : "Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to enable payments."}
           </p>
         </div>
-        <button
-          disabled
-          className="shrink-0 px-5 py-2.5 rounded-xl border border-[rgba(0,255,255,0.1)] text-gray-500 text-sm font-medium cursor-not-allowed"
+        <span
+          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
+            isConnected
+              ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
+              : "bg-[#0d1730] border border-[rgba(0,255,255,0.1)] text-gray-500"
+          }`}
         >
-          Connect Razorpay
-        </button>
+          {isConnected ? "Connected" : "Not configured"}
+        </span>
       </div>
     </div>
   );

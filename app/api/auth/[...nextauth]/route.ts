@@ -45,16 +45,26 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, trigger, session }) {
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
       }
+
+      if (!token.planId) {
+        token.planId = "free";
+      }
+
+      if (trigger === "update" && session?.planId) {
+        token.planId = session.planId;
+      }
+
       return token;
     },
 
     async session({ session, token }: { session: any; token: any }) {
       session.accessToken = token.accessToken;
+      session.planId = token.planId ?? "free";
       return session;
     },
 

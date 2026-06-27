@@ -1,7 +1,20 @@
+import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { generateEmailReply } from "@/lib/openai";
+import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.email;
+
+  if (!userId) {
+    return NextResponse.json(
+      { error: "Not authenticated." },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { sender, subject, emailBody } = body;
@@ -13,11 +26,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const subscription = await subscriptionProvider.getSubscription(userId);
+    const gate = canUseAiAction(subscription.planId, subscription.usage);
+
+    if (!gate.allowed) {
+      return NextResponse.json({ error: gate.reason }, { status: 403 });
+    }
+
     const reply = await generateEmailReply({
       sender,
       subject,
       body: emailBody,
     });
+
+    await subscriptionProvider.recordAiAction(userId);
 
     return NextResponse.json({ reply });
   } catch (error) {

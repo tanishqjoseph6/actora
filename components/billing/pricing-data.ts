@@ -123,12 +123,6 @@ export function getDisplayPrice(
   };
 }
 
-export const MOCK_USAGE = {
-  aiActions: { used: 32, limit: 50 },
-  inboxes: { used: 1, limit: 1 },
-  drafts: { used: 8, limit: 25 },
-};
-
 export const MOCK_BILLING_HISTORY = [
   {
     id: "inv_001",

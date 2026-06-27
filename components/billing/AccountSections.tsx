@@ -1,10 +1,25 @@
-import { MOCK_USAGE } from "./pricing-data";
+import type { SubscriptionSnapshot } from "@/lib/subscription";
+import {
+  CurrentPlanBadge,
+  formatRenewalDate,
+  PlanUsageDisplay,
+} from "@/components/subscription/CurrentPlanBadge";
 
 type CurrentPlanCardProps = {
+  subscription: SubscriptionSnapshot | null;
+  loading?: boolean;
   onUpgradePlan?: () => void;
 };
 
-export function CurrentPlanCard({ onUpgradePlan }: CurrentPlanCardProps) {
+export function CurrentPlanCard({
+  subscription,
+  loading,
+  onUpgradePlan,
+}: CurrentPlanCardProps) {
+  const renewalDate = subscription
+    ? formatRenewalDate(subscription.currentPeriodEnd)
+    : "—";
+
   return (
     <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -12,14 +27,10 @@ export function CurrentPlanCard({ onUpgradePlan }: CurrentPlanCardProps) {
           <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">
             Current Plan
           </p>
-          <div className="flex items-center gap-3">
-            <h3 className="text-2xl font-bold text-white">Free</h3>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-medium">
-              Active
-            </span>
-          </div>
+          <CurrentPlanBadge subscription={subscription} loading={loading} />
           <p className="text-sm text-gray-400 mt-2">
-            Renews on <span className="text-gray-300">Apr 1, 2026</span>
+            Renews on{" "}
+            <span className="text-gray-300">{renewalDate}</span>
           </p>
         </div>
 
@@ -39,56 +50,16 @@ export function CurrentPlanCard({ onUpgradePlan }: CurrentPlanCardProps) {
   );
 }
 
-export function UsageStats() {
-  const stats = [
-    {
-      label: "AI Actions",
-      used: MOCK_USAGE.aiActions.used,
-      limit: MOCK_USAGE.aiActions.limit,
-      unit: "this month",
-    },
-    {
-      label: "Inboxes",
-      used: MOCK_USAGE.inboxes.used,
-      limit: MOCK_USAGE.inboxes.limit,
-      unit: "connected",
-    },
-    {
-      label: "Drafts Generated",
-      used: MOCK_USAGE.drafts.used,
-      limit: MOCK_USAGE.drafts.limit,
-      unit: "this month",
-    },
-  ];
+type UsageStatsProps = {
+  subscription: SubscriptionSnapshot | null;
+  loading?: boolean;
+};
 
+export function UsageStats({ subscription, loading }: UsageStatsProps) {
   return (
     <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
       <h3 className="text-lg font-bold text-white mb-6">Usage This Month</h3>
-
-      <div className="grid sm:grid-cols-3 gap-6">
-        {stats.map((stat) => {
-          const percent = Math.min((stat.used / stat.limit) * 100, 100);
-
-          return (
-            <div key={stat.label}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-400">{stat.label}</span>
-                <span className="text-sm font-medium text-white">
-                  {stat.used}
-                  <span className="text-gray-500"> / {stat.limit}</span>
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-[#0d1730] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] transition-all duration-500"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1.5">{stat.unit}</p>
-            </div>
-          );
-        })}
-      </div>
+      <PlanUsageDisplay subscription={subscription} loading={loading} />
     </div>
   );
 }

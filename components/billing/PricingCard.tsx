@@ -5,9 +5,10 @@ type PricingCardProps = {
   plan: PricingPlan;
   period: BillingPeriod;
   onUpgrade?: (plan: PricingPlan) => void;
+  isCurrentPlan?: boolean;
 };
 
-export function PricingCard({ plan, period, onUpgrade }: PricingCardProps) {
+export function PricingCard({ plan, period, onUpgrade, isCurrentPlan }: PricingCardProps) {
   const pricing = getDisplayPrice(plan.id, plan.monthlyPrice, period);
   const isEnterprise = plan.id === "enterprise";
   const showYearlyNote =
@@ -15,8 +16,11 @@ export function PricingCard({ plan, period, onUpgrade }: PricingCardProps) {
     plan.monthlyPrice !== null &&
     plan.monthlyPrice > 0;
 
+  const isActionableCta =
+    plan.cta === "Upgrade" || plan.cta === "Contact Sales";
+
   const handleCtaClick = () => {
-    if (plan.cta === "Upgrade" && onUpgrade) {
+    if (isActionableCta && onUpgrade) {
       onUpgrade(plan);
     }
   };
@@ -34,6 +38,8 @@ export function PricingCard({ plan, period, onUpgrade }: PricingCardProps) {
             isEnterprise={isEnterprise}
             ctaVariant="gradient"
             onCtaClick={handleCtaClick}
+            isCurrentPlan={isCurrentPlan}
+            ctaLabel={plan.cta}
           />
         </div>
       </div>
@@ -50,6 +56,8 @@ export function PricingCard({ plan, period, onUpgrade }: PricingCardProps) {
         isEnterprise={isEnterprise}
         ctaVariant={plan.ctaVariant}
         onCtaClick={handleCtaClick}
+        isCurrentPlan={isCurrentPlan}
+        ctaLabel={plan.cta}
       />
     </div>
   );
@@ -62,6 +70,8 @@ function PlanContent({
   isEnterprise,
   ctaVariant,
   onCtaClick,
+  isCurrentPlan,
+  ctaLabel,
 }: {
   plan: PricingPlan;
   pricing: ReturnType<typeof getDisplayPrice>;
@@ -69,6 +79,8 @@ function PlanContent({
   isEnterprise: boolean;
   ctaVariant: PricingPlan["ctaVariant"];
   onCtaClick?: () => void;
+  isCurrentPlan?: boolean;
+  ctaLabel: string;
 }) {
   return (
     <>
@@ -113,9 +125,10 @@ function PlanContent({
       </ul>
 
       <PlanCta
-        label={plan.cta}
+        label={isCurrentPlan ? "Current Plan" : ctaLabel}
         variant={ctaVariant}
-        onClick={plan.cta === "Upgrade" ? onCtaClick : undefined}
+        onClick={onCtaClick}
+        disabled={isCurrentPlan}
       />
     </>
   );
@@ -147,18 +160,21 @@ function PlanCta({
   label,
   variant,
   onClick,
+  disabled,
 }: {
   label: string;
   variant: PricingPlan["ctaVariant"];
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   const base =
-    "w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98]";
+    "w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100";
 
   if (variant === "gradient") {
     return (
       <button
         onClick={onClick}
+        disabled={disabled}
         className={`${base} bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:brightness-110`}
       >
         {label}
@@ -170,6 +186,7 @@ function PlanCta({
     return (
       <button
         onClick={onClick}
+        disabled={disabled}
         className={`${base} bg-[#3B82F6] text-white hover:bg-[#60A5FA] shadow-md shadow-blue-500/20 hover:shadow-blue-500/30`}
       >
         {label}
@@ -180,6 +197,8 @@ function PlanCta({
   if (variant === "enterprise") {
     return (
       <button
+        onClick={onClick}
+        disabled={disabled}
         className={`${base} bg-[#081226] border border-[rgba(0,255,255,0.25)] text-white hover:bg-[#0d1730] hover:border-[#00CFFF]/40`}
       >
         {label}
