@@ -1,133 +1,66 @@
+"use client";
+
+import { useState } from "react";
+import { BillingToggle } from "@/components/billing/BillingToggle";
+import { PricingCard } from "@/components/billing/PricingCard";
+import {
+  CurrentPlanCard,
+  UsageStats,
+} from "@/components/billing/AccountSections";
+import {
+  BillingHistoryTable,
+  RazorpayPlaceholder,
+} from "@/components/billing/BillingHistory";
+import { PRICING_PLANS, type BillingPeriod } from "@/components/billing/pricing-data";
+
 export default function Billing() {
+  const [period, setPeriod] = useState<BillingPeriod>("monthly");
+
   return (
-    <main className="min-h-screen bg-[#050816] text-white px-8 py-20">
-      <div className="text-center mb-16">
-        <div className="inline-block px-4 py-1 mb-4 text-blue-500 border border-blue-500 rounded-full text-sm">
-          PRICING
-        </div>
+    <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
+      {/* Ambient glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[#3B82F6]/8 blur-[200px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-[#00CFFF]/5 blur-[180px] rounded-full pointer-events-none" />
 
-        <h1 className="text-6xl font-bold">
-          Simple <span className="text-blue-500">Pricing</span>
-        </h1>
-
-        <p className="text-gray-400 mt-4 text-lg">
-          Scale your inbox automation as your business grows
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto">
-
-        {/* FREE */}
-        <div className="bg-[#0B1120] border border-zinc-800 p-8 rounded-3xl">
-          <h2 className="text-3xl font-bold">Free</h2>
-
-          <p className="text-6xl mt-4 font-bold">$0</p>
-          <p className="text-gray-400 mb-6">Forever</p>
-
-          <ul className="space-y-3 mb-8">
-            <li>✓ 50 AI actions/month</li>
-            <li>✓ 1 inbox</li>
-            <li>✓ Basic email drafts</li>
-            <li>✓ Community support</li>
-          </ul>
-
-          <button className="w-full border border-blue-500 text-blue-400 py-3 rounded-xl hover:bg-blue-500 hover:text-white transition">
-            Start Free
-          </button>
-        </div>
-
-        {/* STARTER */}
-        <div className="bg-gradient-to-b from-[#0B1120] to-[#101C38] border border-blue-700/50 p-8 rounded-3xl hover:scale-105 hover:border-cyan-400 tansition-all duration-300">
-          <div className="mb-3">
-            <span className="bg-blue-500/20 text-blue-400 text-xs font-semibold px-3 py-1 rounded-full border border-blue-500/30">
-              ⚡️ BEST FOR STARTUPS
-            </span>
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
+        {/* Header */}
+        <div className="text-center mb-10 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full border border-[rgba(0,255,255,0.25)] text-[#00CFFF] text-sm font-medium bg-[#081226]/60 backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00CFFF] animate-pulse" />
+            PRICING
           </div>
 
-          <h2 className="text-3xl font-bold text-white">
-            Starter
-          </h2>
-          <p className="text-cyan-300 text-sm mb-1">
-            Perfect for growing businesses
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
+            Simple{" "}
+            <span className="bg-gradient-to-r from-[#00CFFF] via-[#3B82F6] to-[#60A5FA] bg-clip-text text-transparent">
+              Pricing
+            </span>
+          </h1>
+
+          <p className="text-gray-400 mt-4 text-base sm:text-lg max-w-xl mx-auto">
+            Scale your inbox automation as your business grows
           </p>
 
-          <p className="text-6xl mt-4 font-bold text-cyan-400">$19</p>
-          <p className="text-gray-400 mb-6">per month</p>
+          <div className="mt-8">
+            <BillingToggle period={period} onChange={setPeriod} />
+          </div>
+        </div>
 
-          <ul className="space-y-3 mb-8">
-            <li>✓ 1,000 AI actions</li>
-            <li>✓ 3 inboxes</li>
-            <li>✓ Smart drafts</li>
-            <li>✓ Meeting summaries</li>
-            <li>✓ Priority support</li>
-          </ul>
-          <div className="h-6"></div>
-          <button
-  className="w-full bg-gradient-to-r from-blue-600 to-cyan-400 py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/30 hover:scale-105 transition-all duration-300"
->
-<div className="h-6"></div>
-  Upgrade
-</button>
+        {/* Pricing grid */}
+        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 mb-12 lg:mb-16 items-stretch">
+          {PRICING_PLANS.map((plan) => (
+            <PricingCard key={plan.id} plan={plan} period={period} />
+          ))}
+        </div>
+
+        {/* Account sections */}
+        <div className="space-y-6 lg:space-y-8">
+          <CurrentPlanCard />
+          <UsageStats />
+          <BillingHistoryTable />
+          <RazorpayPlaceholder />
+        </div>
       </div>
-
-      {/* PRO */}
-      <div className="relative bg-[#081226] border-2 border-cyan-400 p-8 rounded-3xl scale-110 shadow-[0_0_60px_rgba(34,211,238,0.45)] hover:scale-110 transition-all duration-300">
-
-      <div className="mb-3">
-      <div className="inline-block bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-1 rounded-full text-xs font-semibold text-black">
-         🚀 MOST POPULAR
-       </div>
-      </div>
-
-        <h2 className="text-3xl font-bold">Pro</h2>
-        <p className="text-cyan-300 text-sm mb-3">
-        For power users & teams
-        </p>
-
-        <p className="text-6xl mt-4 font-bold text-cyan-300">$49</p>
-        <p className="text-gray-400 mb-6">per month</p>
-
-        <ul className="space-y-3 mb-8">
-          <li>✓ Unlimited AI actions</li>
-          <li>✓ Unlimited inboxes</li>
-          <li>✓ AI automations</li>
-          <li>✓ AI Morning Brief</li>
-          <li>✓ Team collaboration</li>
-          <li>✓ Priority support</li>
-        </ul>
-        <div className="h-6"></div>
-        <button className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 py-3 rounded-xl font-semibold shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:scale-105 transition-all duration-300">
-          Upgrade
-        </button>
-      </div>
-
-      {/* ENTERPRISE */}
-      <div className="bg-[#0B1120] border border-blue-900/40 p-8 rounded-3xl">
-        <h2 className="text-3xl font-bold">Enterprise</h2>
-        <p className="text-blue-400 text-sm mt-1">
-          For large teams & organizations
-        </p>
-
-        <p className="text-4xl mt-4 font-bold text-cyan-400">
-          Let's Talk
-        </p>
-
-
-        <ul className="space-y-3 mb-8">
-          <li>✓ Unlimited AI actions</li>
-          <li>✓ Unlimited inboxes</li>
-          <li>✓ Team workspaces</li>
-          <li>✓ API access</li>
-          <li>✓ Custom integrations</li>
-          <li>✓ Dedicated account manager</li>
-        </ul>
-
-        <button className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl transition">
-          Book Demo
-        </button>
-      </div>
-
-    </div>
-    </main >
+    </main>
   );
 }

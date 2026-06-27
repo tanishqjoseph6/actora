@@ -10,7 +10,119 @@ export type InboxEmail = {
   starred: boolean;
 };
 
+export type EmailDetail = {
+  id: string;
+  threadId: string;
+  sender: string;
+  senderEmail: string;
+  subject: string;
+  body: string;
+  date: string;
+  messageIdHeader: string;
+};
+
 const INBOX_BATCH_SIZE = 20;
+
+export function parseSenderEmail(from: string): string {
+  const emailMatch = from.match(/<([^>]+)>/);
+  return emailMatch?.[1] ?? from.trim();
+}
+
+export function formatReplySubject(subject: string): string {
+  const trimmed = subject.trim();
+  if (/^re:/i.test(trimmed)) {
+    return trimmed;
+  }
+  return `Re: ${trimmed}`;
+}
+
+function decodeBase64Url(data: string): string {
+  const normalized = data.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64").toString("utf-8");
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractBodyFromPart(
+  part: { mimeType?: string | null; body?: { data?: string | null } | null; parts?: unknown[] | null }
+): string {
+  if (part.body?.data) {
+    const decoded = decodeBase64Url(part.body.data);
+    if (part.mimeType === "text/html") {
+      return stripHtml(decoded);
+    }
+    return decoded;
+  }
+
+  if (part.parts?.length) {
+    const parts = part.parts as typeof part[];
+
+    const plain = parts.find((p) => p.mimeType === "text/plain");
+    if (plain) {
+      const body = extractBodyFromPart(plain);
+      if (body) return body;
+    }
+
+    const html = parts.find((p) => p.mimeType === "text/html");
+    if (html) {
+      const body = extractBodyFromPart(html);
+      if (body) return body;
+    }
+
+    for (const nested of parts) {
+      const body = extractBodyFromPart(nested);
+      if (body) return body;
+    }
+  }
+
+  return "";
+}
+
+function buildMimeMessage({
+  to,
+  subject,
+  body,
+  inReplyTo,
+  references,
+}: {
+  to: string;
+  subject: string;
+  body: string;
+  inReplyTo?: string;
+  references?: string;
+}): string {
+  const headers = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: 7bit",
+  ];
+
+  if (inReplyTo) headers.push(`In-Reply-To: ${inReplyTo}`);
+  if (references) headers.push(`References: ${references}`);
+
+  return `${headers.join("\r\n")}\r\n\r\n${body}`;
+}
+
+function encodeMimeForGmail(raw: string): string {
+  return Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
 
 export function parseSender(from: string): string {
   const trimmed = from.trim();
@@ -102,4 +214,83 @@ export async function fetchInboxEmails(
   );
 
   return emails.filter((email): email is InboxEmail => email !== null);
+}
+
+export async function fetchEmailById(
+  auth: GmailAuth,
+  messageId: string
+): Promise<EmailDetail | null> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  const detail = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+    format: "full",
+  });
+
+  if (!detail.data.id || !detail.data.threadId) {
+    return null;
+  }
+
+  const headers = detail.data.payload?.headers ?? [];
+  const fromHeader = getHeader(headers, "From");
+  const dateHeader = getHeader(headers, "Date");
+  const body =
+    extractBodyFromPart(detail.data.payload ?? {}) ||
+    detail.data.snippet ||
+    "";
+
+  return {
+    id: detail.data.id,
+    threadId: detail.data.threadId,
+    sender: parseSender(fromHeader),
+    senderEmail: parseSenderEmail(fromHeader),
+    subject: getHeader(headers, "Subject") || "(No subject)",
+    body,
+    date: formatEmailDate(dateHeader),
+    messageIdHeader: getHeader(headers, "Message-ID"),
+  };
+}
+
+export async function sendEmailReply(
+  auth: GmailAuth,
+  {
+    threadId,
+    to,
+    subject,
+    body,
+    inReplyTo,
+    references,
+  }: {
+    threadId: string;
+    to: string;
+    subject: string;
+    body: string;
+    inReplyTo?: string;
+    references?: string;
+  }
+): Promise<{ id: string }> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  const raw = buildMimeMessage({
+    to,
+    subject,
+    body,
+    inReplyTo,
+    references,
+  });
+
+  const response = await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw: encodeMimeForGmail(raw),
+      threadId,
+    },
+  });
+
+  if (!response.data.id) {
+    throw new Error("Gmail did not return a message id.");
+  }
+
+  return { id: response.data.id };
 }
