@@ -8,7 +8,7 @@ export default function Providers({
   children: React.ReactNode;
 }) {
   return (
-    <SessionProvider>
+    <SessionProvider basePath="/api/auth" refetchOnWindowFocus={false}>
       {children}
     </SessionProvider>
   );

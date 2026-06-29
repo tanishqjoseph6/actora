@@ -14,15 +14,22 @@ type UseSubscriptionResult = {
 };
 
 export function useSubscription(): UseSubscriptionResult {
-  const { data: session, update: updateSession } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const [subscription, setSubscription] = useState<SubscriptionSnapshot | null>(
     null
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = session?.user?.email;
+  const sessionPlanId = (session as { planId?: PlanId } | null)?.planId;
+
   const refresh = useCallback(async () => {
-    if (!session) {
+    if (status === "loading") {
+      return;
+    }
+
+    if (!userId) {
       setSubscription(null);
       setLoading(false);
       return;
@@ -40,13 +47,16 @@ export function useSubscription(): UseSubscriptionResult {
       }
 
       setSubscription(data.subscription);
-      await updateSession({ planId: data.subscription.planId });
+
+      if (data.subscription.planId !== sessionPlanId) {
+        await updateSession({ planId: data.subscription.planId });
+      }
     } catch {
       setError("Failed to load subscription");
     } finally {
       setLoading(false);
     }
-  }, [session, updateSession]);
+  }, [status, userId, sessionPlanId, updateSession]);
 
   useEffect(() => {
     refresh();
