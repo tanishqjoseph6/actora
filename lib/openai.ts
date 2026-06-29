@@ -53,15 +53,21 @@ export async function generateEmailReply({
   sender,
   subject,
   body,
+  threadContext,
   tone = "professional",
 }: {
   sender: string;
   subject: string;
   body: string;
+  threadContext?: string;
   tone?: ReplyTone;
 }): Promise<string> {
   const openai = getOpenAIClient();
   const toneGuide = getToneInstruction(tone);
+
+  const threadSection = threadContext?.trim()
+    ? `\n\nPrior messages in this thread (for context):\n${threadContext.slice(0, 8000)}`
+    : "";
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
@@ -71,6 +77,7 @@ export async function generateEmailReply({
         role: "system",
         content: `You are Actora, a professional email assistant. Write clear, contextual replies that:
 - Directly address the sender's questions, requests, or concerns
+- Use thread history when provided to maintain continuity
 - Tone guidance: ${toneGuide}
 - Use a greeting and sign-off appropriate to the tone
 - Never include a subject line, markdown, or quoted text from the original email
@@ -84,7 +91,7 @@ From: ${sender}
 Subject: ${subject}
 
 Email body:
-${body.slice(0, 12000)}`,
+${body.slice(0, 12000)}${threadSection}`,
       },
     ],
   });

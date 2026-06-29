@@ -19,6 +19,8 @@ export type EmailDetail = {
   body: string;
   date: string;
   messageIdHeader: string;
+  /** Prior messages in the thread for AI context (excludes current message). */
+  threadContext: string;
 };
 
 const INBOX_BATCH_SIZE = 20;
@@ -238,6 +240,41 @@ export async function fetchInboxEmails(
   return emails.filter((email): email is InboxEmail => email !== null);
 }
 
+const THREAD_CONTEXT_MAX_MESSAGES = 4;
+const THREAD_CONTEXT_BODY_LIMIT = 1500;
+
+async function fetchThreadContext(
+  gmail: ReturnType<typeof google.gmail>,
+  threadId: string,
+  currentMessageId: string
+): Promise<string> {
+  const thread = await gmail.users.threads.get({
+    userId: "me",
+    id: threadId,
+    format: "full",
+  });
+
+  const messages = thread.data.messages ?? [];
+  if (messages.length <= 1) return "";
+
+  const priorMessages = messages
+    .filter((msg) => msg.id && msg.id !== currentMessageId)
+    .slice(-THREAD_CONTEXT_MAX_MESSAGES);
+
+  if (priorMessages.length === 0) return "";
+
+  return priorMessages
+    .map((msg) => {
+      const headers = msg.payload?.headers ?? [];
+      const from = parseSender(getHeader(headers, "From"));
+      const date = formatEmailDate(getHeader(headers, "Date"));
+      const snippet =
+        extractBodyFromPart(msg.payload ?? {}) || msg.snippet || "";
+      return `[${date}] From ${from}:\n${snippet.slice(0, THREAD_CONTEXT_BODY_LIMIT)}`;
+    })
+    .join("\n\n---\n\n");
+}
+
 export async function fetchEmailById(
   auth: GmailAuth,
   messageId: string
@@ -262,6 +299,12 @@ export async function fetchEmailById(
     detail.data.snippet ||
     "";
 
+  const threadContext = await fetchThreadContext(
+    gmail,
+    detail.data.threadId,
+    detail.data.id
+  );
+
   return {
     id: detail.data.id,
     threadId: detail.data.threadId,
@@ -271,6 +314,7 @@ export async function fetchEmailById(
     body,
     date: formatEmailDate(dateHeader),
     messageIdHeader: getHeader(headers, "Message-ID"),
+    threadContext,
   };
 }
 

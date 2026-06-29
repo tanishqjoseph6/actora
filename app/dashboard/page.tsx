@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterChip>("all");
   const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
+  const [openAiReply, setOpenAiReply] = useState(false);
   const { subscription, loading: subscriptionLoading } = usePlanGate();
 
   const aiActionsDisplay = useMemo(() => {
@@ -257,6 +258,10 @@ export default function Dashboard() {
                     email={email}
                     selected={selectedEmail?.id === email.id}
                     onSelect={setSelectedEmail}
+                    onAiReply={(target) => {
+                      setSelectedEmail(target);
+                      setOpenAiReply(true);
+                    }}
                   />
                 ))}
               </div>
@@ -280,7 +285,12 @@ export default function Dashboard() {
       {selectedEmail && (
         <EmailDetailPanel
           email={selectedEmail}
-          onClose={() => setSelectedEmail(null)}
+          onClose={() => {
+            setSelectedEmail(null);
+            setOpenAiReply(false);
+          }}
+          openAiReply={openAiReply}
+          onAiReplyOpened={() => setOpenAiReply(false)}
         />
       )}
     </main>

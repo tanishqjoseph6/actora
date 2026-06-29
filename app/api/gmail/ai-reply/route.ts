@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { sender, subject, emailBody, tone } = body;
+    const { sender, subject, emailBody, threadContext, tone } = body;
 
     if (!sender || !subject || !emailBody) {
       return NextResponse.json(
@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       sender,
       subject,
       body: emailBody,
+      threadContext:
+        typeof threadContext === "string" ? threadContext : undefined,
       tone: replyTone,
     });
 

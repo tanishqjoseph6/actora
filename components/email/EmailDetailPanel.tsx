@@ -25,13 +25,21 @@ import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 type EmailDetailPanelProps = {
   email: InboxEmail;
   onClose: () => void;
+  /** Opens tone picker once the email detail has loaded. */
+  openAiReply?: boolean;
+  onAiReplyOpened?: () => void;
 };
 
 type PanelState = "loading" | "ready" | "error";
 
 const EMPTY_REPLY: ReplyContent = { plain: "", html: "" };
 
-export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
+export function EmailDetailPanel({
+  email,
+  onClose,
+  openAiReply,
+  onAiReplyOpened,
+}: EmailDetailPanelProps) {
   const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
   const composerRef = useRef<ReplyComposerHandle>(null);
 
@@ -84,6 +92,13 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
   }, [loadDetail]);
 
   useEffect(() => {
+    if (panelState === "ready" && openAiReply) {
+      setShowTonePicker(true);
+      onAiReplyOpened?.();
+    }
+  }, [panelState, openAiReply, onAiReplyOpened]);
+
+  useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -130,6 +145,7 @@ export function EmailDetailPanel({ email, onClose }: EmailDetailPanelProps) {
             sender: detail.sender,
             subject: detail.subject,
             emailBody: detail.body,
+            threadContext: detail.threadContext,
             tone,
           }),
         });
