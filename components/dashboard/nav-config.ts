@@ -33,6 +33,12 @@ export const CRM_NAV: NavItem[] = [
     matchPrefix: "/dashboard/crm/companies",
   },
   {
+    href: "/dashboard/crm/pipeline",
+    label: "Pipeline",
+    icon: "📊",
+    matchPrefix: "/dashboard/crm/pipeline",
+  },
+  {
     href: "/dashboard/crm/deals",
     label: "Deals",
     icon: "💼",
