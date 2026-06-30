@@ -2,6 +2,8 @@
 
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
 import {
+  AI_SCORE_FILTER_OPTIONS,
+  PIPELINE_COMPANIES,
   PIPELINE_OWNERS,
   PIPELINE_STAGES,
   type PipelineSort,
@@ -11,8 +13,10 @@ import type { DealStage } from "@/lib/crm/types";
 export type PipelineFilters = {
   search: string;
   owner: string;
+  companyId: string;
   priority: string;
   stage: string;
+  aiScoreTier: string;
   sort: PipelineSort;
 };
 
@@ -47,7 +51,7 @@ export function PipelineToolbar({
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
         <SelectFilter
           label="Owner"
           value={filters.owner}
@@ -55,6 +59,24 @@ export function PipelineToolbar({
           options={[
             { value: "all", label: "All owners" },
             ...PIPELINE_OWNERS.map((o) => ({ value: o, label: o })),
+          ]}
+        />
+        <SelectFilter
+          label="Company"
+          value={filters.companyId}
+          onChange={(companyId) => update({ companyId })}
+          options={[
+            { value: "all", label: "All companies" },
+            ...PIPELINE_COMPANIES.map((c) => ({ value: c.id, label: c.name })),
+          ]}
+        />
+        <SelectFilter
+          label="Stage"
+          value={filters.stage}
+          onChange={(stage) => update({ stage })}
+          options={[
+            { value: "all", label: "All stages" },
+            ...PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label })),
           ]}
         />
         <SelectFilter
@@ -69,24 +91,22 @@ export function PipelineToolbar({
           ]}
         />
         <SelectFilter
-          label="Stage"
-          value={filters.stage}
-          onChange={(stage) => update({ stage })}
-          options={[
-            { value: "all", label: "All stages" },
-            ...PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label })),
-          ]}
+          label="AI score"
+          value={filters.aiScoreTier}
+          onChange={(aiScoreTier) => update({ aiScoreTier })}
+          options={AI_SCORE_FILTER_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.label,
+          }))}
         />
         <SelectFilter
           label="Sort by"
           value={filters.sort}
           onChange={(sort) => update({ sort: sort as PipelineSort })}
           options={[
-            { value: "value-desc", label: "Value (high → low)" },
-            { value: "value-asc", label: "Value (low → high)" },
+            { value: "value-desc", label: "Deal value" },
             { value: "close-date", label: "Close date" },
             { value: "ai-score", label: "AI score" },
-            { value: "last-activity", label: "Last activity" },
           ]}
         />
       </div>
@@ -107,13 +127,13 @@ function SelectFilter({
 }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <label className="text-[10px] uppercase tracking-wider text-gray-500 shrink-0">
+      <label className="text-[10px] uppercase tracking-wider text-gray-500 shrink-0 w-14">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 sm:flex-none min-w-[140px] px-3 py-2 rounded-xl bg-[#0d1730] border border-cyan-400/15 text-sm text-gray-300 focus:outline-none focus:border-cyan-400/40 focus:ring-1 focus:ring-cyan-400/20 transition-all cursor-pointer"
+        className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-[#0d1730] border border-cyan-400/15 text-sm text-gray-300 focus:outline-none focus:border-cyan-400/40 focus:ring-1 focus:ring-cyan-400/20 transition-all cursor-pointer"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value} className="bg-[#0d1730]">
@@ -125,9 +145,7 @@ function SelectFilter({
   );
 }
 
-export function getVisibleStages(
-  stageFilter: string
-): DealStage[] {
+export function getVisibleStages(stageFilter: string): DealStage[] {
   if (stageFilter !== "all") {
     return [stageFilter as DealStage];
   }

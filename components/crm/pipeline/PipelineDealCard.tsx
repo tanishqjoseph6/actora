@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { formatCurrency, formatDate } from "@/lib/crm/mock-data";
 import {
-  getAiScoreStyle,
+  getAiScoreTier,
   PRIORITY_STYLES,
   type PipelineDeal,
 } from "@/lib/crm/pipeline";
@@ -33,7 +33,7 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
 
   const dragging = isDragging || isSortableDragging;
   const priorityStyle = PRIORITY_STYLES[deal.priority];
-  const aiGradient = getAiScoreStyle(deal.aiScore);
+  const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
     <motion.article
@@ -82,11 +82,13 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
           {formatCurrency(deal.value)}
         </p>
         <div
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r ${aiGradient} bg-opacity-10 border border-white/10`}
-          title="AI win probability score"
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${aiTier.badge}`}
+          title="AI lead score"
         >
-          <SparkIcon className="w-3 h-3 text-white" />
-          <span className="text-[10px] font-bold text-white">{deal.aiScore}</span>
+          <SparkIcon className="w-3 h-3 shrink-0" />
+          <span className="text-[10px] font-bold">
+            {aiTier.label} · {deal.aiScore}
+          </span>
         </div>
       </div>
 

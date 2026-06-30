@@ -20,7 +20,7 @@ import {
   MOCK_PIPELINE_DEALS,
   PIPELINE_STAGES,
   filterPipelineDeals,
-  getAiScoreStyle,
+  getAiScoreTier,
   PRIORITY_STYLES,
   sortPipelineDeals,
   type PipelineDeal,
@@ -37,8 +37,10 @@ import {
 const DEFAULT_FILTERS: PipelineFilters = {
   search: "",
   owner: "all",
+  companyId: "all",
   priority: "all",
   stage: "all",
+  aiScoreTier: "all",
   sort: "value-desc",
 };
 
@@ -151,7 +153,7 @@ export function PipelineBoard() {
 
 function DragOverlayCard({ deal }: { deal: PipelineDeal }) {
   const priorityStyle = PRIORITY_STYLES[deal.priority];
-  const aiGradient = getAiScoreStyle(deal.aiScore);
+  const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
     <div className="rounded-2xl border border-cyan-400/40 bg-[#0d1730]/95 backdrop-blur-xl p-4 shadow-2xl shadow-cyan-500/20 w-[280px] rotate-1 cursor-grabbing">
@@ -179,9 +181,9 @@ function DragOverlayCard({ deal }: { deal: PipelineDeal }) {
       <div className="flex items-center justify-between text-[10px] text-gray-500">
         <span>{formatDate(deal.closeDate)}</span>
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r ${aiGradient}`}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${aiTier.badge}`}
         >
-          AI {deal.aiScore}
+          {aiTier.label} · {deal.aiScore}
         </span>
       </div>
     </div>

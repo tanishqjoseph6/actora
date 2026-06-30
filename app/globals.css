@@ -79,6 +79,43 @@ body {
   margin-left: 1.25rem;
 }
 
+/* Premium dashboard utilities */
+.premium-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.25) transparent;
+}
+
+.premium-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 999px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.35);
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+
+.glass-panel {
+  background: rgba(7, 20, 38, 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: 20px;
+}
+
 .reply-composer p {
   margin-bottom: 0.5rem;
 }

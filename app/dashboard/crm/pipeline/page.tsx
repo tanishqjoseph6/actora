@@ -6,21 +6,16 @@ import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { PipelineBoard } from "@/components/crm/pipeline/PipelineBoard";
 import { formatCurrency } from "@/lib/crm/mock-data";
-import { MOCK_PIPELINE_DEALS } from "@/lib/crm/pipeline";
+import {
+  computePipelineMetrics,
+  MOCK_PIPELINE_DEALS,
+} from "@/lib/crm/pipeline";
 
 export default function PipelinePage() {
-  const stats = useMemo(() => {
-    const open = MOCK_PIPELINE_DEALS.filter(
-      (d) => d.stage !== "won" && d.stage !== "lost"
-    );
-    const openValue = open.reduce((s, d) => s + d.value, 0);
-    const won = MOCK_PIPELINE_DEALS.filter((d) => d.stage === "won").length;
-    const avgScore = Math.round(
-      MOCK_PIPELINE_DEALS.reduce((s, d) => s + d.aiScore, 0) /
-        MOCK_PIPELINE_DEALS.length
-    );
-    return { openCount: open.length, openValue, won, avgScore };
-  }, []);
+  const stats = useMemo(
+    () => computePipelineMetrics(MOCK_PIPELINE_DEALS),
+    []
+  );
 
   return (
     <>
@@ -35,17 +30,24 @@ export default function PipelinePage() {
         <CrmSubNav />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
-        <CrmStatCard title="Open deals" value={stats.openCount} />
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <CrmStatCard
           title="Pipeline value"
-          value={formatCurrency(stats.openValue)}
+          value={formatCurrency(stats.totalPipelineValue)}
+          hint="Open deals"
         />
-        <CrmStatCard title="Won this quarter" value={stats.won} />
+        <CrmStatCard title="Deals won" value={stats.dealsWon} />
+        <CrmStatCard title="Deals lost" value={stats.dealsLost} />
         <CrmStatCard
           title="Avg. AI score"
-          value={stats.avgScore}
-          hint="Win probability"
+          value={stats.avgAiScore}
+          hint="All deals"
+        />
+        <CrmStatCard title="Active deals" value={stats.activeDeals} />
+        <CrmStatCard
+          title="Win rate"
+          value={`${stats.winRate}%`}
+          hint="Won vs lost"
         />
       </div>
 

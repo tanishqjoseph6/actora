@@ -1,13 +1,11 @@
 import type { DealStage } from "./types";
+import { MOCK_COMPANIES } from "./mock-data";
 
 export type DealPriority = "high" | "medium" | "low";
 
-export type PipelineSort =
-  | "value-desc"
-  | "value-asc"
-  | "close-date"
-  | "ai-score"
-  | "last-activity";
+export type AiScoreTier = "hot" | "high" | "medium" | "low" | "cold";
+
+export type PipelineSort = "value-desc" | "close-date" | "ai-score";
 
 export type PipelineDeal = {
   id: string;
@@ -70,6 +68,95 @@ export const PIPELINE_STAGES: {
 ];
 
 export const PIPELINE_OWNERS = ["Tanishq", "Alex Rivera", "Sam Okonkwo"] as const;
+
+export const PIPELINE_COMPANIES = MOCK_COMPANIES.map((c) => ({
+  id: c.id,
+  name: c.name,
+}));
+
+export const AI_SCORE_FILTER_OPTIONS = [
+  { value: "all", label: "All scores" },
+  { value: "hot", label: "Hot (90+)" },
+  { value: "high", label: "High (80–89)" },
+  { value: "medium", label: "Medium (60–79)" },
+  { value: "low", label: "Low (40–59)" },
+  { value: "cold", label: "Below 40" },
+] as const;
+
+const OPEN_STAGES: DealStage[] = ["lead", "qualified", "proposal", "negotiation"];
+
+export function getAiScoreTier(score: number): {
+  tier: AiScoreTier;
+  label: string;
+  badge: string;
+  gradient: string;
+} {
+  if (score >= 90) {
+    return {
+      tier: "hot",
+      label: "Hot",
+      badge: "bg-rose-500/20 border-rose-400/40 text-rose-300",
+      gradient: "from-rose-500 to-orange-400",
+    };
+  }
+  if (score >= 80) {
+    return {
+      tier: "high",
+      label: "High",
+      badge: "bg-emerald-500/20 border-emerald-400/40 text-emerald-300",
+      gradient: "from-emerald-400 to-cyan-400",
+    };
+  }
+  if (score >= 60) {
+    return {
+      tier: "medium",
+      label: "Medium",
+      badge: "bg-blue-500/20 border-blue-400/40 text-blue-300",
+      gradient: "from-blue-400 to-cyan-400",
+    };
+  }
+  if (score >= 40) {
+    return {
+      tier: "low",
+      label: "Low",
+      badge: "bg-amber-500/20 border-amber-400/40 text-amber-300",
+      gradient: "from-amber-400 to-orange-400",
+    };
+  }
+  return {
+    tier: "cold",
+    label: "Cold",
+    badge: "bg-gray-500/20 border-gray-400/40 text-gray-400",
+    gradient: "from-gray-500 to-gray-600",
+  };
+}
+
+export function getAiScoreStyle(score: number): string {
+  return getAiScoreTier(score).gradient;
+}
+
+export function computePipelineMetrics(deals: PipelineDeal[]) {
+  const open = deals.filter((d) => OPEN_STAGES.includes(d.stage));
+  const won = deals.filter((d) => d.stage === "won");
+  const lost = deals.filter((d) => d.stage === "lost");
+  const openValue = open.reduce((sum, d) => sum + d.value, 0);
+  const avgAiScore =
+    deals.length > 0
+      ? Math.round(deals.reduce((sum, d) => sum + d.aiScore, 0) / deals.length)
+      : 0;
+  const closedCount = won.length + lost.length;
+  const winRate =
+    closedCount > 0 ? Math.round((won.length / closedCount) * 100) : 0;
+
+  return {
+    totalPipelineValue: openValue,
+    dealsWon: won.length,
+    dealsLost: lost.length,
+    avgAiScore,
+    activeDeals: open.length,
+    winRate,
+  };
+}
 
 export const MOCK_PIPELINE_DEALS: PipelineDeal[] = [
   {
@@ -272,13 +359,6 @@ export const PRIORITY_STYLES: Record<
   },
 };
 
-export function getAiScoreStyle(score: number): string {
-  if (score >= 80) return "from-emerald-400 to-cyan-400";
-  if (score >= 60) return "from-blue-400 to-cyan-400";
-  if (score >= 40) return "from-amber-400 to-orange-400";
-  return "from-gray-400 to-gray-500";
-}
-
 export function sortPipelineDeals(
   deals: PipelineDeal[],
   sort: PipelineSort
@@ -287,8 +367,6 @@ export function sortPipelineDeals(
   switch (sort) {
     case "value-desc":
       return sorted.sort((a, b) => b.value - a.value);
-    case "value-asc":
-      return sorted.sort((a, b) => a.value - b.value);
     case "close-date":
       return sorted.sort(
         (a, b) =>
@@ -296,8 +374,6 @@ export function sortPipelineDeals(
       );
     case "ai-score":
       return sorted.sort((a, b) => b.aiScore - a.aiScore);
-    case "last-activity":
-      return sorted;
     default:
       return sorted;
   }
@@ -308,20 +384,29 @@ export function filterPipelineDeals(
   {
     search,
     owner,
+    companyId,
     priority,
     stage,
+    aiScoreTier,
   }: {
     search: string;
     owner: string;
+    companyId: string;
     priority: string;
     stage: string;
+    aiScoreTier: string;
   }
 ): PipelineDeal[] {
   const query = search.trim().toLowerCase();
   return deals.filter((deal) => {
     if (owner !== "all" && deal.owner !== owner) return false;
+    if (companyId !== "all" && deal.companyId !== companyId) return false;
     if (priority !== "all" && deal.priority !== priority) return false;
     if (stage !== "all" && deal.stage !== stage) return false;
+    if (aiScoreTier !== "all") {
+      const tier = getAiScoreTier(deal.aiScore).tier;
+      if (tier !== aiScoreTier) return false;
+    }
     if (!query) return true;
     return (
       deal.title.toLowerCase().includes(query) ||
