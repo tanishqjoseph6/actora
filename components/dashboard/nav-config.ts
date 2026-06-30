@@ -15,6 +15,12 @@ export type NavSection = {
 
 export const MAIN_NAV: NavItem[] = [
   { href: "/dashboard", label: "Inbox", icon: "📥" },
+  {
+    href: "/dashboard/automations",
+    label: "Automations",
+    icon: "🤖",
+    matchPrefix: "/dashboard/automations",
+  },
   { href: "/dashboard/actions", label: "Actions", icon: "⚡" },
   { href: "/dashboard/meetings", label: "Meetings", icon: "📅" },
   { href: "/dashboard/tasks", label: "Tasks", icon: "📝" },

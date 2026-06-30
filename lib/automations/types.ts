@@ -1,4 +1,6 @@
-export type AutomationStatus = "active" | "paused" | "draft" | "error";
+export type WorkflowStatus = "draft" | "active" | "paused";
+
+export type AutomationStatus = WorkflowStatus | "error";
 
 export type AutomationView =
   | "templates"
@@ -25,19 +27,60 @@ export type WorkflowNode = {
   icon: string;
 };
 
-export type Automation = {
+export type WorkflowConnection = {
   id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+};
+
+export type WorkflowMetadata = {
+  templateId?: string;
+  tags?: string[];
+  [key: string]: unknown;
+};
+
+export type WorkflowRecord = {
+  id: string;
+  userId: string;
   name: string;
   description: string;
-  status: AutomationStatus;
-  lastRun: string;
-  runsToday: number;
-  successRate: number;
-  createdBy: string;
-  executionTimeMs: number;
+  status: WorkflowStatus;
   nodes: WorkflowNode[];
-  templateId?: string;
+  connections: WorkflowConnection[];
+  triggerBlockId: string | null;
+  metadata: WorkflowMetadata;
+  version: number;
+  createdBy: string;
+  createdAt: string;
   updatedAt: string;
+  publishedAt: string | null;
+};
+
+export type WorkflowVersion = {
+  id: string;
+  workflowId: string;
+  version: number;
+  name: string;
+  description: string;
+  status: WorkflowStatus;
+  nodes: WorkflowNode[];
+  connections: WorkflowConnection[];
+  triggerBlockId: string | null;
+  metadata: WorkflowMetadata;
+  createdBy: string;
+  changeNote: string | null;
+  createdAt: string;
+};
+
+export type Automation = WorkflowRecord & {
+  lastRun: string;
+  lastRunAt: string | null;
+  runsToday: number;
+  totalExecutions: number;
+  successRate: number;
+  executionTimeMs: number;
+  triggerLabel: string;
+  templateId?: string;
 };
 
 export type AutomationTemplate = {
@@ -50,14 +93,37 @@ export type AutomationTemplate = {
   popularity: number;
 };
 
+export type RunStatus = "running" | "success" | "failed" | "skipped";
+
+export type ExecutionLog = {
+  id: string;
+  runId: string;
+  stepIndex: number;
+  nodeId: string;
+  blockId: string;
+  label: string;
+  status: "success" | "failed" | "skipped";
+  message: string;
+  output: Record<string, unknown>;
+  durationMs: number;
+  loggedAt: string;
+};
+
 export type AutomationRun = {
   id: string;
+  workflowId: string;
   automationId: string;
   automationName: string;
-  status: "success" | "failed" | "skipped";
-  startedAt: string;
-  durationMs: number;
+  status: RunStatus;
   trigger: string;
+  isTest: boolean;
+  durationMs: number;
+  startedAt: string;
+  startedAtDisplay?: string;
+  completedAt: string | null;
+  payload: Record<string, unknown>;
+  errorMessage: string | null;
+  logs?: ExecutionLog[];
 };
 
 export type AutomationMetrics = {
@@ -65,4 +131,27 @@ export type AutomationMetrics = {
   todayRuns: number;
   successRate: number;
   timeSavedHours: number;
+};
+
+export type CreateWorkflowInput = {
+  name?: string;
+  description?: string;
+  nodes?: WorkflowNode[];
+  connections?: WorkflowConnection[];
+  metadata?: WorkflowMetadata;
+  status?: WorkflowStatus;
+};
+
+export type UpdateWorkflowInput = {
+  name?: string;
+  description?: string;
+  nodes?: WorkflowNode[];
+  connections?: WorkflowConnection[];
+  metadata?: WorkflowMetadata;
+  changeNote?: string;
+};
+
+export type TestRunResult = {
+  run: AutomationRun;
+  logs: ExecutionLog[];
 };

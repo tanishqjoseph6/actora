@@ -7,18 +7,23 @@ const STATUS_STYLES = {
   success: "text-emerald-400 bg-emerald-500/15 border-emerald-400/25",
   failed: "text-rose-400 bg-rose-500/15 border-rose-400/25",
   skipped: "text-gray-400 bg-gray-500/15 border-gray-400/25",
+  running: "text-[#00D4FF] bg-[#00D4FF]/10 border-[#00D4FF]/25",
 };
 
 type AutomationHistoryListProps = {
   runs: AutomationRun[];
+  onSelectRun?: (run: AutomationRun) => void;
+  selectedRunId?: string | null;
 };
 
-export function AutomationHistoryList({ runs }: AutomationHistoryListProps) {
+export function AutomationHistoryList({ runs, onSelectRun, selectedRunId }: AutomationHistoryListProps) {
   return (
     <div className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#00D4FF]/10">
-        <h2 className="text-lg font-semibold text-white">Run History</h2>
-        <p className="text-sm text-gray-500">Recent workflow executions</p>
+        <h2 className="text-lg font-semibold text-white">Execution History</h2>
+        <p className="text-sm text-gray-500">
+          {runs.length} total execution{runs.length === 1 ? "" : "s"} · Click a run for step logs
+        </p>
       </div>
       <ul className="divide-y divide-[#00D4FF]/5">
         {runs.map((run, i) => (
@@ -27,12 +32,22 @@ export function AutomationHistoryList({ runs }: AutomationHistoryListProps) {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03 }}
-            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-5 py-4 hover:bg-[#0B1730]/40 transition-colors"
+            onClick={() => onSelectRun?.(run)}
+            className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-5 py-4 transition-colors ${
+              onSelectRun ? "cursor-pointer hover:bg-[#0B1730]/40" : ""
+            } ${selectedRunId === run.id ? "bg-[#0B1730]/50" : ""}`}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{run.automationName}</p>
+              <p className="text-sm font-medium text-white truncate flex items-center gap-2">
+                {run.automationName}
+                {run.isTest && (
+                  <span className="text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20">
+                    Test
+                  </span>
+                )}
+              </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {run.trigger} · {run.startedAt}
+                {run.trigger} · {run.startedAtDisplay ?? run.startedAt}
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
