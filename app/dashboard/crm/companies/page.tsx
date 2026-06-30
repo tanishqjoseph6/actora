@@ -1,21 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CompanyListItem } from "@/components/crm/CompanyListItem";
 import { CrmEmptyState, CompanyEmptyIcon } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
+import { CrmListSkeleton } from "@/components/crm/CrmListSkeleton";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
+import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import {
+  CRM_INDUSTRIES,
+  CRM_OWNERS,
+  filterCompanies,
+  sortCompanies,
+} from "@/lib/crm/entities";
 import { formatCurrency, MOCK_COMPANIES } from "@/lib/crm/mock-data";
-import type { CompanySize } from "@/lib/crm/types";
+import type { CompanySize, CompanySort } from "@/lib/crm/types";
 
 type CompanyFilter = "all" | CompanySize;
 
 export default function CompaniesPage() {
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<CompanyFilter>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const [sort, setSort] = useState<CompanySort>("name-asc");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filterCounts = useMemo(() => {
     const counts = { all: MOCK_COMPANIES.length, startup: 0, smb: 0, enterprise: 0 };
@@ -29,18 +47,15 @@ export default function CompaniesPage() {
   );
 
   const filteredCompanies = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return MOCK_COMPANIES.filter((company) => {
-      if (activeFilter !== "all" && company.size !== activeFilter) return false;
-      if (!query) return true;
-      return (
-        company.name.toLowerCase().includes(query) ||
-        company.industry.toLowerCase().includes(query) ||
-        company.location.toLowerCase().includes(query) ||
-        company.website.toLowerCase().includes(query)
-      );
+    const filtered = filterCompanies(MOCK_COMPANIES, {
+      search: searchQuery,
+      size: activeFilter,
+      industry: industryFilter,
+      owner: ownerFilter,
+      status: statusFilter,
     });
-  }, [searchQuery, activeFilter]);
+    return sortCompanies(filtered, sort);
+  }, [searchQuery, activeFilter, industryFilter, ownerFilter, statusFilter, sort]);
 
   const chips = [
     { id: "all", label: "All", count: filterCounts.all },
@@ -50,6 +65,26 @@ export default function CompaniesPage() {
   ];
 
   const hasSearch = searchQuery.trim().length > 0;
+  const avgAiScore = Math.round(
+    MOCK_COMPANIES.reduce((s, c) => s + c.aiScore, 0) / MOCK_COMPANIES.length
+  );
+
+  if (loading) {
+    return (
+      <>
+        <CrmPageHeader
+          badge="🏢 CRM · Companies"
+          title="Account"
+          titleAccent="Companies"
+          description="Organize accounts by size, industry, and pipeline value across your book of business."
+        />
+        <div className="mb-6">
+          <CrmSubNav />
+        </div>
+        <CrmListSkeleton rows={6} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -67,19 +102,8 @@ export default function CompaniesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <CrmStatCard title="Total companies" value={MOCK_COMPANIES.length} />
         <CrmStatCard title="Enterprise" value={filterCounts.enterprise} />
-        <CrmStatCard
-          title="Total pipeline"
-          value={formatCurrency(totalPipeline)}
-        />
-        <CrmStatCard
-          title="Avg. open deals"
-          value={
-            (
-              MOCK_COMPANIES.reduce((s, c) => s + c.openDeals, 0) /
-              MOCK_COMPANIES.length
-            ).toFixed(1)
-          }
-        />
+        <CrmStatCard title="Total pipeline" value={formatCurrency(totalPipeline)} />
+        <CrmStatCard title="Avg. AI score" value={avgAiScore} />
       </div>
 
       <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
@@ -99,15 +123,60 @@ export default function CompaniesPage() {
           <CrmSearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by name, industry, location, or website…"
+            placeholder="Search by name, industry, address, owner, or notes…"
           />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <CrmFilterChips
             chips={chips}
             activeId={activeFilter}
             onChange={(id) => setActiveFilter(id as CompanyFilter)}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6">
+          <CrmSelectFilter
+            label="Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "active", label: "Active" },
+              { value: "prospect", label: "Prospect" },
+              { value: "churned", label: "Churned" },
+            ]}
+          />
+          <CrmSelectFilter
+            label="Industry"
+            value={industryFilter}
+            onChange={setIndustryFilter}
+            options={CRM_INDUSTRIES.map((i) => ({
+              value: i,
+              label: i === "all" ? "All industries" : i,
+            }))}
+          />
+          <CrmSelectFilter
+            label="Owner"
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            options={CRM_OWNERS.map((o) => ({
+              value: o,
+              label: o === "all" ? "All owners" : o,
+            }))}
+          />
+          <CrmSelectFilter
+            label="Sort"
+            value={sort}
+            onChange={(v) => setSort(v as CompanySort)}
+            options={[
+              { value: "name-asc", label: "Name A → Z" },
+              { value: "name-desc", label: "Name Z → A" },
+              { value: "revenue-desc", label: "Revenue (high → low)" },
+              { value: "employees-desc", label: "Employees" },
+              { value: "ai-score-desc", label: "AI score" },
+              { value: "pipeline-desc", label: "Pipeline value" },
+            ]}
           />
         </div>
 
@@ -117,13 +186,9 @@ export default function CompaniesPage() {
             title={
               hasSearch
                 ? "No companies match your search"
-                : "No companies in this segment"
+                : "No companies match your filters"
             }
-            description={
-              hasSearch
-                ? "Try a different search term or clear your filters."
-                : "Adjust your size filter to see companies in this category."
-            }
+            description="Try a different search term or adjust your filters."
           />
         ) : (
           <div className="space-y-2">

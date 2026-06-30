@@ -4,6 +4,8 @@ export type NavItem = {
   icon: string;
   /** Prefix match for nested routes (e.g. /dashboard/crm) */
   matchPrefix?: string;
+  /** Only highlight when pathname matches href exactly */
+  exact?: boolean;
 };
 
 export type NavSection = {
@@ -20,6 +22,13 @@ export const MAIN_NAV: NavItem[] = [
 ];
 
 export const CRM_NAV: NavItem[] = [
+  {
+    href: "/dashboard/crm",
+    label: "Overview",
+    icon: "✨",
+    matchPrefix: "/dashboard/crm",
+    exact: true,
+  },
   {
     href: "/dashboard/crm/contacts",
     label: "Contacts",
@@ -50,8 +59,11 @@ export const FOOTER_NAV: NavItem[] = [
   { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
 ];
 
-export const CRM_TABS = CRM_NAV.map(({ href, label, icon }) => ({
-  href,
-  label,
-  icon,
-}));
+export const CRM_TABS = [
+  { href: "/dashboard/crm", label: "Overview", icon: "✨" },
+  ...CRM_NAV.filter((item) => item.href !== "/dashboard/crm").map(({ href, label, icon }) => ({
+    href,
+    label,
+    icon,
+  })),
+];

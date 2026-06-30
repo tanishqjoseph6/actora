@@ -1,21 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ContactListItem } from "@/components/crm/ContactListItem";
 import { CrmEmptyState, ContactEmptyIcon } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
+import { CrmListSkeleton } from "@/components/crm/CrmListSkeleton";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
+import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
-import { MOCK_CONTACTS } from "@/lib/crm/mock-data";
-import type { ContactStatus } from "@/lib/crm/types";
+import {
+  CRM_OWNERS,
+  filterContacts,
+  sortContacts,
+} from "@/lib/crm/entities";
+import { MOCK_COMPANIES, MOCK_CONTACTS } from "@/lib/crm/mock-data";
+import type { ContactSort, ContactStatus } from "@/lib/crm/types";
 
 type ContactFilter = "all" | ContactStatus;
 
 export default function ContactsPage() {
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ContactFilter>("all");
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
+  const [sort, setSort] = useState<ContactSort>("name-asc");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filterCounts = useMemo(() => {
     const counts = { all: MOCK_CONTACTS.length, active: 0, lead: 0, inactive: 0 };
@@ -24,19 +40,14 @@ export default function ContactsPage() {
   }, []);
 
   const filteredContacts = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return MOCK_CONTACTS.filter((contact) => {
-      if (activeFilter !== "all" && contact.status !== activeFilter) return false;
-      if (!query) return true;
-      return (
-        contact.name.toLowerCase().includes(query) ||
-        contact.email.toLowerCase().includes(query) ||
-        contact.companyName.toLowerCase().includes(query) ||
-        contact.title.toLowerCase().includes(query) ||
-        contact.tags.some((t) => t.toLowerCase().includes(query))
-      );
+    const filtered = filterContacts(MOCK_CONTACTS, {
+      search: searchQuery,
+      status: activeFilter,
+      companyId: companyFilter,
+      owner: ownerFilter,
     });
-  }, [searchQuery, activeFilter]);
+    return sortContacts(filtered, sort);
+  }, [searchQuery, activeFilter, companyFilter, ownerFilter, sort]);
 
   const chips = [
     { id: "all", label: "All", count: filterCounts.all },
@@ -46,6 +57,26 @@ export default function ContactsPage() {
   ];
 
   const hasSearch = searchQuery.trim().length > 0;
+  const avgAiScore = Math.round(
+    MOCK_CONTACTS.reduce((s, c) => s + c.aiLeadScore, 0) / MOCK_CONTACTS.length
+  );
+
+  if (loading) {
+    return (
+      <>
+        <CrmPageHeader
+          badge="👤 CRM · Contacts"
+          title="Your"
+          titleAccent="Contacts"
+          description="Track relationships, roles, and engagement across every account in your pipeline."
+        />
+        <div className="mb-6">
+          <CrmSubNav />
+        </div>
+        <CrmListSkeleton rows={6} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -64,7 +95,7 @@ export default function ContactsPage() {
         <CrmStatCard title="Total contacts" value={MOCK_CONTACTS.length} />
         <CrmStatCard title="Active" value={filterCounts.active} />
         <CrmStatCard title="Leads" value={filterCounts.lead} />
-        <CrmStatCard title="Companies linked" value={new Set(MOCK_CONTACTS.map((c) => c.companyId)).size} />
+        <CrmStatCard title="Avg. AI score" value={avgAiScore} />
       </div>
 
       <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
@@ -84,15 +115,47 @@ export default function ContactsPage() {
           <CrmSearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by name, email, company, or tag…"
+            placeholder="Search by name, email, company, owner, or notes…"
           />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <CrmFilterChips
             chips={chips}
             activeId={activeFilter}
             onChange={(id) => setActiveFilter(id as ContactFilter)}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6">
+          <CrmSelectFilter
+            label="Company"
+            value={companyFilter}
+            onChange={setCompanyFilter}
+            options={[
+              { value: "all", label: "All companies" },
+              ...MOCK_COMPANIES.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+          <CrmSelectFilter
+            label="Owner"
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            options={CRM_OWNERS.map((o) => ({
+              value: o,
+              label: o === "all" ? "All owners" : o,
+            }))}
+          />
+          <CrmSelectFilter
+            label="Sort"
+            value={sort}
+            onChange={(v) => setSort(v as ContactSort)}
+            options={[
+              { value: "name-asc", label: "Name A → Z" },
+              { value: "name-desc", label: "Name Z → A" },
+              { value: "last-contacted", label: "Last contacted" },
+              { value: "ai-score-desc", label: "AI score" },
+            ]}
           />
         </div>
 
@@ -102,13 +165,9 @@ export default function ContactsPage() {
             title={
               hasSearch
                 ? "No contacts match your search"
-                : `No ${activeFilter === "all" ? "" : activeFilter + " "}contacts found`
+                : "No contacts match your filters"
             }
-            description={
-              hasSearch
-                ? "Try a different search term or clear your filters."
-                : "Adjust your filters to see contacts in this category."
-            }
+            description="Try a different search term or adjust your filters."
           />
         ) : (
           <div className="space-y-2">

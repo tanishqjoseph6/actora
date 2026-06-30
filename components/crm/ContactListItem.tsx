@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { formatDate } from "@/lib/crm/mock-data";
+import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { Contact, ContactStatus } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<ContactStatus, string> = {
@@ -8,56 +10,94 @@ const STATUS_STYLES: Record<ContactStatus, string> = {
   inactive: "bg-gray-500/15 border-gray-400/25 text-gray-400",
 };
 
-export function ContactListItem({ contact }: { contact: Contact }) {
+type ContactListItemProps = {
+  contact: Contact;
+  compact?: boolean;
+};
+
+export function ContactListItem({ contact, compact }: ContactListItemProps) {
+  const aiGradient = getAiScoreStyle(contact.aiLeadScore);
+
   return (
-    <article className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#0d1730]/40 border border-cyan-400/10 hover:border-cyan-400/25 hover:bg-[#0d1730]/70 transition-all duration-200">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <div
-          className={`w-11 h-11 rounded-full bg-gradient-to-br ${getAvatarGradient(contact.name)} flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-lg shadow-black/20`}
-        >
-          {getInitials(contact.name)}
+    <Link
+      href={`/dashboard/crm/contacts/${contact.id}`}
+      className="block group"
+    >
+      <article
+        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-[#0d1730]/40 border border-cyan-400/10 hover:border-cyan-400/30 hover:bg-[#0d1730]/70 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/5 ${compact ? "p-3" : "p-4 sm:p-5"}`}
+      >
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div
+            className={`${compact ? "w-9 h-9 text-xs" : "w-11 h-11 text-sm"} rounded-full bg-gradient-to-br ${getAvatarGradient(contact.name)} flex items-center justify-center font-bold text-white shrink-0 shadow-lg shadow-black/20`}
+          >
+            {getInitials(contact.name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-0.5">
+              <h3 className="font-semibold text-white truncate group-hover:text-cyan-300 transition-colors">
+                {contact.name}
+              </h3>
+              <span
+                className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${STATUS_STYLES[contact.status]}`}
+              >
+                {contact.status}
+              </span>
+            </div>
+            <p className="text-sm text-gray-400 truncate">{contact.title}</p>
+            {!compact && (
+              <p className="text-sm text-cyan-400/80 truncate mt-0.5">
+                {contact.companyName}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 mb-0.5">
-            <h3 className="font-semibold text-white truncate">{contact.name}</h3>
-            <span
-              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${STATUS_STYLES[contact.status]}`}
+
+        {!compact && (
+          <>
+            <div className="flex flex-col sm:items-end gap-1.5 sm:min-w-[160px] shrink-0">
+              <span className="text-sm text-gray-300 truncate max-w-full">
+                {contact.email}
+              </span>
+              <p className="text-xs text-gray-500">{contact.phone}</p>
+              <p className="text-xs text-gray-500">Owner · {contact.owner}</p>
+              <p className="text-xs text-gray-500">
+                Last contact · {formatDate(contact.lastContacted)}
+              </p>
+            </div>
+
+            <div
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r ${aiGradient} shrink-0 self-start sm:self-center`}
+              title="AI lead score"
             >
-              {contact.status}
+              <SparkIcon className="w-3 h-3 text-white" />
+              <span className="text-xs font-bold text-white">
+                {contact.aiLeadScore}
+              </span>
+            </div>
+          </>
+        )}
+
+        {compact && (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs text-gray-500">{contact.title}</span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r ${aiGradient}`}
+            >
+              <span className="text-[10px] font-bold text-white">
+                {contact.aiLeadScore}
+              </span>
             </span>
           </div>
-          <p className="text-sm text-gray-400 truncate">{contact.title}</p>
-          <p className="text-sm text-cyan-400/80 truncate mt-0.5">
-            {contact.companyName}
-          </p>
-        </div>
-      </div>
+        )}
+      </article>
+    </Link>
+  );
+}
 
-      <div className="flex flex-col sm:items-end gap-1.5 sm:min-w-[180px] shrink-0">
-        <a
-          href={`mailto:${contact.email}`}
-          className="text-sm text-gray-300 hover:text-cyan-400 transition-colors truncate max-w-full"
-        >
-          {contact.email}
-        </a>
-        <p className="text-xs text-gray-500">{contact.phone}</p>
-        <p className="text-xs text-gray-500">
-          Last contact · {formatDate(contact.lastContacted)}
-        </p>
-      </div>
-
-      {contact.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 sm:max-w-[160px] sm:justify-end">
-          {contact.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 rounded-md bg-[#081226] border border-cyan-400/10 text-[10px] text-gray-400"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-    </article>
+function SparkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
   );
 }

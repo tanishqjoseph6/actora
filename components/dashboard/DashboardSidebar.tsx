@@ -81,9 +81,12 @@ function NavGroup({
   return (
     <div className="space-y-1">
       {items.map((item) => {
-        const active = item.matchPrefix
-          ? pathname.startsWith(item.matchPrefix)
-          : pathname === item.href;
+        const active = item.exact
+          ? pathname === item.href
+          : item.matchPrefix
+            ? pathname === item.href ||
+              pathname.startsWith(`${item.matchPrefix}/`)
+            : pathname === item.href;
 
         return (
           <Link

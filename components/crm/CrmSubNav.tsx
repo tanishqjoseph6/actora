@@ -13,7 +13,11 @@ export function CrmSubNav() {
       aria-label="CRM sections"
     >
       {CRM_TABS.map((tab) => {
-        const active = pathname.startsWith(tab.href);
+        const active =
+          tab.href === "/dashboard/crm"
+            ? pathname === "/dashboard/crm"
+            : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+
         return (
           <Link
             key={tab.href}
