@@ -17,6 +17,17 @@ type AutomationHistoryListProps = {
 };
 
 export function AutomationHistoryList({ runs, onSelectRun, selectedRunId }: AutomationHistoryListProps) {
+  if (runs.length === 0) {
+    return (
+      <div className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl px-5 py-12 text-center">
+        <p className="text-lg font-semibold text-white mb-2">No executions yet</p>
+        <p className="text-sm text-gray-500 max-w-md mx-auto">
+          Run a test from the workflow editor or publish an automation to see execution history here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-4 border-b border-[#00D4FF]/10">

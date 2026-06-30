@@ -56,7 +56,10 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
       </div>
 
       <ul className="divide-y divide-[#00D4FF]/5 max-h-80 overflow-y-auto premium-scrollbar">
-        {logs.map((log, i) => (
+        {logs.length === 0 ? (
+          <li className="px-5 py-8 text-center text-sm text-gray-500">No step logs recorded for this run.</li>
+        ) : (
+          logs.map((log, i) => (
           <motion.li
             key={log.id}
             initial={{ opacity: 0, x: -6 }}
@@ -87,7 +90,8 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
               </div>
             </div>
           </motion.li>
-        ))}
+          ))
+        )}
       </ul>
     </motion.div>
   );

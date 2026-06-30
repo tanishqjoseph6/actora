@@ -72,7 +72,7 @@ export function WorkflowEditorToolbar({
           variant="secondary"
         />
         <ToolbarButton
-          label="Publish"
+          label={status === "paused" ? "Re-activate" : "Publish"}
           onClick={onPublish}
           disabled={!canSave || saving}
           variant="primary"

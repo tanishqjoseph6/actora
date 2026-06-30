@@ -201,6 +201,7 @@ export default function AutomationsPage() {
       });
       const updated = await publishWorkflow(selectedWorkflow.id);
       setSelectedWorkflow(updated);
+      setActiveView("my-automations");
       await loadVersions(updated.id);
       showToast("Workflow published and active");
     } catch (err) {
@@ -215,6 +216,7 @@ export default function AutomationsPage() {
     try {
       const updated = await pauseWorkflow(selectedWorkflow.id);
       setSelectedWorkflow(updated);
+      await loadVersions(updated.id);
       showToast("Workflow paused");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Pause failed");
@@ -233,6 +235,16 @@ export default function AutomationsPage() {
       });
       setLastTestRun(result.run);
       setLastTestLogs(result.logs);
+      setSelectedWorkflow((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: workflowName,
+              description: workflowDescription,
+              nodes: canvasNodes.map((n) => ({ ...n })),
+            }
+          : null
+      );
       showToast(`Test run ${result.run.status}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Test run failed");
@@ -245,8 +257,9 @@ export default function AutomationsPage() {
     if (!selectedWorkflow) return;
     try {
       const copy = await duplicateWorkflow(selectedWorkflow.id);
+      setActiveView("drafts");
       openWorkflow(copy);
-      showToast("Workflow duplicated");
+      showToast("Workflow duplicated — saved to Drafts");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Duplicate failed");
     }
@@ -260,6 +273,7 @@ export default function AutomationsPage() {
       setSelectedWorkflow(null);
       setEditorOpen(false);
       setCanvasNodes([]);
+      setVersions([]);
       showToast("Workflow deleted");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Delete failed");

@@ -281,6 +281,8 @@ export class SupabaseAutomationRepository {
       id: `${n.blockId}-${randomUUID().slice(0, 8)}`,
     }));
     const graph = syncWorkflowGraph(nodes);
+    const { seedId: _removed, ...metadataRest } = source.metadata;
+    const metadata: WorkflowMetadata = { ...metadataRest, duplicatedFrom: source.id };
 
     return this.createWorkflow(
       userId,
@@ -289,7 +291,7 @@ export class SupabaseAutomationRepository {
         description: source.description,
         nodes: graph.nodes,
         connections: graph.connections,
-        metadata: { ...source.metadata, duplicatedFrom: source.id },
+        metadata,
         status: "draft",
       },
       createdBy
@@ -332,6 +334,12 @@ export class SupabaseAutomationRepository {
   async pauseWorkflow(userId: string, id: string, updatedBy: string): Promise<WorkflowRecord | null> {
     const db = this.client();
     if (!db) return this.useMemoryFallback().pauseWorkflow(userId, id, updatedBy);
+
+    const existing = await this.getWorkflow(userId, id);
+    if (!existing) return null;
+    if (existing.status !== "active") {
+      throw new Error("Only active workflows can be paused.");
+    }
 
     const { data, error } = await db
       .from("workflows")

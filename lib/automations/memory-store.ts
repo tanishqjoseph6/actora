@@ -6,6 +6,7 @@ import type {
   ExecutionLog,
   TestRunResult,
   UpdateWorkflowInput,
+  WorkflowMetadata,
   WorkflowRecord,
   WorkflowStatus,
   WorkflowVersion,
@@ -115,9 +116,11 @@ export class MemoryAutomationRepository {
     const workflow = await this.getWorkflow(userId, id);
     if (!workflow) return false;
     const store = getStore();
+    const runIds = store.runs.filter((r) => r.workflowId === id).map((r) => r.id);
     store.workflows.delete(id);
     store.versions = store.versions.filter((v) => v.workflowId !== id);
     store.runs = store.runs.filter((r) => r.workflowId !== id);
+    store.logs = store.logs.filter((l) => !runIds.includes(l.runId));
     return true;
   }
 
@@ -127,9 +130,11 @@ export class MemoryAutomationRepository {
 
     const nodes = source.nodes.map((n) => ({
       ...n,
-      id: `${n.id}-copy-${randomUUID().slice(0, 8)}`,
+      id: `${n.blockId}-${randomUUID().slice(0, 8)}`,
     }));
     const graph = syncWorkflowGraph(nodes);
+    const { seedId: _removed, ...metadataRest } = source.metadata;
+    const metadata: WorkflowMetadata = { ...metadataRest, duplicatedFrom: source.id };
 
     return this.createWorkflow(
       userId,
@@ -138,7 +143,7 @@ export class MemoryAutomationRepository {
         description: source.description,
         nodes: graph.nodes,
         connections: graph.connections,
-        metadata: { ...source.metadata, duplicatedFrom: source.id },
+        metadata,
         status: "draft",
       },
       createdBy
@@ -170,6 +175,9 @@ export class MemoryAutomationRepository {
   async pauseWorkflow(userId: string, id: string, updatedBy: string): Promise<WorkflowRecord | null> {
     const existing = await this.getWorkflow(userId, id);
     if (!existing) return null;
+    if (existing.status !== "active") {
+      throw new Error("Only active workflows can be paused.");
+    }
     const updated = { ...existing, status: "paused" as const, updatedAt: now() };
     getStore().workflows.set(id, updated);
     await this.saveVersion(updated, updatedBy, "Paused");
@@ -177,6 +185,11 @@ export class MemoryAutomationRepository {
   }
 
   async saveVersion(workflow: WorkflowRecord, createdBy: string, changeNote?: string): Promise<WorkflowVersion> {
+    const store = getStore();
+    store.versions = store.versions.filter(
+      (v) => !(v.workflowId === workflow.id && v.version === workflow.version)
+    );
+
     const version: WorkflowVersion = {
       id: randomUUID(),
       workflowId: workflow.id,
