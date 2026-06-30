@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getAutomationUserId } from "@/lib/automations/auth";
 import { automationRepository } from "@/lib/automations/repository";
 import { toAutomationCard } from "@/lib/automations/mappers";
+import { ensureSampleWorkflows } from "@/lib/automations/ensure-samples";
 import { apiError, apiOk } from "@/lib/automations/api-utils";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
 import type { CreateWorkflowInput, WorkflowStatus } from "@/lib/automations/types";
@@ -11,6 +12,10 @@ export async function GET(request: NextRequest) {
   if (!userId) return apiError("Not authenticated.", 401);
 
   try {
+    if (isSupabaseConfigured()) {
+      await ensureSampleWorkflows(userId, userId);
+    }
+
     const status = request.nextUrl.searchParams.get("status") as WorkflowStatus | null;
     const [workflows, runs, metrics] = await Promise.all([
       automationRepository.listWorkflows(userId, status ?? undefined),

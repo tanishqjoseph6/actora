@@ -6,9 +6,16 @@ import type { WorkflowVersion } from "@/lib/automations/types";
 type VersionHistoryPanelProps = {
   versions: WorkflowVersion[];
   loading?: boolean;
+  restoringId?: string | null;
+  onRestore?: (version: WorkflowVersion) => void;
 };
 
-export function VersionHistoryPanel({ versions, loading }: VersionHistoryPanelProps) {
+export function VersionHistoryPanel({
+  versions,
+  loading,
+  restoringId,
+  onRestore,
+}: VersionHistoryPanelProps) {
   if (loading) {
     return (
       <div className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 p-5 animate-pulse">
@@ -45,9 +52,21 @@ export function VersionHistoryPanel({ versions, loading }: VersionHistoryPanelPr
                 {v.changeNote ?? "Updated"} · {v.nodes.length} steps · {v.status}
               </p>
             </div>
-            <time className="text-[10px] text-gray-600 shrink-0">
-              {new Date(v.createdAt).toLocaleDateString()}
-            </time>
+            <div className="flex items-center gap-2 shrink-0">
+              {onRestore && (
+                <button
+                  type="button"
+                  onClick={() => onRestore(v)}
+                  disabled={restoringId === v.id}
+                  className="text-[10px] font-medium px-2.5 py-1 rounded-lg border border-[#00D4FF]/25 text-[#00D4FF] hover:bg-[#00D4FF]/10 disabled:opacity-50 transition-colors"
+                >
+                  {restoringId === v.id ? "Restoring…" : "Restore"}
+                </button>
+              )}
+              <time className="text-[10px] text-gray-600">
+                {new Date(v.createdAt).toLocaleDateString()}
+              </time>
+            </div>
           </li>
         ))}
       </ul>

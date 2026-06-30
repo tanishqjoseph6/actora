@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let adminClient: SupabaseClient | null = null;
+let adminClientUrl: string | null = null;
 
 /**
  * Server-only Supabase client with service role for automation persistence.
@@ -14,13 +15,14 @@ export function getSupabaseAdmin(): SupabaseClient | null {
     return null;
   }
 
-  if (!adminClient) {
+  if (!adminClient || adminClientUrl !== url) {
     adminClient = createClient(url, serviceKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
       },
     });
+    adminClientUrl = url;
   }
 
   return adminClient;

@@ -393,6 +393,43 @@ export class SupabaseAutomationRepository {
     return (data as VersionRow[]).map(mapVersion);
   }
 
+  async restoreVersion(
+    userId: string,
+    workflowId: string,
+    versionId: string,
+    restoredBy: string
+  ): Promise<WorkflowRecord | null> {
+    const db = this.client();
+    if (!db) return this.useMemoryFallback().restoreVersion(userId, workflowId, versionId, restoredBy);
+
+    const workflow = await this.getWorkflow(userId, workflowId);
+    if (!workflow) return null;
+
+    const { data: versionRow, error: versionError } = await db
+      .from("workflow_versions")
+      .select("*")
+      .eq("id", versionId)
+      .eq("workflow_id", workflowId)
+      .maybeSingle();
+
+    if (versionError) this.handleDbError(versionError);
+    if (!versionRow) return null;
+
+    const snapshot = mapVersion(versionRow as VersionRow);
+    return this.updateWorkflow(
+      userId,
+      workflowId,
+      {
+        name: snapshot.name,
+        description: snapshot.description,
+        nodes: snapshot.nodes,
+        connections: snapshot.connections,
+        changeNote: `Restored from v${snapshot.version}`,
+      },
+      restoredBy
+    );
+  }
+
   async recordRun(userId: string, result: TestRunResult): Promise<AutomationRun> {
     const db = this.client();
     if (!db) return this.useMemoryFallback().recordRun(userId, result);

@@ -204,6 +204,32 @@ export class MemoryAutomationRepository {
       .sort((a, b) => b.version - a.version);
   }
 
+  async restoreVersion(
+    userId: string,
+    workflowId: string,
+    versionId: string,
+    restoredBy: string
+  ): Promise<WorkflowRecord | null> {
+    const workflow = await this.getWorkflow(userId, workflowId);
+    if (!workflow) return null;
+
+    const snapshot = getStore().versions.find((v) => v.id === versionId && v.workflowId === workflowId);
+    if (!snapshot) return null;
+
+    return this.updateWorkflow(
+      userId,
+      workflowId,
+      {
+        name: snapshot.name,
+        description: snapshot.description,
+        nodes: snapshot.nodes.map((n) => ({ ...n })),
+        connections: snapshot.connections.map((c) => ({ ...c })),
+        changeNote: `Restored from v${snapshot.version}`,
+      },
+      restoredBy
+    );
+  }
+
   async recordRun(userId: string, result: TestRunResult): Promise<AutomationRun> {
     const store = getStore();
     store.runs.unshift(result.run);

@@ -187,6 +187,21 @@ export function useAutomations() {
     return data.versions as WorkflowVersion[];
   }, []);
 
+  const restoreVersion = useCallback(
+    async (workflowId: string, versionId: string) => {
+      const res = await fetch(`/api/automations/${workflowId}/versions/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ versionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to restore version");
+      await refresh();
+      return data.workflow as Automation;
+    },
+    [refresh]
+  );
+
   return {
     ...state,
     refresh,
@@ -198,5 +213,6 @@ export function useAutomations() {
     deleteWorkflow,
     runTest,
     fetchVersions,
+    restoreVersion,
   };
 }

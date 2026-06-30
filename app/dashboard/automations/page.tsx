@@ -45,6 +45,7 @@ export default function AutomationsPage() {
     deleteWorkflow,
     runTest,
     fetchVersions,
+    restoreVersion,
   } = useAutomations();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -62,6 +63,7 @@ export default function AutomationsPage() {
   const [lastTestLogs, setLastTestLogs] = useState<ExecutionLog[]>([]);
   const [versions, setVersions] = useState<WorkflowVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [selectedHistoryRun, setSelectedHistoryRun] = useState<AutomationRun | null>(null);
   const [historyLogs, setHistoryLogs] = useState<ExecutionLog[]>([]);
 
@@ -264,6 +266,28 @@ export default function AutomationsPage() {
     }
   }, [selectedWorkflow, deleteWorkflow, showToast]);
 
+  const handleRestoreVersion = useCallback(
+    async (version: WorkflowVersion) => {
+      if (!selectedWorkflow) return;
+      if (!confirm(`Restore workflow to v${version.version}? Unsaved changes will be replaced.`)) return;
+      try {
+        setRestoringVersionId(version.id);
+        const updated = await restoreVersion(selectedWorkflow.id, version.id);
+        setSelectedWorkflow(updated);
+        setWorkflowName(updated.name);
+        setWorkflowDescription(updated.description);
+        setCanvasNodes(updated.nodes.map((n) => ({ ...n })));
+        await loadVersions(updated.id);
+        showToast(`Restored to v${version.version}`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Restore failed");
+      } finally {
+        setRestoringVersionId(null);
+      }
+    },
+    [selectedWorkflow, restoreVersion, loadVersions, showToast]
+  );
+
   const handleHistoryRunSelect = useCallback(async (run: AutomationRun) => {
     setSelectedHistoryRun(run);
     try {
@@ -325,6 +349,11 @@ export default function AutomationsPage() {
                 {store === "memory" && (
                   <p className="text-xs text-amber-400/80 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-400/20">
                     Using in-memory store. Add SUPABASE_SERVICE_ROLE_KEY and run the migration for persistent storage.
+                  </p>
+                )}
+                {store === "supabase" && (
+                  <p className="text-xs text-emerald-400/80 mb-4 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-400/20">
+                    Connected to Supabase — workflows persist across sessions.
                   </p>
                 )}
 
@@ -428,7 +457,12 @@ export default function AutomationsPage() {
                                     setLastTestLogs([]);
                                   }}
                                 />
-                                <VersionHistoryPanel versions={versions} loading={versionsLoading} />
+                                <VersionHistoryPanel
+                                  versions={versions}
+                                  loading={versionsLoading}
+                                  restoringId={restoringVersionId}
+                                  onRestore={handleRestoreVersion}
+                                />
                               </div>
                             )}
 
