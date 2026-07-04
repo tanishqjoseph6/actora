@@ -10,7 +10,7 @@ type BillingToggleProps = {
 export function BillingToggle({ period, onChange }: BillingToggleProps) {
   return (
     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <div className="relative flex items-center p-1 rounded-xl bg-[#081226] border border-[rgba(0,255,255,0.15)] backdrop-blur-sm">
+      <div className="relative flex items-center p-1 rounded-xl bg-[#0B1220] border border-[rgba(37, 99, 235,0.15)] backdrop-blur-sm">
         <button
           onClick={() => onChange("monthly")}
           className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
@@ -32,15 +32,15 @@ export function BillingToggle({ period, onChange }: BillingToggleProps) {
           Yearly
         </button>
         <span
-          className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] transition-all duration-300 ease-out ${
+          className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[#2563EB] transition-all duration-300 ease-out ${
             period === "yearly" ? "left-[calc(50%+2px)]" : "left-1"
           }`}
           aria-hidden
         />
       </div>
 
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-400 text-xs font-semibold">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#2563EB] text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
         Save 15%
       </span>
     </div>

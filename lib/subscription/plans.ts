@@ -28,7 +28,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
 
 export const PLAN_DISPLAY_NAMES: Record<PlanId, string> = {
   free: "Free",
-  starter: "Starter",
+  starter: "Team",
   pro: "Pro",
   enterprise: "Enterprise",
 };
@@ -56,23 +56,23 @@ export function getPlanBadgeStyles(planId: PlanId): {
   switch (planId) {
     case "starter":
       return {
-        badge: "bg-[#3B82F6]/15 border-[#3B82F6]/30 text-[#60A5FA]",
-        dot: "bg-[#60A5FA]",
+        badge: "bg-[#1D4ED8]/20 border-[#1D4ED8]/50 text-[#93C5FD]",
+        dot: "bg-[#1D4ED8]",
       };
     case "pro":
       return {
-        badge: "bg-gradient-to-r from-[#00CFFF]/20 to-[#3B82F6]/20 border-[#00CFFF]/30 text-[#00CFFF]",
-        dot: "bg-[#00CFFF]",
+        badge: "bg-[#2563EB] border-[#2563EB] text-white",
+        dot: "bg-white",
       };
     case "enterprise":
       return {
-        badge: "bg-purple-500/15 border-purple-400/30 text-purple-300",
-        dot: "bg-purple-400",
+        badge: "bg-[#050816] border-[#1E293B] text-[#94A3B8]",
+        dot: "bg-[#64748B]",
       };
     default:
       return {
-        badge: "bg-cyan-400/10 border-cyan-400/20 text-gray-400",
-        dot: "bg-gray-400",
+        badge: "bg-[#111827] border-[#2563EB]/40 text-[#94A3B8]",
+        dot: "bg-[#64748B]",
       };
   }
 }

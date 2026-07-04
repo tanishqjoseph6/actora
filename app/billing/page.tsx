@@ -2,17 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { BillingToggle } from "@/components/billing/BillingToggle";
-import { CurrencyToggle } from "@/components/billing/CurrencyToggle";
-import { PricingCard } from "@/components/billing/PricingCard";
-import {
-  CurrentPlanCard,
-  UsageStats,
-} from "@/components/billing/AccountSections";
-import {
-  BillingHistoryTable,
-  RazorpayPlaceholder,
-} from "@/components/billing/BillingHistory";
+import { motion } from "framer-motion";
 import {
   PaymentToast,
   usePaymentToastFromUrl,
@@ -23,11 +13,20 @@ import {
   useUpgradeModal,
 } from "@/components/billing/UpgradeModal";
 import {
+  BillingHistoryTable,
+  RazorpayPlaceholder,
+} from "@/components/billing/BillingHistory";
+import {
   PRICING_PLANS,
   getPlanById,
   type BillingPeriod,
   type PricingPlan,
 } from "@/components/billing/pricing-data";
+import { BillingHeader } from "@/components/billing/premium/BillingHeader";
+import { PremiumPricingCard } from "@/components/billing/premium/PremiumPricingCard";
+import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
+import { BillingFaq } from "@/components/billing/premium/BillingFaq";
+import { CurrentPlanSection } from "@/components/billing/premium/CurrentPlanSection";
 import { parseBillingCurrency } from "@/lib/billing/currency";
 import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -79,6 +78,8 @@ export default function Billing() {
           "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
         return;
       }
+
+      if (plan.id === "free") return;
 
       openUpgrade(plan, period);
     },
@@ -158,55 +159,53 @@ export default function Billing() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[#3B82F6]/8 blur-[200px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-[#00CFFF]/5 blur-[180px] rounded-full pointer-events-none" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[#3B82F6]/10 blur-[200px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-0 w-[600px] h-[500px] bg-[#2563EB]/8 blur-[180px] rounded-full pointer-events-none" />
+      <div className="fixed top-1/3 -left-32 w-[400px] h-[400px] bg-[#3B82F6]/6 blur-[160px] rounded-full pointer-events-none" />
 
       <PaymentToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
-        <div className="text-center mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-2 px-4 py-1 mb-5 rounded-full border border-[rgba(0,255,255,0.25)] text-[#00CFFF] text-sm font-medium bg-[#081226]/60 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00CFFF] animate-pulse" />
-            PRICING
-          </div>
+        <BillingHeader
+          period={period}
+          currency={currency}
+          onPeriodChange={setPeriod}
+          onCurrencyChange={setCurrency}
+        />
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">
-            Simple{" "}
-            <span className="bg-gradient-to-r from-[#00CFFF] via-[#3B82F6] to-[#60A5FA] bg-clip-text text-transparent">
-              Pricing
-            </span>
-          </h1>
-
-          <p className="text-gray-400 mt-4 text-base sm:text-lg max-w-xl mx-auto">
-            Scale your inbox automation as your business grows
-          </p>
-
-          <div className="mt-8 flex flex-col items-center gap-4">
-            <CurrencyToggle currency={currency} onChange={setCurrency} />
-            <BillingToggle period={period} onChange={setPeriod} />
-          </div>
-        </div>
-
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 mb-12 lg:mb-16 items-stretch">
-          {PRICING_PLANS.map((plan) => (
-            <PricingCard
+        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 mb-16 lg:mb-20 items-stretch">
+          {PRICING_PLANS.map((plan, index) => (
+            <PremiumPricingCard
               key={plan.id}
               plan={plan}
               period={period}
-              currency={currency}
-              onUpgrade={handleUpgrade}
-              isCurrentPlan={subscription?.planId === plan.id}
+              index={index}
+              currentPlanId={subscription?.planId}
+              onSelect={handleUpgrade}
             />
           ))}
         </div>
 
-        <div className="space-y-6 lg:space-y-8">
-          <CurrentPlanCard
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4 }}
+          className="space-y-8 lg:space-y-10 mb-16 lg:mb-20"
+        >
+          <CurrentPlanSection
             subscription={subscription}
             loading={loading}
             onUpgradePlan={handleUpgradePlan}
           />
-          <UsageStats subscription={subscription} loading={loading} />
+        </motion.div>
+
+        <div className="space-y-8 lg:space-y-10 mb-16 lg:mb-20">
+          <ComparisonTable />
+          <BillingFaq />
+        </div>
+
+        <div className="space-y-6">
           <BillingHistoryTable />
           <RazorpayPlaceholder />
         </div>
