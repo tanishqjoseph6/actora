@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import {
   PaymentToast,
@@ -9,99 +8,31 @@ import {
   type PaymentToastState,
 } from "@/components/billing/PaymentToast";
 import {
-  UpgradeModal,
-  useUpgradeModal,
-} from "@/components/billing/UpgradeModal";
-import {
   BillingHistoryTable,
   RazorpayPlaceholder,
 } from "@/components/billing/BillingHistory";
-import {
-  getDisplayPlans,
-  getPlanById,
-  type BillingPeriod,
-  type PricingPlan,
-} from "@/components/billing/pricing-data";
-import { BillingHeader } from "@/components/billing/premium/BillingHeader";
-import { PremiumPricingCard } from "@/components/billing/premium/PremiumPricingCard";
+import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
 import { BillingFaq } from "@/components/billing/premium/BillingFaq";
 import { CurrentPlanSection } from "@/components/billing/premium/CurrentPlanSection";
-import { parseBillingCurrency } from "@/lib/billing/currency";
-import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
-import type { BillingCurrency } from "@/lib/billing/currency";
 import type { PlanId } from "@/lib/subscription";
 
 export default function Billing() {
-  const { data: session } = useSession();
-  const { currency, setCurrency } = useBillingCurrency();
-  const [period, setPeriod] = useState<BillingPeriod>("monthly");
-  const displayPlans = useMemo(
-    () => getDisplayPlans(currency, period),
-    [currency, period]
-  );
-  const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
   const { subscription, loading, upgradePlan, refresh } = useSubscription();
   const [toast, setToast] = useState<PaymentToastState>(null);
+  const [proUpgradeRequest, setProUpgradeRequest] = useState(0);
 
   usePaymentToastFromUrl(setToast);
 
-  const { openCheckout } = useRazorpayCheckout({
-    onSuccess: async (_planId, planName) => {
-      closeUpgrade();
-      await refresh();
-      setToast({
-        type: "success",
-        title: "Payment successful!",
-        message: `Welcome to Actora ${planName}. Your plan is now active.`,
-      });
-      window.history.replaceState({}, "", "/billing");
-    },
-    onFailure: (message) => {
-      setToast({
-        type: "error",
-        title: "Payment failed",
-        message,
-      });
-    },
-    onCancel: () => {
-      setToast({
-        type: "info",
-        title: "Payment cancelled",
-        message: "No charges were made to your account.",
-      });
-    },
-  });
-
-  const handleUpgrade = useCallback(
-    (plan: PricingPlan) => {
-      if (plan.id === "enterprise") {
-        window.location.href =
-          "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
-        return;
-      }
-
-      if (plan.id === "free") return;
-
-      openUpgrade(plan, period, currency);
-    },
-    [period, currency, openUpgrade]
-  );
-
   const handleUpgradePlan = useCallback(() => {
-    const proPlan = getPlanById("pro", currency, period);
-    if (proPlan) {
-      handleUpgrade(proPlan);
-    }
-  }, [handleUpgrade, currency, period]);
+    setProUpgradeRequest((n) => n + 1);
+  }, []);
 
   const handleDevUpgrade = useCallback(
     async (planId: PlanId) => {
-      const success = await upgradePlan(planId, period);
+      const success = await upgradePlan(planId, "monthly");
       if (success) {
-        closeUpgrade();
         await refresh();
         setToast({
           type: "success",
@@ -110,57 +41,8 @@ export default function Billing() {
         });
       }
     },
-    [upgradePlan, period, closeUpgrade, refresh]
+    [upgradePlan, refresh]
   );
-
-  const handleCheckout = useCallback(
-    async (
-      planId: PlanId,
-      billingPeriod: BillingPeriod,
-      billingCurrency: BillingCurrency,
-      razorpayPlanId?: string
-    ) => {
-      if (!session) {
-        setToast({
-          type: "error",
-          title: "Sign in required",
-          message: "Please sign in before upgrading your plan.",
-        });
-        return;
-      }
-
-      await openCheckout(planId, billingPeriod, billingCurrency, razorpayPlanId);
-    },
-    [session, openCheckout]
-  );
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const planParam = params.get("plan");
-    const periodParam = params.get("period");
-    const currencyParam = parseBillingCurrency(params.get("currency"));
-    const billingPeriod: BillingPeriod =
-      periodParam === "yearly" ? "yearly" : "monthly";
-
-    if (currencyParam) {
-      setCurrency(currencyParam);
-    }
-
-    if (periodParam === "yearly" || periodParam === "monthly") {
-      setPeriod(billingPeriod);
-    }
-
-    if (planParam === "starter" || planParam === "pro") {
-      const plan = getPlanById(planParam, currencyParam ?? currency, billingPeriod);
-      if (plan) {
-        openUpgrade(plan, billingPeriod, currencyParam ?? currency);
-      }
-    }
-
-    if (params.has("plan") || params.has("period") || params.has("currency")) {
-      window.history.replaceState({}, "", "/billing");
-    }
-  }, [openUpgrade, setCurrency, currency]);
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
@@ -171,24 +53,18 @@ export default function Billing() {
       <PaymentToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
-        <BillingHeader
-          period={period}
-          currency={currency}
-          onPeriodChange={setPeriod}
-          onCurrencyChange={setCurrency}
+        <PricingSection
+          badge="Billing"
+          title="Billing"
+          subtitle="Manage your subscription, invoices and usage."
+          mode="billing"
+          currentPlanId={subscription?.planId}
+          syncFromUrl
+          onPaymentSuccess={refresh}
+          onDevUpgrade={handleDevUpgrade}
+          proUpgradeRequest={proUpgradeRequest}
+          className="mb-16 lg:mb-20"
         />
-
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 mb-16 lg:mb-20 items-stretch">
-          {displayPlans.map((plan, index) => (
-            <PremiumPricingCard
-              key={`${plan.id}-${currency}-${period}`}
-              plan={plan}
-              index={index}
-              currentPlanId={subscription?.planId}
-              onSelect={handleUpgrade}
-            />
-          ))}
-        </div>
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -214,15 +90,6 @@ export default function Billing() {
           <RazorpayPlaceholder />
         </div>
       </div>
-
-      <UpgradeModal
-        selection={selection}
-        currency={currency}
-        onClose={closeUpgrade}
-        onDevUpgrade={handleDevUpgrade}
-        onCheckout={handleCheckout}
-        currentPlanId={subscription?.planId}
-      />
     </main>
   );
 }

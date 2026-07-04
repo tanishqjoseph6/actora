@@ -8,6 +8,7 @@ type PremiumPricingCardProps = {
   plan: PricingPlan;
   index: number;
   currentPlanId?: PlanId;
+  marketingMode?: boolean;
   onSelect: (plan: PricingPlan) => void;
 };
 
@@ -15,19 +16,24 @@ export function PremiumPricingCard({
   plan,
   index,
   currentPlanId,
+  marketingMode = false,
   onSelect,
 }: PremiumPricingCardProps) {
-  const isCurrent = currentPlanId === plan.id;
+  const isCurrent = !marketingMode && currentPlanId === plan.id;
   const isFreeCurrent = isCurrent && plan.id === "free";
   const showActiveBadge = isCurrent && plan.id !== "free";
   const isEnterprise = plan.id === "enterprise";
   const isActionable =
-    isEnterprise || (plan.id !== "free" && !isCurrent);
+    isEnterprise ||
+    (plan.id === "free" && marketingMode) ||
+    (plan.id !== "free" && !isCurrent);
 
   const ctaLabel = isFreeCurrent
     ? "Current Plan"
     : plan.id === "free"
-      ? "Free Plan"
+      ? marketingMode
+        ? "Start Free"
+        : "Free Plan"
       : plan.cta;
 
   const handleClick = () => {
@@ -127,7 +133,7 @@ export function PremiumPricingCard({
       <PlanButton
         label={ctaLabel}
         variant={plan.ctaVariant}
-        disabled={isFreeCurrent || (plan.id === "free" && !isCurrent)}
+        disabled={!marketingMode && (isFreeCurrent || (plan.id === "free" && !isCurrent))}
         onClick={handleClick}
       />
     </>
