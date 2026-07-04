@@ -104,7 +104,7 @@ export function getAiScoreTier(score: number): {
       tier: "high",
       label: "High",
       badge: "bg-emerald-500/20 border-emerald-400/40 text-emerald-300",
-      gradient: "from-emerald-400 to-cyan-400",
+      gradient: "from-[#2563EB] to-[#1D4ED8]",
     };
   }
   if (score >= 60) {
@@ -112,7 +112,7 @@ export function getAiScoreTier(score: number): {
       tier: "medium",
       label: "Medium",
       badge: "bg-blue-500/20 border-blue-400/40 text-blue-300",
-      gradient: "from-blue-400 to-cyan-400",
+      gradient: "from-blue-400 to-blue-400",
     };
   }
   if (score >= 40) {

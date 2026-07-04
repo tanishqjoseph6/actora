@@ -27,8 +27,8 @@ export function CrmSubNav() {
               transition-all duration-200 shrink-0
               ${
                 active
-                  ? "bg-gradient-to-r from-[#3B82F6]/20 to-[#00CFFF]/20 border border-cyan-400/40 text-cyan-300 shadow-sm shadow-cyan-500/10"
-                  : "bg-[#0d1730]/60 border border-cyan-400/10 text-gray-400 hover:border-cyan-400/25 hover:text-gray-200"
+                  ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-white"
+                  : "bg-[#111827]/60 border border-blue-400/10 text-gray-400 hover:border-blue-400/25 hover:text-gray-200"
               }
             `}
           >

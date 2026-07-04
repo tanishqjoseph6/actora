@@ -18,11 +18,11 @@ export function DashboardTopNav({
   const { subscription, loading } = usePlanGate();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-[#00D4FF]/10 bg-[#050816]/80 backdrop-blur-2xl">
+    <header className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3 border-b border-[#1E293B] bg-[#050816]/80 backdrop-blur-2xl">
       <button
         type="button"
         onClick={onMenuClick}
-        className="lg:hidden p-2 rounded-xl border border-[#00D4FF]/15 text-[#00D4FF] hover:bg-[#00D4FF]/5"
+        className="lg:hidden p-2 rounded-xl border border-[#1E293B] text-[#2563EB] hover:bg-[#2563EB]/5"
         aria-label="Open menu"
       >
         <MenuIcon className="w-5 h-5" />
@@ -35,7 +35,7 @@ export function DashboardTopNav({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search emails, contacts, deals…"
-          className="w-full pl-11 pr-4 py-2.5 rounded-[14px] bg-[#0B1730]/80 border border-[#00D4FF]/10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[#00D4FF]/35 focus:ring-1 focus:ring-[#00D4FF]/20 transition-all"
+          className="w-full pl-11 pr-4 py-2.5 rounded-[14px] bg-[#111827]/80 border border-[#1E293B] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[#1E293B] focus:ring-1 focus:ring-[#2563EB]/20 transition-all"
         />
       </div>
 
@@ -51,16 +51,16 @@ export function DashboardTopNav({
 
         <button
           type="button"
-          className="relative p-2 rounded-xl border border-[#00D4FF]/10 text-gray-400 hover:text-white hover:border-[#00D4FF]/25 transition-colors"
+          className="relative p-2 rounded-xl border border-[#1E293B] text-gray-400 hover:text-white hover:border-[#1E293B] transition-colors"
           aria-label="Notifications"
         >
           <BellIcon className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#00D4FF]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#2563EB]" />
         </button>
 
         <CurrentPlanBadge subscription={subscription} loading={loading} compact />
 
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4F8CFF] to-[#00D4FF] flex items-center justify-center text-xs font-bold text-[#050816]">
+        <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-xs font-bold text-white">
           T
         </div>
       </div>

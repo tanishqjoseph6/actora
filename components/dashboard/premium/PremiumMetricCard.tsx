@@ -33,9 +33,9 @@ export function PremiumMetricCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.35 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 sm:p-5 overflow-hidden hover:border-[#00D4FF]/30 hover:shadow-[0_0_30px_rgba(0,212,255,0.08)] transition-shadow duration-300"
+      className="group relative rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 sm:p-5 overflow-hidden hover:border-[#1E293B] hover: transition-shadow duration-300"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#4F8CFF]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-[#2563EB]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
       <div className="relative">
         <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{title}</p>
@@ -57,8 +57,8 @@ export function PremiumMetricCard({
           <svg viewBox="0 0 100 40" className="w-16 h-8 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden>
             <defs>
               <linearGradient id={`spark-${title.replace(/\s/g, "")}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#4F8CFF" />
-                <stop offset="100%" stopColor="#00D4FF" />
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#2563EB" />
               </linearGradient>
             </defs>
             <polyline

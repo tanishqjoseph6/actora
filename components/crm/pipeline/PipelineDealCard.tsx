@@ -46,9 +46,9 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={`
         group relative rounded-2xl border backdrop-blur-sm cursor-grab active:cursor-grabbing
-        bg-[#0d1730]/70 border-cyan-400/15 p-4
-        hover:border-cyan-400/35 hover:shadow-lg hover:shadow-cyan-500/5
-        ${dragging ? "z-50 shadow-2xl shadow-cyan-500/15 border-cyan-400/40 ring-2 ring-cyan-400/20" : ""}
+        bg-[#111827]/70 border-blue-400/15 p-4
+        hover:border-blue-400/35 hover:shadow-lg hover:shadow-blue-500/5
+        ${dragging ? "z-50 shadow-2xl shadow-blue-500/15 border-blue-400/40 ring-2 ring-blue-400/20" : ""}
       `}
       {...attributes}
       {...listeners}
@@ -73,12 +73,12 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
       </div>
 
       <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-        <UserIcon className="w-3.5 h-3.5 text-cyan-400/60 shrink-0" />
+        <UserIcon className="w-3.5 h-3.5 text-blue-400/60 shrink-0" />
         <span className="truncate">{deal.contactName}</span>
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <p className="text-base font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#00CFFF]">
+        <p className="text-base font-bold text-white">
           {formatCurrency(deal.value)}
         </p>
         <div
@@ -105,7 +105,7 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
           {deal.labels.map((label) => (
             <span
               key={label}
-              className="px-1.5 py-0.5 rounded-md bg-[#081226]/80 border border-cyan-400/10 text-[9px] text-gray-400"
+              className="px-1.5 py-0.5 rounded-md bg-[#0B1220]/80 border border-blue-400/10 text-[9px] text-gray-400"
             >
               {label}
             </span>
@@ -113,8 +113,8 @@ export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
         </div>
       )}
 
-      <div className="flex items-center gap-2 pt-2 border-t border-cyan-400/10">
-        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#00CFFF] flex items-center justify-center text-[8px] font-bold text-[#050816]">
+      <div className="flex items-center gap-2 pt-2 border-t border-blue-400/10">
+        <div className="w-5 h-5 rounded-full bg-[#2563EB] flex items-center justify-center text-[8px] font-bold text-white">
           {getInitials(deal.owner)}
         </div>
         <span className="text-[10px] text-gray-500">{deal.owner}</span>

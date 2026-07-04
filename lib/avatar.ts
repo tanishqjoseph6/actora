@@ -1,10 +1,10 @@
 export const AVATAR_GRADIENTS = [
-  "from-cyan-400 to-blue-600",
-  "from-blue-400 to-indigo-600",
-  "from-teal-400 to-cyan-600",
-  "from-sky-400 to-blue-700",
-  "from-cyan-500 to-teal-700",
-  "from-indigo-400 to-violet-600",
+  "from-[#1D4ED8] to-[#2563EB]",
+  "from-[#2563EB] to-[#3B82F6]",
+  "from-[#1E40AF] to-[#2563EB]",
+  "from-[#1D4ED8] to-[#3B82F6]",
+  "from-[#2563EB] to-[#1D4ED8]",
+  "from-[#3B82F6] to-[#2563EB]",
 ] as const;
 
 export function getInitials(name: string): string {

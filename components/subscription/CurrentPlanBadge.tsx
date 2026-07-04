@@ -14,7 +14,7 @@ export function CurrentPlanBadge({
 }: CurrentPlanBadgeProps) {
   if (loading) {
     return (
-      <span className="inline-flex px-2.5 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-xs text-gray-500 animate-pulse">
+      <span className="inline-flex px-2.5 py-0.5 rounded-full bg-blue-400/10 border border-blue-400/20 text-xs text-gray-500 animate-pulse">
         Loading…
       </span>
     );
@@ -57,8 +57,8 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
   if (loading || !subscription) {
     return (
       <div className="grid sm:grid-cols-2 gap-6 animate-pulse">
-        <div className="h-16 bg-cyan-400/10 rounded-xl" />
-        <div className="h-16 bg-cyan-400/10 rounded-xl" />
+        <div className="h-16 bg-blue-400/10 rounded-xl" />
+        <div className="h-16 bg-blue-400/10 rounded-xl" />
       </div>
     );
   }
@@ -94,12 +94,10 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
                 <span className="text-gray-500"> / {limitLabel}</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-[#0d1730] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#111827] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isAtLimit
-                    ? "bg-gradient-to-r from-amber-500 to-red-400"
-                    : "bg-gradient-to-r from-[#3B82F6] to-[#00CFFF]"
+                  isAtLimit ? "bg-[#EF4444]" : "bg-[#2563EB]"
                 }`}
                 style={{ width: `${percent}%` }}
               />

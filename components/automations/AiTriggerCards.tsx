@@ -17,7 +17,7 @@ export function AiTriggerCards({ onSelectTrigger, disabled }: AiTriggerCardsProp
           <h2 className="text-lg font-semibold text-white">AI Triggers</h2>
           <p className="text-sm text-gray-500">Start a workflow from a smart trigger</p>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-[#00D4FF]/70 px-2 py-1 rounded-full border border-[#00D4FF]/20">
+        <span className="text-[10px] uppercase tracking-widest text-[#2563EB]/70 px-2 py-1 rounded-full border border-[#1E293B]">
           Powered by AI
         </span>
       </div>
@@ -33,14 +33,14 @@ export function AiTriggerCards({ onSelectTrigger, disabled }: AiTriggerCardsProp
             transition={{ delay: i * 0.04 }}
             whileHover={disabled ? undefined : { y: -4, scale: 1.02 }}
             onClick={() => onSelectTrigger(trigger)}
-            className="group relative text-left rounded-[16px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 hover:border-[#00D4FF]/30 hover:shadow-[0_0_24px_rgba(0,212,255,0.1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+            className="group relative text-left rounded-[16px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#1E293B] hover: transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#4F8CFF]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="absolute inset-0 bg-[#2563EB]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             <div className="relative">
               <span className="text-2xl mb-2 block" aria-hidden>
                 {trigger.icon}
               </span>
-              <p className="text-sm font-semibold text-white group-hover:text-[#00D4FF] transition-colors">
+              <p className="text-sm font-semibold text-white group-hover:text-[#2563EB] transition-colors">
                 {trigger.label}
               </p>
               <p className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">

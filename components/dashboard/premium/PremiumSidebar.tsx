@@ -37,19 +37,19 @@ export function PremiumSidebar({
     <motion.aside
       animate={{ width: collapsed ? 80 : 260 }}
       transition={{ type: "spring", stiffness: 380, damping: 32 }}
-      className="flex flex-col h-full border-r border-[#00D4FF]/10 bg-[#071426]/80 backdrop-blur-2xl shrink-0 overflow-hidden"
+      className="flex flex-col h-full border-r border-[#1E293B] bg-[#0B1220] shrink-0 overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-2 p-4 border-b border-[#00D4FF]/10">
+      <div className="flex items-center justify-between gap-2 p-4 border-b border-[#1E293B]">
         <Link
           href="/dashboard"
-          className={`font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00D4FF] to-[#4F8CFF] ${collapsed ? "text-lg" : "text-2xl"}`}
+          className={`font-bold text-white ${collapsed ? "text-lg" : "text-2xl"}`}
         >
           {collapsed ? "A" : "Actora"}
         </Link>
         <button
           type="button"
           onClick={onToggle}
-          className="hidden lg:flex p-2 rounded-xl border border-[#00D4FF]/15 text-gray-400 hover:text-[#00D4FF] hover:border-[#00D4FF]/30 transition-colors"
+          className="hidden lg:flex p-2 rounded-xl border border-[#1E293B] text-gray-400 hover:text-[#2563EB] hover:border-[#1E293B] transition-colors"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronIcon className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
@@ -62,20 +62,20 @@ export function PremiumSidebar({
         <NavSection title="" items={FOOTER_NAV} pathname={pathname} collapsed={collapsed} onNavigate={onMobileClose} />
       </nav>
 
-      <div className="p-4 border-t border-[#00D4FF]/10">
+      <div className="p-4 border-t border-[#1E293B]">
         {!collapsed && (
           <div className="mb-3">
             <CurrentPlanBadge subscription={subscription} loading={loading} compact />
           </div>
         )}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4F8CFF] to-[#00D4FF] flex items-center justify-center text-xs font-bold text-[#050816] shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-xs font-bold text-white shrink-0">
             {displayInitial}
           </div>
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-              <p className="text-xs text-gray-500 truncate">{session?.user?.email ?? "Signed in"}</p>
+              <p className="text-xs text-[#64748B] truncate">{session?.user?.email ?? "Signed in"}</p>
             </div>
           )}
         </div>
@@ -150,8 +150,8 @@ function NavSection({
               className={`
                 group flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-sm font-medium transition-all duration-200
                 ${active
-                  ? "bg-gradient-to-r from-[#4F8CFF]/20 to-[#00D4FF]/10 border border-[#00D4FF]/30 text-[#00D4FF] shadow-[0_0_20px_rgba(0,212,255,0.12)]"
-                  : "border border-transparent text-gray-400 hover:text-white hover:bg-[#0B1730]/60 hover:border-[#00D4FF]/10"
+                  ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-white"
+                  : "border border-transparent text-[#94A3B8] hover:text-white hover:bg-[#111827] hover:border-[#1E293B]"
                 }
               `}
             >

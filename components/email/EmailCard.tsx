@@ -33,15 +33,15 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
       onClick={() => onSelect(email)}
       className={`
         group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-[16px]
-        bg-[#0B1730]/50 border transition-all duration-300 ease-out cursor-pointer
-        hover:bg-[#0B1730]/90 hover:border-[#00D4FF]/25 hover:shadow-[0_8px_32px_rgba(0,212,255,0.08)]
+        bg-[#111827] border transition-all duration-300 ease-out cursor-pointer
+        hover:bg-[#111827] hover:border-[#2563EB]/60 hover:shadow-sm
         hover:-translate-y-0.5
-        ${email.unread ? "border-l-2 border-l-[#00D4FF]" : "border-[#00D4FF]/10"}
-        ${selected ? "border-[#00D4FF]/40 bg-[#0B1730] shadow-[0_0_24px_rgba(0,212,255,0.12)]" : ""}
+        ${email.unread ? "border-l-2 border-l-[#2563EB]" : "border-[#1E293B]"}
+        ${selected ? "border-[#2563EB]/60 bg-[#111827]" : ""}
       `}
     >
       {email.unread && (
-        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#00D4FF] shadow-[0_0_8px_#00D4FF]" aria-hidden />
+        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#2563EB] " aria-hidden />
       )}
 
       <div
@@ -66,7 +66,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
               </span>
             )}
             {email.unread && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF]">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#2563EB]">
                 Unread
               </span>
             )}
@@ -87,7 +87,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
           {email.subject}
         </p>
 
-        <p className="mt-1.5 text-xs text-[#4F8CFF]/80 line-clamp-1">
+        <p className="mt-1.5 text-xs text-[#94A3B8] line-clamp-1">
           <span className="text-gray-600 mr-1">AI:</span>
           {aiSummary}
         </p>
@@ -103,7 +103,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
               e.stopPropagation();
               onSelect(email);
             }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0B1730] border border-[#00D4FF]/15 text-gray-400 text-xs hover:text-white hover:border-[#00D4FF]/30 transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#1E293B] text-gray-400 text-xs hover:text-white hover:border-[#1E293B] transition-colors"
           >
             Quick Reply
           </button>
@@ -114,7 +114,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
                 e.stopPropagation();
                 onAiReply(email);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#4F8CFF]/20 to-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF] text-xs font-medium hover:from-[#4F8CFF]/30 hover:to-[#00D4FF]/25 transition-all"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2563EB] text-white text-xs font-medium hover:bg-[#1D4ED8] transition-colors"
               aria-label={`AI Reply to ${email.sender}`}
             >
               <SparkleIcon className="w-3 h-3" />
@@ -124,7 +124,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
           <button
             type="button"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-transparent text-gray-500 text-xs hover:text-gray-300 hover:bg-[#0B1730] transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-transparent text-gray-500 text-xs hover:text-gray-300 hover:bg-[#111827] transition-colors"
             aria-label="Archive"
           >
             Archive
