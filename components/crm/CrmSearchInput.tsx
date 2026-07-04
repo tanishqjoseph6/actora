@@ -17,7 +17,7 @@ export function CrmSearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0d1730] border border-cyan-400/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:border-cyan-400/40 focus:ring-1 focus:ring-cyan-400/20 transition-all duration-200"
+        className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#111827] border border-blue-400/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:border-blue-400/40 focus:ring-1 focus:ring-blue-400/20 transition-all duration-200"
       />
     </div>
   );

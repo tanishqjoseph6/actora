@@ -21,7 +21,7 @@ export function WorkflowList({
 }: WorkflowListProps) {
   if (workflows.length === 0 && emptyMessage) {
     return (
-      <div className="rounded-[20px] border border-dashed border-[#00D4FF]/15 p-8 text-center">
+      <div className="rounded-[20px] border border-dashed border-[#1E293B] p-8 text-center">
         <p className="text-gray-500 text-sm">{emptyMessage}</p>
       </div>
     );

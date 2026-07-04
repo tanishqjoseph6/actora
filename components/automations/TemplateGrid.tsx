@@ -18,14 +18,14 @@ export function TemplateGrid({ templates, onUseTemplate }: TemplateGridProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
           whileHover={{ y: -4 }}
-          className="group rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-5 hover:border-[#00D4FF]/30 hover:shadow-[0_0_28px_rgba(0,212,255,0.1)] transition-all duration-300"
+          className="group rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 hover:border-[#1E293B] hover: transition-all duration-300"
         >
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-[#4F8CFF]/20 to-[#00D4FF]/10 border border-[#00D4FF]/20 flex items-center justify-center text-2xl">
+            <div className="w-12 h-12 rounded-[14px] bg-[#111827] border border-[#1E293B] flex items-center justify-center text-2xl">
               {template.icon}
             </div>
             <div className="min-w-0 flex-1">
-              <span className="text-[10px] uppercase tracking-wider text-[#4F8CFF]">
+              <span className="text-[10px] uppercase tracking-wider text-[#3B82F6]">
                 {template.category}
               </span>
               <h3 className="text-base font-semibold text-white mt-0.5">{template.name}</h3>
@@ -36,7 +36,7 @@ export function TemplateGrid({ templates, onUseTemplate }: TemplateGridProps) {
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="text-[#00D4FF]">{template.popularity}%</span>
+              <span className="text-[#2563EB]">{template.popularity}%</span>
               <span>adoption</span>
               <span className="text-gray-600">·</span>
               <span>{template.nodes.length} steps</span>
@@ -44,7 +44,7 @@ export function TemplateGrid({ templates, onUseTemplate }: TemplateGridProps) {
             <button
               type="button"
               onClick={() => onUseTemplate(template)}
-              className="px-3 py-1.5 rounded-[10px] text-xs font-semibold bg-gradient-to-r from-[#4F8CFF]/25 to-[#00D4FF]/15 border border-[#00D4FF]/30 text-[#00D4FF] hover:from-[#4F8CFF]/35 hover:to-[#00D4FF]/25 transition-all"
+              className="px-3 py-1.5 rounded-[10px] text-xs font-semibold bg-[#2563EB] text-white hover:from-[#3B82F6]/35 hover:to-[#2563EB]/25 transition-all"
             >
               Use Template
             </button>

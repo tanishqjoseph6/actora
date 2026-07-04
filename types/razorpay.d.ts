@@ -1,16 +1,23 @@
-export type RazorpayPaymentResponse = {
+export type RazorpayOrderPaymentResponse = {
   razorpay_payment_id: string;
   razorpay_order_id: string;
   razorpay_signature: string;
 };
 
-export type RazorpayCheckoutOptions = {
+export type RazorpaySubscriptionPaymentResponse = {
+  razorpay_payment_id: string;
+  razorpay_subscription_id: string;
+  razorpay_signature: string;
+};
+
+export type RazorpayPaymentResponse =
+  | RazorpayOrderPaymentResponse
+  | RazorpaySubscriptionPaymentResponse;
+
+type RazorpayCheckoutBaseOptions = {
   key: string;
-  amount: number;
-  currency: string;
   name: string;
   description: string;
-  order_id: string;
   prefill?: {
     name?: string | null;
     email?: string | null;
@@ -23,6 +30,20 @@ export type RazorpayCheckoutOptions = {
     ondismiss?: () => void;
   };
 };
+
+export type RazorpayOrderCheckoutOptions = RazorpayCheckoutBaseOptions & {
+  amount: number;
+  currency: string;
+  order_id: string;
+};
+
+export type RazorpaySubscriptionCheckoutOptions = RazorpayCheckoutBaseOptions & {
+  subscription_id: string;
+};
+
+export type RazorpayCheckoutOptions =
+  | RazorpayOrderCheckoutOptions
+  | RazorpaySubscriptionCheckoutOptions;
 
 export type RazorpayInstance = {
   open: () => void;

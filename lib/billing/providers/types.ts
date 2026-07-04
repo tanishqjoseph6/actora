@@ -12,8 +12,10 @@ export type CheckoutOrderRequest = {
 
 export type CheckoutOrderResult = {
   provider: PaymentProviderId;
-  orderId: string;
-  amount: number;
+  orderId?: string;
+  subscriptionId?: string;
+  razorpayPlanId?: string;
+  amount?: number;
   currency: BillingCurrency;
   keyId?: string;
   description: string;

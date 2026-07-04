@@ -12,7 +12,7 @@ const STATUS_CONFIG: Record<
   },
   active: {
     label: "Active",
-    className: "bg-emerald-500/15 text-emerald-400 border-emerald-400/30 shadow-[0_0_12px_rgba(52,211,153,0.15)]",
+    className: "bg-emerald-500/15 text-emerald-400 border-emerald-400/30 ",
   },
   paused: {
     label: "Paused",

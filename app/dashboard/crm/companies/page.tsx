@@ -106,13 +106,13 @@ export default function CompaniesPage() {
         <CrmStatCard title="Avg. AI score" value={avgAiScore} />
       </div>
 
-      <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
+      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold">All companies</h2>
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] text-[#050816] opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8] opacity-60 cursor-not-allowed"
             title="Coming soon"
           >
             + Add company
@@ -182,7 +182,7 @@ export default function CompaniesPage() {
 
         {filteredCompanies.length === 0 ? (
           <CrmEmptyState
-            icon={<CompanyEmptyIcon className="w-8 h-8 text-cyan-400/60" />}
+            icon={<CompanyEmptyIcon className="w-8 h-8 text-blue-400/60" />}
             title={
               hasSearch
                 ? "No companies match your search"

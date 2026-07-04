@@ -6,7 +6,12 @@ import {
 } from "./config";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
-import { getChargeAmount, getChargeDescription } from "./pricing";
+import {
+  getChargeAmount,
+  getChargeDescription,
+  getRazorpayPlanId,
+  isPaidPlan,
+} from "./pricing";
 
 export function getRazorpayClient(): Razorpay {
   if (!RAZORPAY_CONNECTED) {
@@ -30,30 +35,38 @@ export async function createRazorpayOrder({
   period: BillingPeriod;
   currency: BillingCurrency;
 }) {
+  if (!isPaidPlan(planId)) {
+    throw new Error("This plan cannot be purchased via checkout.");
+  }
+
+  const razorpayPlanId = getRazorpayPlanId(planId, period);
   const amount = getChargeAmount(currency, planId, period);
 
-  if (!amount) {
+  if (!razorpayPlanId || !amount) {
     throw new Error("This plan cannot be purchased via checkout.");
   }
 
   const razorpay = getRazorpayClient();
 
-  const order = await razorpay.orders.create({
-    amount,
-    currency,
-    receipt: `actora_${planId}_${period}_${currency}_${Date.now()}`,
+  const subscription = await razorpay.subscriptions.create({
+    plan_id: razorpayPlanId,
+    customer_notify: 1,
+    quantity: 1,
+    total_count: period === "yearly" ? 10 : 120,
     notes: {
       userId,
       planId,
       period,
       currency,
+      razorpayPlanId,
     },
   });
 
   return {
-    orderId: order.id,
-    amount: Number(order.amount),
-    currency: order.currency as BillingCurrency,
+    subscriptionId: subscription.id,
+    razorpayPlanId,
+    amount,
+    currency,
     keyId: RAZORPAY_KEY_ID,
     description: getChargeDescription(currency, planId, period),
   };
@@ -72,6 +85,27 @@ export function verifyRazorpayPaymentSignature({
   if (!secret) return false;
 
   const body = `${orderId}|${paymentId}`;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(body)
+    .digest("hex");
+
+  return expected === signature;
+}
+
+export function verifyRazorpaySubscriptionSignature({
+  subscriptionId,
+  paymentId,
+  signature,
+}: {
+  subscriptionId: string;
+  paymentId: string;
+  signature: string;
+}): boolean {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!secret) return false;
+
+  const body = `${paymentId}|${subscriptionId}`;
   const expected = crypto
     .createHmac("sha256", secret)
     .update(body)

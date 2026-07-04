@@ -53,17 +53,17 @@ export function PlanLimitModal({
 
       <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <div
-          className="pointer-events-auto w-full max-w-md rounded-2xl bg-[#081226]/95 backdrop-blur-xl border border-[rgba(0,255,255,0.2)] shadow-2xl shadow-cyan-500/10 animate-scale-in overflow-hidden"
+          className="pointer-events-auto w-full max-w-md rounded-2xl bg-[#0B1220]/95 backdrop-blur-xl border border-[rgba(37, 99, 235,0.2)] shadow-2xl shadow-blue-500/10 animate-scale-in overflow-hidden"
           role="dialog"
           aria-modal
           aria-labelledby="plan-limit-title"
         >
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-28 bg-[#00CFFF]/20 blur-3xl pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-28 bg-[#3B82F6]/20 blur-3xl pointer-events-none" />
 
           <div className="relative p-6 sm:p-8">
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-cyan-500/10 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-blue-500/10 transition-colors"
               aria-label="Close"
             >
               <CloseIcon className="w-5 h-5" />
@@ -85,11 +85,11 @@ export function PlanLimitModal({
               </p>
             </div>
 
-            <div className="rounded-xl bg-[#0d1730]/60 border border-[rgba(0,255,255,0.12)] p-5 mb-5">
-              <p className="text-xs font-medium uppercase tracking-wider text-[#00CFFF] mb-2">
+            <div className="rounded-xl bg-[#111827]/60 border border-[rgba(37, 99, 235,0.12)] p-5 mb-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-2">
                 Recommended upgrade
               </p>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-[#00CFFF] to-[#60A5FA] bg-clip-text text-transparent">
+              <h3 className="text-xl font-bold bg-[#2563EB] bg-clip-text text-transparent">
                 Actora {recommendedName}
               </h3>
               <ul className="mt-4 space-y-2">
@@ -98,7 +98,7 @@ export function PlanLimitModal({
                     key={feature}
                     className="flex items-start gap-2 text-sm text-gray-300"
                   >
-                    <CheckIcon className="shrink-0 w-4 h-4 text-[#00CFFF] mt-0.5" />
+                    <CheckIcon className="shrink-0 w-4 h-4 text-[#3B82F6] mt-0.5" />
                     {feature}
                   </li>
                 ))}
@@ -108,13 +108,13 @@ export function PlanLimitModal({
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={`/billing?plan=${recommendedPlanId}`}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] text-sm font-semibold text-center shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all duration-300 active:scale-[0.98]"
+                className="flex-1 py-3 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold text-center shadow-lg shadow-blue-500/20 hover:bg-[#1D4ED8] transition-all duration-300 active:scale-[0.98]"
               >
                 Upgrade to {recommendedName}
               </Link>
               <button
                 onClick={onClose}
-                className="flex-1 py-3 rounded-xl border border-[rgba(0,255,255,0.15)] text-gray-300 text-sm font-medium hover:border-[#00CFFF]/30 hover:text-white transition-all duration-300 active:scale-[0.98]"
+                className="flex-1 py-3 rounded-xl border border-[rgba(37, 99, 235,0.15)] text-gray-300 text-sm font-medium hover:border-[#3B82F6]/30 hover:text-white transition-all duration-300 active:scale-[0.98]"
               >
                 Maybe later
               </button>

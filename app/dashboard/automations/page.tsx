@@ -323,8 +323,8 @@ export default function AutomationsPage() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#4F8CFF]/8 blur-[180px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-[#00D4FF]/6 blur-[160px] rounded-full pointer-events-none" />
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#3B82F6]/8 blur-[180px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-[#2563EB]/6 blur-[160px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 flex min-h-screen">
         <PremiumSidebar
@@ -335,16 +335,16 @@ export default function AutomationsPage() {
         />
 
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b border-[#00D4FF]/10 bg-[#050816]/90 backdrop-blur-xl">
+          <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 border-b border-[#1E293B] bg-[#050816]/90 backdrop-blur-xl">
             <button
               type="button"
               onClick={() => setMobileNavOpen(true)}
-              className="p-2 rounded-xl border border-[#00D4FF]/15 text-[#00D4FF]"
+              className="p-2 rounded-xl border border-[#1E293B] text-[#2563EB]"
               aria-label="Open menu"
             >
               ☰
             </button>
-            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00D4FF] to-[#4F8CFF]">
+            <span className="font-bold text-white">
               Automations
             </span>
           </header>
@@ -382,7 +382,7 @@ export default function AutomationsPage() {
                 {loading ? (
                   <div className="grid gap-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="h-32 rounded-[20px] bg-[#071426]/50 border border-[#00D4FF]/10 animate-pulse" />
+                      <div key={i} className="h-32 rounded-[20px] bg-[#111827]/50 border border-[#1E293B] animate-pulse" />
                     ))}
                   </div>
                 ) : (
@@ -439,7 +439,7 @@ export default function AutomationsPage() {
                             />
 
                             {editorOpen && selectedWorkflow && (
-                              <div className="rounded-[20px] border border-[#00D4FF]/10 bg-[#071426]/30 p-4 sm:p-6">
+                              <div className="rounded-[20px] border border-[#1E293B] bg-[#111827]/30 p-4 sm:p-6">
                                 <h2 className="text-lg font-semibold text-white mb-4">Workflow Editor</h2>
                                 <WorkflowEditorToolbar
                                   workflowName={workflowName}
@@ -484,7 +484,7 @@ export default function AutomationsPage() {
                               <button
                                 type="button"
                                 onClick={() => setEditorOpen(true)}
-                                className="w-full py-4 rounded-[16px] border border-dashed border-[#00D4FF]/20 text-[#00D4FF] text-sm font-medium hover:bg-[#00D4FF]/5 transition-colors"
+                                className="w-full py-4 rounded-[16px] border border-dashed border-[#1E293B] text-[#2563EB] text-sm font-medium hover:bg-[#2563EB]/5 transition-colors"
                               >
                                 Open Workflow Editor
                               </button>
@@ -507,7 +507,7 @@ export default function AutomationsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[14px] bg-[#0B1730] border border-[#00D4FF]/30 text-sm text-white shadow-xl shadow-[#00D4FF]/10"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[14px] bg-[#111827] border border-[#1E293B] text-sm text-white shadow-xl "
           >
             {toast}
           </motion.div>

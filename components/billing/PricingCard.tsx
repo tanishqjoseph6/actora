@@ -19,17 +19,9 @@ export function PricingCard({
   onUpgrade,
   isCurrentPlan,
 }: PricingCardProps) {
-  const pricing = getDisplayPrice(
-    currency,
-    plan.id,
-    plan.monthlyPrice,
-    period
-  );
+  const pricing = getDisplayPrice(currency, plan.id, period);
   const isEnterprise = plan.id === "enterprise";
-  const showYearlyNote =
-    period === "yearly" &&
-    plan.monthlyPrice !== null &&
-    plan.monthlyPrice > 0;
+  const showYearlyNote = Boolean(plan.saveNote);
 
   const isActionableCta =
     plan.cta === "Upgrade" || plan.cta === "Contact Sales";
@@ -43,8 +35,8 @@ export function PricingCard({
   if (plan.recommended) {
     return (
       <div className="relative group lg:-mt-2 lg:mb-2">
-        <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-[#00CFFF] via-[#3B82F6] to-[#60A5FA] opacity-80 blur-sm group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="relative h-full flex flex-col rounded-2xl bg-gradient-to-b from-[#0d2847] via-[#081226] to-[#050816] border border-[rgba(0,255,255,0.25)] p-6 sm:p-8 shadow-2xl shadow-cyan-500/10 transition-all duration-300 hover:shadow-cyan-500/20 hover:-translate-y-1">
+        <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-[#3B82F6] via-[#3B82F6] to-[#3B82F6] opacity-80 blur-sm group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative h-full flex flex-col rounded-2xl bg-gradient-to-b from-[#111827] via-[#0B1220] to-[#050816] border border-[rgba(37, 99, 235,0.25)] p-6 sm:p-8 shadow-2xl shadow-blue-500/10 transition-all duration-300 hover:shadow-blue-500/20 hover:-translate-y-1">
           <PlanBadge label={plan.badge ?? "Recommended"} variant="gradient" />
           <PlanContent
             plan={plan}
@@ -62,7 +54,7 @@ export function PricingCard({
   }
 
   return (
-    <div className="group relative h-full flex flex-col rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20 transition-all duration-300 hover:border-[rgba(0,255,255,0.3)] hover:shadow-xl hover:shadow-cyan-500/5 hover:-translate-y-1">
+    <div className="group relative h-full flex flex-col rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20 transition-all duration-300 hover:border-[rgba(37, 99, 235,0.3)] hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1">
       {plan.badge && <PlanBadge label={plan.badge} variant="subtle" />}
       <PlanContent
         plan={plan}
@@ -109,7 +101,7 @@ function PlanContent({
           <span
             className={`font-bold ${
               plan.recommended
-                ? "text-4xl sm:text-5xl bg-gradient-to-r from-[#00CFFF] to-[#60A5FA] bg-clip-text text-transparent"
+                ? "text-4xl sm:text-5xl bg-[#2563EB] bg-clip-text text-transparent"
                 : "text-4xl sm:text-5xl text-white"
             }`}
           >
@@ -119,11 +111,14 @@ function PlanContent({
             <span className="text-gray-400 text-sm">{pricing.suffix}</span>
           )}
         </div>
-        {showYearlyNote && pricing.annualTotal && (
-          <p className="text-xs text-gray-500 mt-1">{pricing.annualTotal}</p>
+        {showYearlyNote && pricing.saveNote && (
+          <p className="text-xs text-[#3B82F6] mt-1">{pricing.saveNote}</p>
+        )}
+        {pricing.billingNote && (
+          <p className="text-xs text-gray-500 mt-1">{pricing.billingNote}</p>
         )}
         {isEnterprise && (
-          <p className="text-sm text-[#60A5FA] mt-2">Tailored to your team</p>
+          <p className="text-sm text-[#3B82F6] mt-2">Tailored to your team</p>
         )}
         {plan.monthlyPrice === 0 && (
           <p className="text-sm text-gray-400 mt-1">Forever free</p>
@@ -133,7 +128,7 @@ function PlanContent({
       <ul className="space-y-3 mb-8 flex-1">
         {plan.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2.5 text-sm text-gray-300">
-            <CheckIcon className="shrink-0 w-4 h-4 text-[#00CFFF] mt-0.5" />
+            <CheckIcon className="shrink-0 w-4 h-4 text-[#3B82F6] mt-0.5" />
             {feature}
           </li>
         ))}
@@ -158,14 +153,14 @@ function PlanBadge({
 }) {
   if (variant === "gradient") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-[#00CFFF] to-[#3B82F6] text-[#050816] text-xs font-bold">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-xs font-bold">
         ✦ {label}
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#60A5FA] text-xs font-semibold">
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6] text-xs font-semibold">
       {label}
     </span>
   );
@@ -183,14 +178,14 @@ function PlanCta({
   disabled?: boolean;
 }) {
   const base =
-    "w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100";
+    "w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]";
 
   if (variant === "gradient") {
     return (
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-gradient-to-r from-[#3B82F6] via-[#00CFFF] to-[#60A5FA] text-[#050816] shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:brightness-110`}
+        className={`${base} bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:bg-[#1D4ED8]`}
       >
         {label}
       </button>
@@ -202,7 +197,7 @@ function PlanCta({
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#3B82F6] text-white hover:bg-[#60A5FA] shadow-md shadow-blue-500/20 hover:shadow-blue-500/30`}
+        className={`${base} bg-[#3B82F6] text-white hover:bg-[#3B82F6] shadow-md shadow-blue-500/20 hover:shadow-blue-500/30`}
       >
         {label}
       </button>
@@ -214,7 +209,7 @@ function PlanCta({
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#081226] border border-[rgba(0,255,255,0.25)] text-white hover:bg-[#0d1730] hover:border-[#00CFFF]/40`}
+        className={`${base} bg-[#0B1220] border border-[rgba(37, 99, 235,0.25)] text-white hover:bg-[#111827] hover:border-[#3B82F6]/40`}
       >
         {label}
       </button>
@@ -223,7 +218,7 @@ function PlanCta({
 
   return (
     <button
-      className={`${base} border border-[rgba(0,255,255,0.25)] text-[#00CFFF] hover:bg-[#00CFFF]/10`}
+      className={`${base} border border-[rgba(37, 99, 235,0.25)] text-[#3B82F6] hover:bg-[#3B82F6]/10`}
     >
       {label}
     </button>

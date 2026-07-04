@@ -95,8 +95,8 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
     };
 
     return (
-      <div className="rounded-2xl border border-cyan-400/10 bg-[#0d1730]/60 overflow-hidden focus-within:border-cyan-400/40 focus-within:ring-1 focus-within:ring-cyan-400/20 transition-all">
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-cyan-400/10 bg-[#081226]/40">
+      <div className="rounded-2xl border border-blue-400/10 bg-[#111827]/60 overflow-hidden focus-within:border-blue-400/40 focus-within:ring-1 focus-within:ring-blue-400/20 transition-all">
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-blue-400/10 bg-[#0B1220]/40">
           <ToolbarButton
             label="Bold"
             onClick={() => execFormat("bold")}
@@ -118,7 +118,7 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
           >
             <span className="underline">U</span>
           </ToolbarButton>
-          <span className="w-px h-5 bg-cyan-400/10 mx-1" aria-hidden />
+          <span className="w-px h-5 bg-blue-400/10 mx-1" aria-hidden />
           <ToolbarButton
             label="Bullet list"
             onClick={() => execFormat("insertUnorderedList")}
@@ -163,7 +163,7 @@ function ToolbarButton({
       aria-label={label}
       onClick={onClick}
       disabled={disabled}
-      className="w-8 h-8 rounded-lg text-gray-400 hover:text-white hover:bg-cyan-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
+      className="w-8 h-8 rounded-lg text-gray-400 hover:text-white hover:bg-blue-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-sm"
     >
       {children}
     </button>

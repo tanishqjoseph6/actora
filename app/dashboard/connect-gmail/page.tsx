@@ -47,11 +47,11 @@ function ConnectGmailContent() {
     <div className="relative z-10 max-w-2xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
       <div className="flex items-center justify-between gap-4 mb-8">
         <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full border border-[rgba(0,255,255,0.25)] text-[#00CFFF] text-sm font-medium bg-[#081226]/60 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full border border-[rgba(37, 99, 235,0.25)] text-[#3B82F6] text-sm font-medium bg-[#0B1220]/60 backdrop-blur-sm">
             📧 Gmail
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold">
-            Connect <span className="text-cyan-400">Gmail</span>
+            Connect <span className="text-blue-400">Gmail</span>
           </h1>
         </div>
         <CurrentPlanBadge
@@ -61,7 +61,7 @@ function ConnectGmailContent() {
         />
       </div>
 
-      <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
+      <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
         <p className="text-gray-400 leading-relaxed">
           Link an additional Gmail account to Actora. Your plan determines how
           many inboxes you can connect.
@@ -83,7 +83,7 @@ function ConnectGmailContent() {
         <button
           onClick={handleConnect}
           disabled={isConnecting}
-          className="mt-6 px-5 py-3 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] text-[#050816] text-sm font-semibold hover:brightness-110 transition-all duration-300 shadow-md shadow-cyan-500/20 disabled:opacity-50"
+          className="mt-6 px-5 py-3 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold hover:bg-[#1D4ED8] transition-all duration-300 shadow-md shadow-blue-500/20 disabled:opacity-50"
         >
           {isConnecting ? "Redirecting…" : "Connect Google Account"}
         </button>
@@ -95,12 +95,12 @@ function ConnectGmailContent() {
 export default function ConnectGmailPage() {
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-cyan-500/8 blur-[180px] rounded-full pointer-events-none" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-blue-500/8 blur-[180px] rounded-full pointer-events-none" />
       <Suspense
         fallback={
           <div className="relative z-10 max-w-2xl mx-auto px-5 sm:px-8 py-12 sm:py-16 animate-pulse">
-            <div className="h-10 w-48 bg-cyan-400/10 rounded mb-6" />
-            <div className="h-40 bg-[#081226]/80 rounded-2xl" />
+            <div className="h-10 w-48 bg-blue-400/10 rounded mb-6" />
+            <div className="h-40 bg-[#0B1220]/80 rounded-2xl" />
           </div>
         }
       >

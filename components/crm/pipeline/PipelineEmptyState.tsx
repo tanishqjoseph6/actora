@@ -18,11 +18,11 @@ export function PipelineColumnEmpty({
       className={`
         flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl
         border border-dashed transition-colors duration-200
-        ${isOver ? "border-cyan-400/40 bg-cyan-500/5" : "border-cyan-400/15 bg-[#0d1730]/20"}
+        ${isOver ? "border-blue-400/40 bg-blue-500/5" : "border-blue-400/15 bg-[#111827]/20"}
       `}
     >
-      <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center mb-3">
-        <DropIcon className="w-5 h-5 text-cyan-400/50" />
+      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mb-3">
+        <DropIcon className="w-5 h-5 text-blue-400/50" />
       </div>
       <p className="text-xs text-gray-500">
         {isOver ? "Drop deal here" : `No deals in ${stageLabel}`}
@@ -36,10 +36,10 @@ export function PipelineBoardEmpty() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-3xl bg-[#081226]/60 border border-cyan-400/15 backdrop-blur-sm"
+      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-3xl bg-[#0B1220]/60 border border-blue-400/15 backdrop-blur-sm"
     >
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#00CFFF]/10 border border-cyan-400/20 flex items-center justify-center mb-5">
-        <FilterIcon className="w-8 h-8 text-cyan-400/60" />
+      <div className="w-16 h-16 rounded-2xl bg-[#111827] border border-[#1E293B] flex items-center justify-center mb-5">
+        <FilterIcon className="w-8 h-8 text-blue-400/60" />
       </div>
       <p className="text-gray-300 font-medium mb-1">No deals match your filters</p>
       <p className="text-sm text-gray-500 max-w-sm">

@@ -48,7 +48,7 @@ export function CrmPreviewSection() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2, duration: 0.4 }}
-      className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-5 sm:p-6 lg:p-7"
+      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 sm:p-6 lg:p-7"
     >
       <div className="flex items-center justify-between gap-3 mb-6">
         <div>
@@ -57,7 +57,7 @@ export function CrmPreviewSection() {
         </div>
         <Link
           href="/dashboard/crm"
-          className="text-xs font-medium text-[#00D4FF] hover:text-white transition-colors"
+          className="text-xs font-medium text-[#2563EB] hover:text-white transition-colors"
         >
           Open CRM →
         </Link>
@@ -74,14 +74,14 @@ export function CrmPreviewSection() {
         <svg viewBox="0 0 100 50" className="w-full h-16" preserveAspectRatio="none">
           <defs>
             <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4F8CFF" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#4F8CFF" stopOpacity="0" />
+              <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
             </linearGradient>
           </defs>
           <polygon fill="url(#revFill)" points={`0,50 ${revPath} 100,50`} />
           <polyline
             fill="none"
-            stroke="#00D4FF"
+            stroke="#2563EB"
             strokeWidth="1.5"
             strokeLinecap="round"
             points={revPath}
@@ -91,7 +91,7 @@ export function CrmPreviewSection() {
 
       <div className="mb-6">
         <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Pipeline Stages</p>
-        <div className="flex gap-1.5 h-2 rounded-full overflow-hidden bg-[#0B1730]">
+        <div className="flex gap-1.5 h-2 rounded-full overflow-hidden bg-[#111827]">
           {stageCounts.map((stage) => (
             <div
               key={stage.id}
@@ -120,7 +120,7 @@ export function CrmPreviewSection() {
               return (
                 <li
                   key={deal.id}
-                  className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#0B1730]/50 border border-[#00D4FF]/5 hover:border-[#00D4FF]/20 transition-colors"
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#111827]/50 border border-[#2563EB]/5 hover:border-[#1E293B] transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{deal.companyName}</p>
@@ -141,13 +141,13 @@ export function CrmPreviewSection() {
             {topCustomers.map((company) => (
               <li
                 key={company.id}
-                className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#0B1730]/50 border border-[#00D4FF]/5"
+                className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-[#111827]/50 border border-[#2563EB]/5"
               >
                 <div className="min-w-0">
                   <p className="text-sm text-white truncate">{company.name}</p>
                   <p className="text-xs text-gray-500">{company.industry}</p>
                 </div>
-                <span className="text-xs font-semibold text-[#00D4FF] tabular-nums shrink-0">
+                <span className="text-xs font-semibold text-[#2563EB] tabular-nums shrink-0">
                   {company.revenue ? formatCurrency(company.revenue) : "—"}
                 </span>
               </li>

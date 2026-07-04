@@ -9,7 +9,7 @@ export function CrmBackLink({ href, label }: CrmBackLinkProps) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-cyan-400 transition-colors mb-6 group"
+      className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-blue-400 transition-colors mb-6 group"
     >
       <ArrowIcon className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
       {label}

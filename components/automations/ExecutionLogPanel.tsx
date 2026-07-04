@@ -22,9 +22,9 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl overflow-hidden mt-4"
+      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl overflow-hidden mt-4"
     >
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#00D4FF]/10">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#1E293B]">
         <div>
           <h3 className="text-base font-semibold text-white">
             {run.isTest ? "Test Run" : "Execution"} · {run.automationName}
@@ -55,7 +55,7 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
         )}
       </div>
 
-      <ul className="divide-y divide-[#00D4FF]/5 max-h-80 overflow-y-auto premium-scrollbar">
+      <ul className="divide-y divide-[#2563EB]/5 max-h-80 overflow-y-auto premium-scrollbar">
         {logs.length === 0 ? (
           <li className="px-5 py-8 text-center text-sm text-gray-500">No step logs recorded for this run.</li>
         ) : (
@@ -75,7 +75,7 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">{log.message}</p>
                 {Object.keys(log.output).length > 0 && (
-                  <pre className="mt-2 text-[10px] text-[#4F8CFF]/80 bg-[#0B1730]/60 rounded-lg p-2 overflow-x-auto">
+                  <pre className="mt-2 text-[10px] text-[#94A3B8] bg-[#111827]/60 rounded-lg p-2 overflow-x-auto">
                     {JSON.stringify(log.output, null, 2)}
                   </pre>
                 )}

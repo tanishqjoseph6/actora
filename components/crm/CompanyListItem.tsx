@@ -16,7 +16,7 @@ const SIZE_LABELS: Record<CompanySize, string> = {
 
 const SIZE_STYLES: Record<CompanySize, string> = {
   startup: "bg-violet-500/15 border-violet-400/25 text-violet-300",
-  smb: "bg-cyan-500/15 border-cyan-400/25 text-cyan-300",
+  smb: "bg-blue-500/15 border-blue-400/25 text-blue-300",
   enterprise: "bg-amber-500/15 border-amber-400/25 text-amber-300",
 };
 
@@ -39,16 +39,16 @@ export function CompanyListItem({ company }: { company: Company }) {
 
   return (
     <Link href={`/dashboard/crm/companies/${company.id}`} className="block group">
-      <article className="flex flex-col lg:flex-row lg:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#0d1730]/40 border border-cyan-400/10 hover:border-cyan-400/30 hover:bg-[#0d1730]/70 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/5">
+      <article className="flex flex-col lg:flex-row lg:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/30 hover:bg-[#111827]/70 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5">
         <div className="flex items-start gap-4 flex-1 min-w-0">
           <div
-            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-sm font-bold text-white shrink-0 border border-cyan-400/20`}
+            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-sm font-bold text-white shrink-0 border border-blue-400/20`}
           >
             {getInitials(company.name)}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <h3 className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
+              <h3 className="font-semibold text-white group-hover:text-blue-300 transition-colors">
                 {company.name}
               </h3>
             <span
@@ -106,7 +106,7 @@ function Metric({
     <div>
       <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
       <p
-        className={`text-sm font-semibold mt-0.5 ${accent ? "text-cyan-400" : "text-white"}`}
+        className={`text-sm font-semibold mt-0.5 ${accent ? "text-blue-400" : "text-white"}`}
       >
         {value}
       </p>

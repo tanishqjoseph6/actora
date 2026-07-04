@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       provider: order.provider,
       orderId: order.orderId,
+      subscriptionId: order.subscriptionId,
+      razorpayPlanId: order.razorpayPlanId,
       amount: order.amount,
       currency: order.currency,
       keyId: order.keyId,

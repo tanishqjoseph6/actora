@@ -2,10 +2,12 @@ import type {
   BillingPeriod,
   PricingPlan,
 } from "@/components/billing/pricing-data";
+import type { BillingCurrency } from "@/lib/billing/currency";
 
 export type UpgradeSelection = {
   plan: PricingPlan;
   period: BillingPeriod;
+  currency: BillingCurrency;
 };
 
 export type UpgradeFlowResult =

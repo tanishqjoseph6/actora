@@ -7,7 +7,7 @@ type CrmEmptyStateProps = {
 export function CrmEmptyState({ icon, title, description }: CrmEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#3B82F6]/15 to-[#00CFFF]/10 border border-cyan-400/20 flex items-center justify-center mb-5">
+      <div className="w-16 h-16 rounded-2xl bg-[#111827] border border-[#1E293B] flex items-center justify-center mb-5">
         {icon}
       </div>
       <p className="text-gray-300 font-medium mb-1">{title}</p>

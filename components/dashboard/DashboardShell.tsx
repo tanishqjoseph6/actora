@@ -15,7 +15,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-cyan-500/10 blur-[220px] rounded-full pointer-events-none" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-blue-500/10 blur-[220px] rounded-full pointer-events-none" />
       <div className="fixed bottom-0 right-0 w-[600px] h-[600px] bg-blue-600/8 blur-[180px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 flex min-h-screen">
@@ -43,16 +43,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
         )}
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 border-b border-cyan-400/15 bg-[#050816]/90 backdrop-blur-xl">
+          <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 border-b border-blue-400/15 bg-[#050816]/90 backdrop-blur-xl">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-xl border border-cyan-400/20 text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+              className="p-2 rounded-xl border border-blue-400/20 text-blue-400 hover:bg-blue-500/10 transition-colors"
               aria-label="Open menu"
             >
               <MenuIcon className="w-5 h-5" />
             </button>
-            <span className="text-xl font-bold text-cyan-400">Actora</span>
+            <span className="text-xl font-bold text-blue-400">Actora</span>
             <CurrentPlanBadge
               subscription={subscription}
               loading={loading}

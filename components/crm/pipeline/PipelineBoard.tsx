@@ -156,7 +156,7 @@ function DragOverlayCard({ deal }: { deal: PipelineDeal }) {
   const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
-    <div className="rounded-2xl border border-cyan-400/40 bg-[#0d1730]/95 backdrop-blur-xl p-4 shadow-2xl shadow-cyan-500/20 w-[280px] rotate-1 cursor-grabbing">
+    <div className="rounded-2xl border border-blue-400/40 bg-[#111827]/95 backdrop-blur-xl p-4 shadow-2xl shadow-blue-500/20 w-[280px] rotate-1 cursor-grabbing">
       <div className="flex items-start gap-3 mb-3">
         <div
           className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-xs font-bold text-white shrink-0`}
@@ -175,7 +175,7 @@ function DragOverlayCard({ deal }: { deal: PipelineDeal }) {
           {priorityStyle.label}
         </span>
       </div>
-      <p className="text-base font-bold text-cyan-400 mb-2">
+      <p className="text-base font-bold text-blue-400 mb-2">
         {formatCurrency(deal.value)}
       </p>
       <div className="flex items-center justify-between text-[10px] text-gray-500">

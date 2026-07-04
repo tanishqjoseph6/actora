@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
@@ -17,7 +17,7 @@ import {
   RazorpayPlaceholder,
 } from "@/components/billing/BillingHistory";
 import {
-  PRICING_PLANS,
+  getDisplayPlans,
   getPlanById,
   type BillingPeriod,
   type PricingPlan,
@@ -38,6 +38,10 @@ export default function Billing() {
   const { data: session } = useSession();
   const { currency, setCurrency } = useBillingCurrency();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
+  const displayPlans = useMemo(
+    () => getDisplayPlans(currency, period),
+    [currency, period]
+  );
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
   const { subscription, loading, upgradePlan, refresh } = useSubscription();
   const [toast, setToast] = useState<PaymentToastState>(null);
@@ -81,17 +85,17 @@ export default function Billing() {
 
       if (plan.id === "free") return;
 
-      openUpgrade(plan, period);
+      openUpgrade(plan, period, currency);
     },
-    [period, openUpgrade]
+    [period, currency, openUpgrade]
   );
 
   const handleUpgradePlan = useCallback(() => {
-    const proPlan = getPlanById("pro");
+    const proPlan = getPlanById("pro", currency, period);
     if (proPlan) {
       handleUpgrade(proPlan);
     }
-  }, [handleUpgrade]);
+  }, [handleUpgrade, currency, period]);
 
   const handleDevUpgrade = useCallback(
     async (planId: PlanId) => {
@@ -113,7 +117,8 @@ export default function Billing() {
     async (
       planId: PlanId,
       billingPeriod: BillingPeriod,
-      billingCurrency: BillingCurrency
+      billingCurrency: BillingCurrency,
+      razorpayPlanId?: string
     ) => {
       if (!session) {
         setToast({
@@ -124,7 +129,7 @@ export default function Billing() {
         return;
       }
 
-      await openCheckout(planId, billingPeriod, billingCurrency);
+      await openCheckout(planId, billingPeriod, billingCurrency, razorpayPlanId);
     },
     [session, openCheckout]
   );
@@ -146,16 +151,16 @@ export default function Billing() {
     }
 
     if (planParam === "starter" || planParam === "pro") {
-      const plan = getPlanById(planParam);
+      const plan = getPlanById(planParam, currencyParam ?? currency, billingPeriod);
       if (plan) {
-        openUpgrade(plan, billingPeriod);
+        openUpgrade(plan, billingPeriod, currencyParam ?? currency);
       }
     }
 
     if (params.has("plan") || params.has("period") || params.has("currency")) {
       window.history.replaceState({}, "", "/billing");
     }
-  }, [openUpgrade, setCurrency]);
+  }, [openUpgrade, setCurrency, currency]);
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
@@ -174,11 +179,10 @@ export default function Billing() {
         />
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 mb-16 lg:mb-20 items-stretch">
-          {PRICING_PLANS.map((plan, index) => (
+          {displayPlans.map((plan, index) => (
             <PremiumPricingCard
-              key={plan.id}
+              key={`${plan.id}-${currency}-${period}`}
               plan={plan}
-              period={period}
               index={index}
               currentPlanId={subscription?.planId}
               onSelect={handleUpgrade}

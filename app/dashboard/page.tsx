@@ -121,8 +121,8 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#4F8CFF]/8 blur-[180px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-[#00D4FF]/6 blur-[160px] rounded-full pointer-events-none" />
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-[#3B82F6]/8 blur-[180px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-[#2563EB]/6 blur-[160px] rounded-full pointer-events-none" />
 
       <div className="relative z-10 flex min-h-screen">
         <PremiumSidebar

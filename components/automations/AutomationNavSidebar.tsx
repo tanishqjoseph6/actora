@@ -26,7 +26,7 @@ export function AutomationNavSidebar({
   onViewChange,
 }: AutomationNavSidebarProps) {
   return (
-    <aside className="w-full lg:w-56 xl:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-[#00D4FF]/10 bg-[#071426]/50 backdrop-blur-xl">
+    <aside className="w-full lg:w-56 xl:w-60 shrink-0 border-b lg:border-b-0 lg:border-r border-[#1E293B] bg-[#111827]/50 backdrop-blur-xl">
       <nav className="flex lg:flex-col gap-1 p-3 lg:p-4 overflow-x-auto lg:overflow-x-visible premium-scrollbar">
         {NAV_ITEMS.map((item) => {
           const active = activeView === item.id;
@@ -41,15 +41,15 @@ export function AutomationNavSidebar({
                 ${item.disabled
                   ? "opacity-50 cursor-not-allowed text-gray-500"
                   : active
-                    ? "bg-gradient-to-r from-[#4F8CFF]/20 to-[#00D4FF]/10 border border-[#00D4FF]/30 text-[#00D4FF] shadow-[0_0_16px_rgba(0,212,255,0.1)]"
-                    : "border border-transparent text-gray-400 hover:text-white hover:bg-[#0B1730]/60 hover:border-[#00D4FF]/10"
+                    ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-white "
+                    : "border border-transparent text-gray-400 hover:text-white hover:bg-[#111827]/60 hover:border-[#1E293B]"
                 }
               `}
             >
               <span aria-hidden>{item.icon}</span>
               <span>{item.label}</span>
               {item.disabled && (
-                <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#0B1730] text-gray-500 border border-[#00D4FF]/10">
+                <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#111827] text-gray-500 border border-[#1E293B]">
                   Soon
                 </span>
               )}
@@ -88,7 +88,7 @@ export function AutomationMetricsBar({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
           whileHover={{ y: -2 }}
-          className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 hover:border-[#00D4FF]/25 hover:shadow-[0_0_24px_rgba(0,212,255,0.06)] transition-shadow"
+          className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#1E293B] hover: transition-shadow"
         >
           <p className="text-xs text-gray-500 uppercase tracking-wider">{m.label}</p>
           <p className="text-2xl font-bold text-white mt-1 tabular-nums">{m.value}</p>

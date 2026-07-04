@@ -32,7 +32,7 @@ export function PipelineColumn({ stageId, deals }: PipelineColumnProps) {
       className="flex flex-col w-[280px] sm:w-[300px] shrink-0"
     >
       <div
-        className={`mb-3 px-3 py-2.5 rounded-xl bg-gradient-to-r ${stage.accent} border border-cyan-400/15 backdrop-blur-sm`}
+        className={`mb-3 px-3 py-2.5 rounded-xl bg-gradient-to-r ${stage.accent} border border-blue-400/15 backdrop-blur-sm`}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -44,7 +44,7 @@ export function PipelineColumn({ stageId, deals }: PipelineColumnProps) {
               {deals.length}
             </span>
           </div>
-          <span className="text-xs font-medium text-cyan-400/80 tabular-nums shrink-0">
+          <span className="text-xs font-medium text-blue-400/80 tabular-nums shrink-0">
             {formatCurrency(totalValue)}
           </span>
         </div>
@@ -54,8 +54,8 @@ export function PipelineColumn({ stageId, deals }: PipelineColumnProps) {
         ref={setNodeRef}
         className={`
           flex-1 min-h-[200px] rounded-2xl p-2 space-y-2.5 transition-all duration-200
-          bg-[#081226]/40 border border-cyan-400/10 backdrop-blur-sm
-          ${isOver ? "border-cyan-400/40 bg-cyan-500/5 ring-1 ring-cyan-400/20" : ""}
+          bg-[#0B1220]/40 border border-blue-400/10 backdrop-blur-sm
+          ${isOver ? "border-blue-400/40 bg-blue-500/5 ring-1 ring-blue-400/20" : ""}
         `}
       >
         <SortableContext

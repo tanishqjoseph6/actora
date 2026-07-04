@@ -1,51 +1,20 @@
-import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
-import { YEARLY_DISCOUNT } from "@/components/billing/pricing-data";
+import type {
+  BillingPeriod,
+  PaidPlanId,
+  PlanId,
+} from "@/components/billing/pricing-data";
+import {
+  BILLING_PRICING,
+  getPlanPriceConfig,
+  getRazorpayPlanId as resolveRazorpayPlanId,
+  YEARLY_DISCOUNT,
+} from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
 import { CURRENCY_SYMBOLS } from "./currency";
 
-type PaidPlanId = "starter" | "pro";
-
-type PlanPricing = {
-  monthly: number;
-  yearlyDisplay: { monthlyRate: number; annualTotal: number };
-  chargeAmounts: Record<BillingPeriod, number>;
-};
-
-type CurrencyPricing = Record<PaidPlanId, PlanPricing>;
-
-/** Display + charge amounts per currency. Charge amounts use smallest currency unit. */
-export const PRICING_CATALOG: Record<BillingCurrency, CurrencyPricing> = {
-  USD: {
-    starter: {
-      monthly: 19,
-      yearlyDisplay: { monthlyRate: 16, annualTotal: 192 },
-      chargeAmounts: { monthly: 1900, yearly: 19200 },
-    },
-    pro: {
-      monthly: 49,
-      yearlyDisplay: { monthlyRate: 42, annualTotal: 504 },
-      chargeAmounts: { monthly: 4900, yearly: 50400 },
-    },
-  },
-  INR: {
-    starter: {
-      monthly: 1599,
-      yearlyDisplay: { monthlyRate: 1359, annualTotal: 16310 },
-      chargeAmounts: { monthly: 159900, yearly: 1631000 },
-    },
-    pro: {
-      monthly: 4099,
-      yearlyDisplay: { monthlyRate: 3484, annualTotal: 41810 },
-      chargeAmounts: { monthly: 409900, yearly: 4181000 },
-    },
-  },
-};
-
 export { YEARLY_DISCOUNT };
 
-export function isPaidPlan(
-  planId: PlanId
-): planId is PaidPlanId {
+export function isPaidPlan(planId: PlanId): planId is PaidPlanId {
   return planId === "starter" || planId === "pro";
 }
 
@@ -55,44 +24,48 @@ export function getChargeAmount(
   period: BillingPeriod
 ): number | null {
   if (!isPaidPlan(planId)) return null;
-  return PRICING_CATALOG[currency][planId].chargeAmounts[period];
+  return BILLING_PRICING[currency][period][planId].chargeAmount;
+}
+
+export function getRazorpayPlanId(
+  planId: PlanId,
+  period: BillingPeriod
+): string | null {
+  if (!isPaidPlan(planId)) return null;
+  return resolveRazorpayPlanId(planId, period);
 }
 
 export function getDisplayPrice(
   currency: BillingCurrency,
   planId: PlanId,
-  monthlyPrice: number | null,
   period: BillingPeriod
-): { amount: string; suffix: string; annualTotal?: string } {
-  const symbol = CURRENCY_SYMBOLS[currency];
-
-  if (monthlyPrice === null) {
+): {
+  amount: string;
+  suffix: string;
+  billingNote?: string;
+  saveNote?: string;
+  razorpayPlanId?: string;
+} {
+  if (planId === "enterprise") {
     return { amount: "Custom", suffix: "" };
   }
 
-  if (monthlyPrice === 0) {
+  if (planId === "free") {
+    const symbol = CURRENCY_SYMBOLS[currency];
     return { amount: `${symbol}0`, suffix: "/month" };
   }
 
   if (!isPaidPlan(planId)) {
-    return { amount: `${symbol}${monthlyPrice}`, suffix: "/month" };
+    return { amount: "", suffix: "" };
   }
 
-  const pricing = PRICING_CATALOG[currency][planId];
-
-  if (period === "monthly") {
-    return {
-      amount: `${symbol}${pricing.monthly.toLocaleString("en-US")}`,
-      suffix: "/month",
-    };
-  }
-
-  const { monthlyRate, annualTotal } = pricing.yearlyDisplay;
-
+  const config = getPlanPriceConfig(currency, period, planId);
   return {
-    amount: `${symbol}${monthlyRate.toLocaleString("en-US")}`,
-    suffix: "/month",
-    annualTotal: `billed annually at ${symbol}${annualTotal.toLocaleString("en-US")}/year`,
+    amount: config.priceLabel,
+    suffix: config.priceSuffix,
+    billingNote: config.billingNote,
+    saveNote: config.saveNote,
+    razorpayPlanId: config.razorpayPlanId,
   };
 }
 
@@ -102,12 +75,11 @@ export function getChargeDescription(
   period: BillingPeriod
 ): string {
   const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
-  const planName = planId.charAt(0).toUpperCase() + planId.slice(1);
-  const symbol = CURRENCY_SYMBOLS[currency];
+  const planName = planId === "starter" ? "Team" : planId.charAt(0).toUpperCase() + planId.slice(1);
 
   if (period === "yearly" && isPaidPlan(planId)) {
-    const yearly = PRICING_CATALOG[currency][planId].yearlyDisplay;
-    return `Actora ${planName} — ${periodLabel} (${symbol}${yearly.annualTotal.toLocaleString("en-US")}/year)`;
+    const config = BILLING_PRICING[currency][period][planId];
+    return `Actora ${planName} — ${periodLabel} (${config.priceLabel}${config.priceSuffix})`;
   }
 
   return `Actora ${planName} — ${periodLabel}`;

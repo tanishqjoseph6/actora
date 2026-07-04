@@ -1,14 +1,114 @@
+import type { BillingCurrency } from "@/lib/billing/currency";
+
 export type BillingPeriod = "monthly" | "yearly";
 
 export type PlanId = "free" | "starter" | "pro" | "enterprise";
+
+export type PaidPlanId = "starter" | "pro";
+
+/** Razorpay dashboard plan IDs — keyed by app plan + billing period only. */
+export const RAZORPAY_PLAN_IDS: Record<PaidPlanId, Record<BillingPeriod, string>> = {
+  pro: {
+    monthly: "plan_T9Vz1oIg5vt4Ux",
+    yearly: "plan_T9WNoB4e66qhpd",
+  },
+  starter: {
+    monthly: "plan_T9W0MDNq5d0tGJ",
+    yearly: "plan_T9WPxsmgqBlvi6",
+  },
+};
+
+export type PlanDisplayConfig = {
+  priceLabel: string;
+  priceSuffix: string;
+  billingNote?: string;
+  saveNote?: string;
+  chargeAmount: number;
+};
+
+/** Display prices per currency. Razorpay plan IDs come from RAZORPAY_PLAN_IDS. */
+export const BILLING_PRICING: Record<
+  BillingCurrency,
+  Record<BillingPeriod, Record<PaidPlanId, PlanDisplayConfig>>
+> = {
+  USD: {
+    monthly: {
+      pro: {
+        priceLabel: "$25",
+        priceSuffix: "/month",
+        chargeAmount: 2500,
+      },
+      starter: {
+        priceLabel: "$299",
+        priceSuffix: "/month",
+        chargeAmount: 29900,
+      },
+    },
+    yearly: {
+      pro: {
+        priceLabel: "$255",
+        priceSuffix: "/year",
+        billingNote: "Billed yearly",
+        saveNote: "Save 15% with annual billing",
+        chargeAmount: 25500,
+      },
+      starter: {
+        priceLabel: "$3,049",
+        priceSuffix: "/year",
+        billingNote: "Billed yearly",
+        saveNote: "Save 15% with annual billing",
+        chargeAmount: 304900,
+      },
+    },
+  },
+  INR: {
+    monthly: {
+      pro: {
+        priceLabel: "₹2,199",
+        priceSuffix: "/month",
+        chargeAmount: 219900,
+      },
+      starter: {
+        priceLabel: "₹24,999",
+        priceSuffix: "/month",
+        chargeAmount: 2499900,
+      },
+    },
+    yearly: {
+      pro: {
+        priceLabel: "₹22,429",
+        priceSuffix: "/year",
+        billingNote: "Billed yearly",
+        saveNote: "Save 15% with annual billing",
+        chargeAmount: 2242900,
+      },
+      starter: {
+        priceLabel: "₹254,990",
+        priceSuffix: "/year",
+        billingNote: "Billed yearly",
+        saveNote: "Save 15% with annual billing",
+        chargeAmount: 25499000,
+      },
+    },
+  },
+};
+
+export const YEARLY_DISCOUNT = 0.15;
+
+export type PlanPriceConfig = PlanDisplayConfig & {
+  razorpayPlanId: string;
+};
 
 export type PricingPlan = {
   id: PlanId;
   name: string;
   description: string;
-  /** UI display price (checkout uses backend catalog for paid plans). */
   priceLabel: string;
   priceSuffix: string;
+  billingNote?: string;
+  saveNote?: string;
+  chargeAmount?: number | null;
+  razorpayPlanId?: string;
   monthlyPrice: number | null;
   badge?: string;
   recommended?: boolean;
@@ -17,13 +117,14 @@ export type PricingPlan = {
   ctaVariant: "outline" | "primary" | "gradient" | "enterprise";
 };
 
-export const PRICING_PLANS: PricingPlan[] = [
+const PRICING_PLAN_TEMPLATES: Omit<
+  PricingPlan,
+  "priceLabel" | "priceSuffix" | "billingNote" | "saveNote" | "chargeAmount" | "razorpayPlanId"
+>[] = [
   {
     id: "free",
     name: "Free",
     description: "Everything you need to get started",
-    priceLabel: "$0",
-    priceSuffix: "/month",
     monthlyPrice: 0,
     features: [
       "1 Gmail Inbox",
@@ -39,8 +140,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "pro",
     name: "Pro",
     description: "For operators who run their business on Actora",
-    priceLabel: "$25",
-    priceSuffix: "/month",
     monthlyPrice: 25,
     badge: "Most Popular",
     recommended: true,
@@ -64,8 +163,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "starter",
     name: "Team",
     description: "Collaborate across your entire revenue team",
-    priceLabel: "$299",
-    priceSuffix: "/month",
     monthlyPrice: 299,
     features: [
       "Everything in Pro",
@@ -84,8 +181,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     description: "Security, scale, and white-glove support",
-    priceLabel: "Custom",
-    priceSuffix: " Pricing",
     monthlyPrice: null,
     features: [
       "Everything in Team",
@@ -101,10 +196,70 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
 ];
 
-export const YEARLY_DISCOUNT = 0.15;
+export function getPlanPriceConfig(
+  currency: BillingCurrency,
+  period: BillingPeriod,
+  planId: PaidPlanId
+): PlanPriceConfig {
+  const display = BILLING_PRICING[currency][period][planId];
+  return {
+    ...display,
+    razorpayPlanId: RAZORPAY_PLAN_IDS[planId][period],
+  };
+}
 
-export function getPlanById(id: PlanId): PricingPlan | undefined {
-  return PRICING_PLANS.find((plan) => plan.id === id);
+export function getRazorpayPlanId(
+  planId: PaidPlanId,
+  period: BillingPeriod
+): string {
+  return RAZORPAY_PLAN_IDS[planId][period];
+}
+
+export function getDisplayPlans(
+  currency: BillingCurrency,
+  period: BillingPeriod
+): PricingPlan[] {
+  return PRICING_PLAN_TEMPLATES.map((template) => {
+    if (template.id === "free") {
+      return {
+        ...template,
+        priceLabel: "$0",
+        priceSuffix: "/month",
+        chargeAmount: null,
+      };
+    }
+
+    if (template.id === "enterprise") {
+      return {
+        ...template,
+        priceLabel: "Custom",
+        priceSuffix: " Pricing",
+        chargeAmount: null,
+      };
+    }
+
+    const priceConfig = getPlanPriceConfig(currency, period, template.id);
+    return {
+      ...template,
+      priceLabel: priceConfig.priceLabel,
+      priceSuffix: priceConfig.priceSuffix,
+      billingNote: priceConfig.billingNote,
+      saveNote: priceConfig.saveNote,
+      chargeAmount: priceConfig.chargeAmount,
+      razorpayPlanId: priceConfig.razorpayPlanId,
+    };
+  });
+}
+
+/** @deprecated Use getDisplayPlans(currency, period) for billing UI */
+export const PRICING_PLANS: PricingPlan[] = getDisplayPlans("USD", "monthly");
+
+export function getPlanById(
+  id: PlanId,
+  currency: BillingCurrency = "USD",
+  period: BillingPeriod = "monthly"
+): PricingPlan | undefined {
+  return getDisplayPlans(currency, period).find((plan) => plan.id === id);
 }
 
 export const MOCK_BILLING_HISTORY = [

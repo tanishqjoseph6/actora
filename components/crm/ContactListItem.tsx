@@ -24,7 +24,7 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
       className="block group"
     >
       <article
-        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-[#0d1730]/40 border border-cyan-400/10 hover:border-cyan-400/30 hover:bg-[#0d1730]/70 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/5 ${compact ? "p-3" : "p-4 sm:p-5"}`}
+        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/30 hover:bg-[#111827]/70 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5 ${compact ? "p-3" : "p-4 sm:p-5"}`}
       >
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
@@ -34,7 +34,7 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <h3 className="font-semibold text-white truncate group-hover:text-cyan-300 transition-colors">
+              <h3 className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
                 {contact.name}
               </h3>
               <span
@@ -45,7 +45,7 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
             </div>
             <p className="text-sm text-gray-400 truncate">{contact.title}</p>
             {!compact && (
-              <p className="text-sm text-cyan-400/80 truncate mt-0.5">
+              <p className="text-sm text-blue-400/80 truncate mt-0.5">
                 {contact.companyName}
               </p>
             )}

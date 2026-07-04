@@ -13,12 +13,12 @@ export function CrmPageHeader({
 }: CrmPageHeaderProps) {
   return (
     <div className="mb-6 lg:mb-8">
-      <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-cyan-400/30 text-cyan-400 text-sm mb-4 bg-[#081226]/60 backdrop-blur-sm">
+      <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-blue-400/30 text-blue-400 text-sm mb-4 bg-[#0B1220]/60 backdrop-blur-sm">
         {badge}
       </div>
       <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
         {title}{" "}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#00CFFF]">
+        <span className="text-white">
           {titleAccent}
         </span>
       </h1>

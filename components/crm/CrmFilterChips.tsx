@@ -29,14 +29,14 @@ export function CrmFilterChips({
               transition-all duration-200
               ${
                 active
-                  ? "bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 shadow-sm shadow-cyan-500/10"
-                  : "bg-[#0d1730] border border-cyan-400/10 text-gray-400 hover:border-cyan-400/25 hover:text-gray-300"
+                  ? "bg-blue-500/20 border border-blue-400/40 text-blue-300 shadow-sm shadow-blue-500/10"
+                  : "bg-[#111827] border border-blue-400/10 text-gray-400 hover:border-blue-400/25 hover:text-gray-300"
               }
             `}
           >
             {chip.label}
             <span
-              className={`text-xs tabular-nums ${active ? "text-cyan-400/80" : "text-gray-500"}`}
+              className={`text-xs tabular-nums ${active ? "text-blue-400/80" : "text-gray-500"}`}
             >
               {chip.count}
             </span>

@@ -34,11 +34,11 @@ export function DashboardWidgets() {
         <ul className="space-y-3">
           {SCHEDULE.map((item) => (
             <li key={item.title} className="flex items-start gap-3 group">
-              <span className="text-xs font-mono text-[#00D4FF] tabular-nums shrink-0 pt-0.5">
+              <span className="text-xs font-mono text-[#2563EB] tabular-nums shrink-0 pt-0.5">
                 {item.time}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white truncate group-hover:text-[#00D4FF] transition-colors">
+                <p className="text-sm text-white truncate group-hover:text-[#2563EB] transition-colors">
                   {item.title}
                 </p>
                 <span className="text-[10px] text-gray-500 uppercase tracking-wide">{item.tag}</span>
@@ -54,7 +54,7 @@ export function DashboardWidgets() {
             <li key={item.target + item.ago} className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm text-white truncate">
-                  <span className="text-[#4F8CFF]">{item.action}</span>
+                  <span className="text-[#3B82F6]">{item.action}</span>
                 </p>
                 <p className="text-xs text-gray-500 truncate">{item.target}</p>
               </div>
@@ -107,7 +107,7 @@ function WidgetCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.35 }}
       whileHover={{ y: -2 }}
-      className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 sm:p-5 hover:border-[#00D4FF]/25 hover:shadow-[0_0_24px_rgba(0,212,255,0.06)] transition-shadow duration-300"
+      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 sm:p-5 hover:border-[#1E293B] hover: transition-shadow duration-300"
     >
       <h3 className="text-sm font-semibold text-white mb-4">{title}</h3>
       {children}

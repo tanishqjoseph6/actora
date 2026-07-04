@@ -39,17 +39,17 @@ export function PaymentToast({ toast, onDismiss }: PaymentToastProps) {
       bg: "bg-red-500/10",
     },
     info: {
-      border: "border-cyan-400/30",
-      glow: "shadow-cyan-500/20",
-      icon: "text-cyan-400",
-      bg: "bg-cyan-500/10",
+      border: "border-blue-400/30",
+      glow: "shadow-blue-500/20",
+      icon: "text-blue-400",
+      bg: "bg-blue-500/10",
     },
   }[toast.type];
 
   return (
     <div className="fixed top-6 right-6 z-[100] max-w-sm w-[calc(100%-3rem)] animate-slide-in-right">
       <div
-        className={`rounded-2xl bg-[#081226]/95 backdrop-blur-xl border ${styles.border} shadow-2xl ${styles.glow} p-5`}
+        className={`rounded-2xl bg-[#0B1220]/95 backdrop-blur-xl border ${styles.border} shadow-2xl ${styles.glow} p-5`}
       >
         <div className="flex items-start gap-3">
           <div

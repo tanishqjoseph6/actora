@@ -8,7 +8,7 @@ import type { NodeCategory, WorkflowNode } from "@/lib/automations/types";
 const CATEGORY_STYLES: Record<NodeCategory, string> = {
   trigger: "from-violet-500/20 to-violet-600/10 border-violet-400/30",
   condition: "from-amber-500/20 to-amber-600/10 border-amber-400/30",
-  ai: "from-[#4F8CFF]/25 to-[#00D4FF]/10 border-[#00D4FF]/35",
+  ai: "from-[#3B82F6]/25 to-[#2563EB]/10 border-[#1E293B]",
   output: "from-emerald-500/20 to-emerald-600/10 border-emerald-400/30",
 };
 
@@ -54,14 +54,14 @@ export function WorkflowNodeCard({
       layout={!isOverlay}
       className={`
         relative w-full max-w-md mx-auto
-        ${isOverlay ? "shadow-2xl shadow-[#00D4FF]/20" : ""}
+        ${isOverlay ? "shadow-2xl " : ""}
       `}
     >
       <div
         className={`
           flex items-center gap-3 p-4 rounded-[16px] bg-gradient-to-r border backdrop-blur-xl
           ${CATEGORY_STYLES[node.category]}
-          hover:shadow-[0_0_24px_rgba(0,212,255,0.1)] transition-shadow
+          hover: transition-shadow
           cursor-grab active:cursor-grabbing
         `}
         {...attributes}
@@ -100,8 +100,8 @@ export function WorkflowConnector({ animated = true }: { animated?: boolean }) {
       <svg width="24" height="40" viewBox="0 0 24 40" className="overflow-visible">
         <defs>
           <linearGradient id="connectorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#4F8CFF" />
-            <stop offset="100%" stopColor="#00D4FF" />
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#2563EB" />
           </linearGradient>
         </defs>
         <line
@@ -115,7 +115,7 @@ export function WorkflowConnector({ animated = true }: { animated?: boolean }) {
           strokeDasharray={animated ? "4 4" : undefined}
           className={animated ? "animate-[dash_1s_linear_infinite]" : ""}
         />
-        <polygon points="12,40 6,30 18,30" fill="#00D4FF" opacity="0.8" />
+        <polygon points="12,40 6,30 18,30" fill="#2563EB" opacity="0.8" />
       </svg>
     </div>
   );

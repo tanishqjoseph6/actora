@@ -1,12 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { BillingPeriod, PricingPlan } from "../pricing-data";
+import type { PricingPlan } from "../pricing-data";
 import type { PlanId } from "@/lib/subscription";
 
 type PremiumPricingCardProps = {
   plan: PricingPlan;
-  period: BillingPeriod;
   index: number;
   currentPlanId?: PlanId;
   onSelect: (plan: PricingPlan) => void;
@@ -14,7 +13,6 @@ type PremiumPricingCardProps = {
 
 export function PremiumPricingCard({
   plan,
-  period,
   index,
   currentPlanId,
   onSelect,
@@ -31,11 +29,6 @@ export function PremiumPricingCard({
     : plan.id === "free"
       ? "Free Plan"
       : plan.cta;
-
-  const yearlyNote =
-    period === "yearly" && plan.monthlyPrice && plan.monthlyPrice > 0
-      ? "Save 15% with annual billing"
-      : null;
 
   const handleClick = () => {
     if (isEnterprise) {
@@ -76,16 +69,47 @@ export function PremiumPricingCard({
 
       <div className="mt-6 mb-6">
         <div className="flex items-baseline gap-1 flex-wrap">
-          <span
-            className={`font-bold tracking-tight ${
-              plan.recommended ? "text-4xl sm:text-5xl text-white" : "text-4xl sm:text-5xl text-white"
-            }`}
+          <motion.span
+            key={`${plan.id}-${plan.priceLabel}-${plan.priceSuffix}`}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="font-bold tracking-tight text-4xl sm:text-5xl text-white"
           >
             {plan.priceLabel}
-          </span>
-          <span className="text-gray-500 text-sm">{plan.priceSuffix}</span>
+          </motion.span>
+          <motion.span
+            key={`${plan.id}-suffix-${plan.priceSuffix}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+            className="text-gray-500 text-sm"
+          >
+            {plan.priceSuffix}
+          </motion.span>
         </div>
-        {yearlyNote && <p className="text-xs text-[#3B82F6] mt-2">{yearlyNote}</p>}
+        {plan.billingNote && (
+          <motion.p
+            key={`${plan.id}-billing-${plan.billingNote}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="text-xs text-[#94A3B8] mt-2"
+          >
+            {plan.billingNote}
+          </motion.p>
+        )}
+        {plan.saveNote && (
+          <motion.p
+            key={`${plan.id}-save-${plan.saveNote}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+            className="text-xs text-[#3B82F6] mt-2"
+          >
+            {plan.saveNote}
+          </motion.p>
+        )}
         {isEnterprise && (
           <p className="text-sm text-gray-400 mt-2">Tailored to your organization</p>
         )}

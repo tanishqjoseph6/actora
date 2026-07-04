@@ -21,7 +21,7 @@ export function CurrentPlanCard({
     : "—";
 
   return (
-    <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
+    <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">
@@ -37,11 +37,11 @@ export function CurrentPlanCard({
         <div className="flex flex-wrap gap-3">
           <button
             onClick={onUpgradePlan}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] text-[#050816] text-sm font-semibold hover:brightness-110 transition-all duration-300 shadow-md shadow-cyan-500/20 active:scale-[0.98]"
+            className="px-5 py-2.5 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold hover:bg-[#1D4ED8] transition-all duration-300 shadow-md shadow-blue-500/20 active:scale-[0.98]"
           >
             Upgrade Plan
           </button>
-          <button className="px-5 py-2.5 rounded-xl border border-[rgba(0,255,255,0.15)] text-gray-300 text-sm font-medium hover:border-[#00CFFF]/30 hover:text-white transition-all duration-300 active:scale-[0.98]">
+          <button className="px-5 py-2.5 rounded-xl border border-[rgba(37, 99, 235,0.15)] text-gray-300 text-sm font-medium hover:border-[#3B82F6]/30 hover:text-white transition-all duration-300 active:scale-[0.98]">
             Manage Subscription
           </button>
         </div>
@@ -57,7 +57,7 @@ type UsageStatsProps = {
 
 export function UsageStats({ subscription, loading }: UsageStatsProps) {
   return (
-    <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
+    <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
       <h3 className="text-lg font-bold text-white mb-6">Usage This Month</h3>
       <PlanUsageDisplay subscription={subscription} loading={loading} />
     </div>

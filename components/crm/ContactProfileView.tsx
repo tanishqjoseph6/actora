@@ -31,7 +31,7 @@ export function ContactProfileView({
         <CrmSubNav />
       </div>
 
-      <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-8 backdrop-blur-sm shadow-lg shadow-black/20 mb-6">
+      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-8 backdrop-blur-sm shadow-lg shadow-black/20 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start gap-6">
           <div
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br ${getAvatarGradient(contact.name)} flex items-center justify-center text-xl sm:text-2xl font-bold text-white shrink-0 shadow-lg shadow-black/20`}
@@ -55,7 +55,7 @@ export function ContactProfileView({
             {company && (
               <Link
                 href={`/dashboard/crm/companies/${company.id}`}
-                className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium mb-4 group"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm font-medium mb-4 group"
               >
                 <BuildingIcon className="w-4 h-4" />
                 {company.name}
@@ -75,11 +75,11 @@ export function ContactProfileView({
         </div>
 
         {contact.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-cyan-400/10">
+          <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-blue-400/10">
             {contact.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2.5 py-1 rounded-lg bg-[#0d1730] border border-cyan-400/15 text-xs text-gray-400"
+                className="px-2.5 py-1 rounded-lg bg-[#111827] border border-blue-400/15 text-xs text-gray-400"
               >
                 {tag}
               </span>
@@ -89,7 +89,7 @@ export function ContactProfileView({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <section className="bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-white mb-4">Contact info</h2>
           <dl className="space-y-4 text-sm">
             <Detail
@@ -97,7 +97,7 @@ export function ContactProfileView({
               value={
                 <a
                   href={`mailto:${contact.email}`}
-                  className="text-cyan-400 hover:text-cyan-300"
+                  className="text-blue-400 hover:text-blue-300"
                 >
                   {contact.email}
                 </a>
@@ -113,7 +113,7 @@ export function ContactProfileView({
                   href={`https://${contact.linkedin}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-cyan-400 hover:text-cyan-300"
+                  className="text-blue-400 hover:text-blue-300"
                 >
                   {contact.linkedin}
                 </a>
@@ -126,18 +126,18 @@ export function ContactProfileView({
           </dl>
         </section>
 
-        <section className="bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-white mb-4">Notes</h2>
           <p className="text-sm text-gray-400 leading-relaxed">{contact.notes}</p>
         </section>
       </div>
 
       {company && (
-        <section className="mt-6 bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className="mt-6 bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-white mb-4">Company</h2>
           <Link
             href={`/dashboard/crm/companies/${company.id}`}
-            className="flex items-center gap-4 p-4 rounded-xl bg-[#0d1730]/50 border border-cyan-400/10 hover:border-cyan-400/30 transition-all group"
+            className="flex items-center gap-4 p-4 rounded-xl bg-[#111827]/50 border border-blue-400/10 hover:border-blue-400/30 transition-all group"
           >
             <div
               className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-sm font-bold text-white shrink-0`}
@@ -145,12 +145,12 @@ export function ContactProfileView({
               {getInitials(company.name)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-white group-hover:text-cyan-300 transition-colors">
+              <p className="font-semibold text-white group-hover:text-blue-300 transition-colors">
                 {company.name}
               </p>
               <p className="text-sm text-gray-400">{company.industry}</p>
             </div>
-            <ArrowIcon className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors shrink-0" />
+            <ArrowIcon className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition-colors shrink-0" />
           </Link>
         </section>
       )}

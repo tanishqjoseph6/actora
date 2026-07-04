@@ -54,13 +54,19 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
     async (
       planId: PlanId,
       period: BillingPeriod,
-      currency: BillingCurrency
+      currency: BillingCurrency,
+      razorpayPlanId?: string
     ) => {
       try {
         const orderRes = await fetch("/api/payments/razorpay/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId, period, currency }),
+          body: JSON.stringify({
+            planId,
+            period,
+            currency,
+            razorpayPlanId,
+          }),
         });
 
         const orderData = await orderRes.json();
@@ -86,61 +92,80 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
           return false;
         }
 
+        const checkoutBase = {
+          key: orderData.keyId,
+          name: "Actora",
+          description: orderData.description,
+          prefill: {
+            name: session?.user?.name,
+            email: session?.user?.email,
+          },
+          theme: { color: "#3B82F6" },
+        };
+
         return await new Promise<boolean>((resolve) => {
-          const rzp = new window.Razorpay!({
-            key: orderData.keyId,
-            amount: orderData.amount,
-            currency: orderData.currency,
-            name: "Actora",
-            description: orderData.description,
-            order_id: orderData.orderId,
-            prefill: {
-              name: session?.user?.name,
-              email: session?.user?.email,
-            },
-            theme: { color: "#00CFFF" },
-            handler: async (response: RazorpayPaymentResponse) => {
-              try {
-                const verifyRes = await fetch(
-                  "/api/payments/razorpay/verify",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      ...response,
-                      planId,
-                      period,
-                      currency,
-                    }),
-                  }
-                );
-
-                const verifyData = await verifyRes.json();
-
-                if (!verifyRes.ok) {
-                  callbacksRef.current?.onFailure?.(
-                    verifyData.error ?? "Payment verification failed."
-                  );
-                  resolve(false);
-                  return;
+          const handler = async (response: RazorpayPaymentResponse) => {
+            try {
+              const verifyRes = await fetch(
+                "/api/payments/razorpay/verify",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ...response,
+                    planId,
+                    period,
+                    currency,
+                    razorpayPlanId: orderData.razorpayPlanId,
+                  }),
                 }
+              );
 
-                const planName =
-                  verifyData.subscription?.planName ?? planId;
-                callbacksRef.current?.onSuccess?.(planId, planName);
-                resolve(true);
-              } catch {
-                callbacksRef.current?.onFailure?.("Payment verification failed.");
+              const verifyData = await verifyRes.json();
+
+              if (!verifyRes.ok) {
+                callbacksRef.current?.onFailure?.(
+                  verifyData.error ?? "Payment verification failed."
+                );
                 resolve(false);
+                return;
               }
-            },
-            modal: {
-              ondismiss: () => {
-                callbacksRef.current?.onCancel?.();
-                resolve(false);
-              },
-            },
-          });
+
+              const planName =
+                verifyData.subscription?.planName ?? planId;
+              callbacksRef.current?.onSuccess?.(planId, planName);
+              resolve(true);
+            } catch {
+              callbacksRef.current?.onFailure?.("Payment verification failed.");
+              resolve(false);
+            }
+          };
+
+          const rzp = orderData.subscriptionId
+            ? new window.Razorpay!({
+                ...checkoutBase,
+                subscription_id: orderData.subscriptionId,
+                handler,
+                modal: {
+                  ondismiss: () => {
+                    callbacksRef.current?.onCancel?.();
+                    resolve(false);
+                  },
+                },
+              })
+            : new window.Razorpay!({
+                ...checkoutBase,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                order_id: orderData.orderId,
+                handler,
+                modal: {
+                  ondismiss: () => {
+                    callbacksRef.current?.onCancel?.();
+                    resolve(false);
+                  },
+                },
+              });
 
           rzp.on("payment.failed", (response) => {
             callbacksRef.current?.onFailure?.(

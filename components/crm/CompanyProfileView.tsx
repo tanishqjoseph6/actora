@@ -35,10 +35,10 @@ export function CompanyProfileView({
         <CrmSubNav />
       </div>
 
-      <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-5 sm:p-8 backdrop-blur-sm shadow-lg shadow-black/20 mb-6">
+      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-8 backdrop-blur-sm shadow-lg shadow-black/20 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           <div
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-xl sm:text-2xl font-bold text-white shrink-0 border border-cyan-400/20 shadow-lg shadow-black/20`}
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-xl sm:text-2xl font-bold text-white shrink-0 border border-blue-400/20 shadow-lg shadow-black/20`}
           >
             {getInitials(company.name)}
           </div>
@@ -48,7 +48,7 @@ export function CompanyProfileView({
               <h1 className="text-2xl sm:text-3xl font-bold text-white">
                 {company.name}
               </h1>
-              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border border-cyan-400/25 text-cyan-300 bg-cyan-500/10">
+              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border border-blue-400/25 text-blue-300 bg-blue-500/10">
                 {SIZE_LABELS[company.size]}
               </span>
               <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs text-gray-400 border border-gray-400/20 bg-gray-500/10">
@@ -64,7 +64,7 @@ export function CompanyProfileView({
                 href={`https://${company.website}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="text-blue-400 hover:text-blue-300 transition-colors"
               >
                 {company.website}
               </a>
@@ -82,7 +82,7 @@ export function CompanyProfileView({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-cyan-400/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-blue-400/10">
           <Stat label="Annual revenue" value={formatRevenue(company.revenue)} />
           <Stat label="Employees" value={formatEmployeeCount(company.employeeCount)} />
           <Stat label="Open pipeline" value={formatCurrency(company.totalPipeline)} accent />
@@ -91,7 +91,7 @@ export function CompanyProfileView({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <section className="bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-white mb-4">Details</h2>
           <dl className="space-y-4 text-sm">
             <Detail label="Address" value={company.address} />
@@ -102,7 +102,7 @@ export function CompanyProfileView({
                   href={`https://${company.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-cyan-400 hover:text-cyan-300"
+                  className="text-blue-400 hover:text-blue-300"
                 >
                   {company.website}
                 </a>
@@ -113,13 +113,13 @@ export function CompanyProfileView({
           </dl>
         </section>
 
-        <section className="bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
           <h2 className="text-lg font-bold text-white mb-4">Notes</h2>
           <p className="text-sm text-gray-400 leading-relaxed">{company.notes}</p>
         </section>
       </div>
 
-      <section className="mt-6 bg-[#081226]/80 border border-cyan-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+      <section className="mt-6 bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-bold text-white">
             Contacts
@@ -155,10 +155,10 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-[#0d1730]/50 border border-cyan-400/10 p-3 sm:p-4">
+    <div className="rounded-xl bg-[#111827]/50 border border-blue-400/10 p-3 sm:p-4">
       <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
       <p
-        className={`text-lg sm:text-xl font-bold mt-1 ${accent ? "text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#00CFFF]" : "text-white"}`}
+        className={`text-lg sm:text-xl font-bold mt-1 ${accent ? "text-white" : "text-white"}`}
       >
         {value}
       </p>

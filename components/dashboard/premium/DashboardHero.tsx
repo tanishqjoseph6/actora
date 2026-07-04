@@ -30,7 +30,7 @@ export function DashboardHero() {
       </p>
       <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight">
         Your AI workforce is{" "}
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00D4FF] via-[#4F8CFF] to-[#00D4FF]">
+        <span className="text-white">
           managing your business
         </span>{" "}
         today.
@@ -52,8 +52,8 @@ export function DashboardHero() {
               className={`
                 inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-sm font-medium transition-all duration-200
                 ${action.primary
-                  ? "bg-gradient-to-r from-[#4F8CFF] to-[#00D4FF] text-[#050816] shadow-lg shadow-[#00D4FF]/20 hover:shadow-[#00D4FF]/35 hover:scale-[1.02]"
-                  : "bg-[#0B1730]/60 border border-[#00D4FF]/15 text-gray-300 hover:border-[#00D4FF]/30 hover:text-white hover:bg-[#0B1730]"
+                  ? "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-sm hover: "
+                  : "bg-[#111827]/60 border border-[#1E293B] text-gray-300 hover:border-[#1E293B] hover:text-white hover:bg-[#111827]"
                 }
               `}
             >

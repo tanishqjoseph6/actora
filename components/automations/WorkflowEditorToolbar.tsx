@@ -41,7 +41,7 @@ export function WorkflowEditorToolbar({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 sm:p-5 mb-4"
+      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 sm:p-5 mb-4"
     >
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
         <div className="flex-1 min-w-0 space-y-3">
@@ -50,7 +50,7 @@ export function WorkflowEditorToolbar({
             value={workflowName}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Workflow name"
-            className="w-full text-lg font-semibold bg-transparent border-b border-[#00D4FF]/15 pb-2 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#00D4FF]/40"
+            className="w-full text-lg font-semibold bg-transparent border-b border-[#1E293B] pb-2 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#1E293B]"
           />
           <input
             type="text"
@@ -64,7 +64,7 @@ export function WorkflowEditorToolbar({
         {status && <AutomationStatusBadge status={status} size="md" />}
       </div>
 
-      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#00D4FF]/10">
+      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#1E293B]">
         <ToolbarButton
           label={saving ? "Saving…" : "Save Draft"}
           onClick={onSaveDraft}
@@ -106,11 +106,11 @@ function ToolbarButton({
 }) {
   const styles = {
     primary:
-      "bg-gradient-to-r from-[#4F8CFF] to-[#00D4FF] text-[#050816] shadow-md shadow-[#00D4FF]/15 hover:shadow-[#00D4FF]/30",
+      "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md  hover:",
     secondary:
-      "bg-[#0B1730]/60 border border-[#00D4FF]/15 text-gray-300 hover:border-[#00D4FF]/30 hover:text-white",
+      "bg-[#111827]/60 border border-[#1E293B] text-gray-300 hover:border-[#1E293B] hover:text-white",
     accent:
-      "bg-[#00D4FF]/10 border border-[#00D4FF]/30 text-[#00D4FF] hover:bg-[#00D4FF]/20",
+      "bg-[#2563EB]/10 border border-[#1E293B] text-[#2563EB] hover:bg-[#2563EB]/20",
     danger:
       "border border-transparent text-gray-500 hover:text-rose-400 hover:bg-rose-500/10",
   };

@@ -51,7 +51,7 @@ export default function PipelinePage() {
         />
       </div>
 
-      <div className="bg-[#081226]/80 border border-cyan-400/20 rounded-3xl p-4 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
+      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-4 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
         <PipelineBoard />
       </div>
     </>

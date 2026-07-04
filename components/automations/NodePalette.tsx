@@ -17,7 +17,7 @@ type NodePaletteProps = {
 export function NodePalette({ className = "" }: NodePaletteProps) {
   return (
     <aside
-      className={`rounded-[20px] bg-[#071426]/70 border border-[#00D4FF]/10 backdrop-blur-xl p-4 overflow-y-auto premium-scrollbar ${className}`}
+      className={`rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 overflow-y-auto premium-scrollbar ${className}`}
     >
       <h3 className="text-sm font-semibold text-white mb-1">Block Library</h3>
       <p className="text-xs text-gray-500 mb-4">Drag blocks onto the canvas</p>
@@ -68,7 +68,7 @@ function DraggablePaletteItem({ block }: { block: BlockDefinition }) {
       style={style}
       {...listeners}
       {...attributes}
-      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[12px] bg-[#0B1730]/60 border border-[#00D4FF]/10 text-left hover:border-[#00D4FF]/25 hover:bg-[#0B1730] transition-all cursor-grab active:cursor-grabbing"
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[12px] bg-[#111827]/60 border border-[#1E293B] text-left hover:border-[#1E293B] hover:bg-[#111827] transition-all cursor-grab active:cursor-grabbing"
     >
       <span className="text-base shrink-0" aria-hidden>
         {block.icon}

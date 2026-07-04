@@ -23,7 +23,7 @@ export function DealListItem({ deal }: { deal: Deal }) {
   const isClosed = deal.stage === "won" || deal.stage === "lost";
 
   return (
-    <article className="group flex flex-col xl:flex-row xl:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#0d1730]/40 border border-cyan-400/10 hover:border-cyan-400/25 hover:bg-[#0d1730]/70 transition-all duration-200">
+    <article className="group flex flex-col xl:flex-row xl:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/25 hover:bg-[#111827]/70 transition-all duration-200">
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <h3 className="font-semibold text-white">{deal.title}</h3>
@@ -44,7 +44,7 @@ export function DealListItem({ deal }: { deal: Deal }) {
           <p className="text-[10px] uppercase tracking-wider text-gray-500">
             Value
           </p>
-          <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#60A5FA] to-[#00CFFF]">
+          <p className="text-lg font-bold text-white">
             {formatCurrency(deal.value)}
           </p>
         </div>
@@ -53,11 +53,11 @@ export function DealListItem({ deal }: { deal: Deal }) {
           <div className="min-w-[100px]">
             <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
               <span>Probability</span>
-              <span className="text-cyan-400">{deal.probability}%</span>
+              <span className="text-blue-400">{deal.probability}%</span>
             </div>
-            <div className="h-1.5 rounded-full bg-[#081226] border border-cyan-400/10 overflow-hidden">
+            <div className="h-1.5 rounded-full bg-[#0B1220] border border-blue-400/10 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#00CFFF] transition-all"
+                className="h-full rounded-full bg-[#2563EB] transition-all"
                 style={{ width: `${deal.probability}%` }}
               />
             </div>

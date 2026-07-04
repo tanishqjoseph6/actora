@@ -3,8 +3,8 @@ import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
 
 export function BillingHistoryTable() {
   return (
-    <div className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] shadow-lg shadow-black/20 overflow-hidden">
-      <div className="p-6 sm:p-8 border-b border-[rgba(0,255,255,0.1)]">
+    <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] shadow-lg shadow-black/20 overflow-hidden">
+      <div className="p-6 sm:p-8 border-b border-[rgba(37, 99, 235,0.1)]">
         <h3 className="text-lg font-bold text-white">Billing History</h3>
         <p className="text-sm text-gray-400 mt-1">
           View and download your past invoices
@@ -14,7 +14,7 @@ export function BillingHistoryTable() {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[rgba(0,255,255,0.1)] text-left text-gray-500">
+            <tr className="border-b border-[rgba(37, 99, 235,0.1)] text-left text-gray-500">
               <th className="px-6 sm:px-8 py-4 font-medium">Date</th>
               <th className="px-6 sm:px-8 py-4 font-medium">Plan</th>
               <th className="px-6 sm:px-8 py-4 font-medium">Amount</th>
@@ -26,7 +26,7 @@ export function BillingHistoryTable() {
             {MOCK_BILLING_HISTORY.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-[rgba(0,255,255,0.05)] last:border-0 hover:bg-[#0d1730]/40 transition-colors duration-200"
+                className="border-b border-[rgba(37, 99, 235,0.05)] last:border-0 hover:bg-[#111827]/40 transition-colors duration-200"
               >
                 <td className="px-6 sm:px-8 py-4 text-gray-300 whitespace-nowrap">
                   {row.date}
@@ -41,7 +41,7 @@ export function BillingHistoryTable() {
                   </span>
                 </td>
                 <td className="px-6 sm:px-8 py-4 text-right">
-                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgba(0,255,255,0.15)] text-[#00CFFF] text-xs font-medium hover:bg-[#00CFFF]/10 transition-all duration-200 active:scale-[0.98]">
+                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgba(37, 99, 235,0.15)] text-[#3B82F6] text-xs font-medium hover:bg-[#3B82F6]/10 transition-all duration-200 active:scale-[0.98]">
                     <DownloadIcon className="w-3.5 h-3.5" />
                     Download
                   </button>
@@ -62,14 +62,14 @@ export function RazorpayPlaceholder() {
     <div
       className={`rounded-2xl backdrop-blur-sm p-6 sm:p-8 ${
         isConnected
-          ? "bg-[#081226]/80 border border-emerald-400/20"
-          : "bg-[#081226]/60 border border-dashed border-[rgba(0,255,255,0.2)]"
+          ? "bg-[#0B1220]/80 border border-emerald-400/20"
+          : "bg-[#0B1220]/60 border border-dashed border-[rgba(37, 99, 235,0.2)]"
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#0d1730] border border-[rgba(0,255,255,0.15)] shrink-0">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#111827] border border-[rgba(37, 99, 235,0.15)] shrink-0">
           <PaymentIcon
-            className={`w-6 h-6 ${isConnected ? "text-emerald-400" : "text-[#00CFFF]"}`}
+            className={`w-6 h-6 ${isConnected ? "text-emerald-400" : "text-[#3B82F6]"}`}
           />
         </div>
         <div className="flex-1">
@@ -86,7 +86,7 @@ export function RazorpayPlaceholder() {
           className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
             isConnected
               ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
-              : "bg-[#0d1730] border border-[rgba(0,255,255,0.1)] text-gray-500"
+              : "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-500"
           }`}
         >
           {isConnected ? "Connected" : "Not configured"}
