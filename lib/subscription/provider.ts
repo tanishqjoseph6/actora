@@ -36,7 +36,7 @@ export function createDefaultSubscription(userId: string): UserSubscription {
     currentPeriodEnd: getNextRenewalDate(),
     usage: {
       aiActionsUsed: 0,
-      inboxesConnected: 1,
+      inboxesConnected: 0,
     },
     updatedAt: new Date().toISOString(),
   };

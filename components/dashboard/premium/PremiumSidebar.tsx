@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
@@ -26,7 +27,11 @@ export function PremiumSidebar({
   onMobileClose,
 }: PremiumSidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { subscription, loading } = usePlanGate();
+
+  const displayName = session?.user?.name ?? session?.user?.email ?? "User";
+  const displayInitial = displayName.charAt(0).toUpperCase();
 
   const content = (
     <motion.aside
@@ -65,12 +70,12 @@ export function PremiumSidebar({
         )}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4F8CFF] to-[#00D4FF] flex items-center justify-center text-xs font-bold text-[#050816] shrink-0">
-            T
+            {displayInitial}
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">Tanishq</p>
-              <p className="text-xs text-gray-500">Founder</p>
+              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+              <p className="text-xs text-gray-500 truncate">{session?.user?.email ?? "Signed in"}</p>
             </div>
           )}
         </div>

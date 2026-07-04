@@ -1,51 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+
 export default function Signup() {
-    const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-
-async function handleSignup() {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (error) {
-    alert(error.message);
-  } else {
-    alert("Account created!");
-  }
+  return (
+    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 px-6">
+      <div className="bg-zinc-900 p-8 rounded-2xl w-full max-w-md text-center">
+        <h1 className="text-3xl font-bold mb-3">Create your account</h1>
+        <p className="text-sm text-zinc-400 mb-6">
+          Actora uses Google sign-in for secure authentication and Gmail access.
+        </p>
+        <button
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          className="w-full bg-white text-black py-3 rounded-xl font-semibold"
+        >
+          Continue with Google
+        </button>
+        <p className="text-sm text-zinc-500 mt-6">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-400 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
 }
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="bg-zinc-900 p-8 rounded-2xl w-96">
-          <h1 className="text-3xl font-bold mb-6">Create Account</h1>
-  
-          <input
-  type="email"
-  placeholder="Email"
-  value={email}
-  onChange={(e) => setEmail(e.target.value)}
-  className="w-full p-3 mb-4 rounded bg-zinc-800"
-/>
-  
-<input
-  type="password"
-  placeholder="Password"
-  value={password}
-  onChange={(e) => setPassword(e.target.value)}
-  className="w-full p-3 mb-4 rounded bg-zinc-800"
-/>
-  
-<button
-  onClick={handleSignup}
-  className="w-full bg-blue-600 py-3 rounded-xl"
->
-            Sign Up
-          </button>
-        </div>
-      </main>
-    );
-  }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
 import {
   CurrentPlanBadge,
   formatRenewalDate,
@@ -11,6 +12,7 @@ import { formatLimit } from "@/lib/subscription";
 
 export default function SettingsPage() {
   const { subscription, loading } = usePlanGate();
+  const { data: session } = useSession();
 
   return (
     <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
@@ -106,6 +108,25 @@ export default function SettingsPage() {
             <p className="text-sm text-gray-400 mt-1">
               Google Gmail and calendar integrations.
             </p>
+            {session?.user?.email && (
+              <p className="text-sm text-gray-300 mt-3">
+                Signed in as <span className="text-white">{session.user.email}</span>
+              </p>
+            )}
+          </section>
+
+          <section className="rounded-2xl bg-[#081226]/80 backdrop-blur-sm border border-[rgba(0,255,255,0.15)] p-6 shadow-lg shadow-black/20">
+            <h2 className="text-base font-semibold text-white">Sign out</h2>
+            <p className="text-sm text-gray-400 mt-1 mb-4">
+              End your Actora session on this device.
+            </p>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="px-5 py-2.5 rounded-xl border border-rose-400/30 text-rose-300 text-sm font-medium hover:bg-rose-500/10 transition-colors"
+            >
+              Sign out
+            </button>
           </section>
         </div>
       </div>

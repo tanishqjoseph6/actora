@@ -1,38 +1,77 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function Callback() {
+function CallbackContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [message, setMessage] = useState("Completing sign-in…");
 
   useEffect(() => {
     const handleAuth = async () => {
-      const hash = window.location.hash;
+      const oauthError = searchParams.get("error");
+      const oauthDescription = searchParams.get("error_description");
+      if (oauthError) {
+        setMessage(oauthDescription ?? "Sign-in failed.");
+        router.replace(`/login?error=${encodeURIComponent(oauthError)}`);
+        return;
+      }
 
+      const code = searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          router.replace("/dashboard");
+          return;
+        }
+        setMessage(error.message);
+        router.replace("/login?error=OAuthCallback");
+        return;
+      }
+
+      const hash = window.location.hash;
       if (hash) {
         const params = new URLSearchParams(hash.substring(1));
-
         const access_token = params.get("access_token");
         const refresh_token = params.get("refresh_token");
 
         if (access_token && refresh_token) {
-          await supabase.auth.setSession({
+          const { error } = await supabase.auth.setSession({
             access_token,
             refresh_token,
           });
 
-          router.push("/dashboard");
+          if (!error) {
+            router.replace("/dashboard");
+            return;
+          }
+
+          setMessage(error.message);
+          router.replace("/login?error=OAuthCallback");
           return;
         }
       }
 
-      router.push("/login");
+      router.replace("/login");
     };
 
-    handleAuth();
-  }, [router]);
+    void handleAuth();
+  }, [router, searchParams]);
 
-  return <div>Loading...</div>;
+  return (
+    <main className="min-h-screen bg-black text-white flex items-center justify-center">
+      <p className="text-sm text-zinc-400">{message}</p>
+    </main>
+  );
+}
+
+export default function Callback() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-black" />}>
+      <CallbackContent />
+    </Suspense>
+  );
 }

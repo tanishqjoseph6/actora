@@ -1,5 +1,7 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import type { JWT } from "next-auth/jwt";
+import { refreshGoogleAccessToken } from "@/lib/auth/refresh-google-token";
 
 const requiredEnv = [
   "GOOGLE_CLIENT_ID",
@@ -47,24 +49,44 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, account, trigger, session }) {
       if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-      }
-
-      if (!token.planId) {
-        token.planId = "free";
+        return {
+          ...token,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          accessTokenExpires: account.expires_at
+            ? account.expires_at * 1000
+            : Date.now() + 3600 * 1000,
+          planId: token.planId ?? "free",
+        };
       }
 
       if (trigger === "update" && session?.planId) {
         token.planId = session.planId;
       }
 
+      if (!token.planId) {
+        token.planId = "free";
+      }
+
+      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+        return token;
+      }
+
+      if (token.refreshToken) {
+        return refreshGoogleAccessToken(token as JWT);
+      }
+
       return token;
     },
 
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.planId = token.planId ?? "free";
+
+      if (token.error === "RefreshAccessTokenError") {
+        session.error = "RefreshAccessTokenError";
+      }
+
       return session;
     },
 
