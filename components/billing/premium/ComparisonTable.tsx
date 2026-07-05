@@ -61,7 +61,7 @@ export function ComparisonTable() {
               <tr
                 key={row.label}
                 className={`border-b border-[#2563EB]/5 ${
-                  i % 2 === 0 ? "bg-[#050816]/20" : ""
+                  i % 2 === 0 ? "bg-[#05070B]/20" : ""
                 }`}
               >
                 <td className="px-6 sm:px-8 py-4 text-sm text-gray-300 font-medium">

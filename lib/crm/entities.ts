@@ -45,8 +45,8 @@ export const CRM_INDUSTRIES = [
 export function getAiScoreStyle(score: number): string {
   if (score >= 80) return "from-[#2563EB] to-[#1D4ED8]";
   if (score >= 60) return "from-[#3B82F6] to-[#2563EB]";
-  if (score >= 40) return "from-amber-400 to-orange-400";
-  return "from-gray-400 to-gray-500";
+  if (score >= 40) return "from-[#64748B] to-[#475569]";
+  return "from-[#475569] to-[#334155]";
 }
 
 export function sortCompanies(

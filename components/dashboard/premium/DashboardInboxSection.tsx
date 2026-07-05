@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import type { InboxEmail } from "@/lib/gmail";
 import { EmailCard } from "@/components/email/EmailCard";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { dashboard } from "./dashboard-tokens";
 
 type FilterChip = "all" | "unread" | "starred";
 type FetchState = "loading" | "error" | "success";
@@ -48,26 +50,26 @@ export function DashboardInboxSection({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, duration: 0.4 }}
-      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 sm:p-6 lg:p-7"
+      className={`${dashboard.cardLg} p-5 sm:p-6 lg:p-7`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white">Inbox</h2>
-          <p className="text-sm text-gray-500 mt-0.5">AI-powered email management</p>
+          <h2 className="text-lg sm:text-xl font-bold text-white">Inbox</h2>
+          <p className={`text-sm mt-0.5 ${dashboard.subtle}`}>AI-powered email management</p>
         </div>
         {isRefreshing && (
-          <span className="text-sm text-[#2563EB]/70 animate-pulse">Refreshing…</span>
+          <span className="text-sm text-[#3B82F6] animate-pulse">Refreshing…</span>
         )}
       </div>
 
       <div className="relative mb-4 sm:hidden">
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <SearchIcon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${dashboard.subtle}`} />
         <input
           type="search"
           placeholder="Search emails…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-11 pr-4 py-2.5 rounded-[14px] bg-[#111827]/80 border border-[#1E293B] text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-[#1E293B]"
+          className={`${dashboard.input} pl-10 pr-4 py-2.5`}
         />
       </div>
 
@@ -95,13 +97,13 @@ export function DashboardInboxSection({
       {fetchState === "loading" && <EmailSkeletonList />}
 
       {fetchState === "error" && (
-        <div className="rounded-[16px] bg-[#111827]/60 border border-rose-400/20 p-6">
-          <p className="text-rose-300 font-medium mb-2">Could not load Gmail inbox</p>
-          <p className="text-gray-400 text-sm mb-4">{error}</p>
+        <div className={`${dashboard.cardBase} border-[#EF4444]/20 p-6`}>
+          <p className="text-[#FCA5A5] font-medium mb-2">Could not load Gmail inbox</p>
+          <p className={`${dashboard.muted} text-sm mb-4`}>{error}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="px-4 py-2 rounded-[12px] border border-[#1E293B] text-[#2563EB] hover:bg-[#2563EB]/10 transition-colors"
+            className={`${dashboard.btnSecondary} px-4 py-2 text-sm`}
           >
             Try again
           </button>
@@ -156,13 +158,13 @@ function FilterChipButton({
       className={`
         inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200
         ${active
-          ? "bg-[#2563EB] text-white "
-          : "bg-[#111827]/60 border border-[#1E293B] text-gray-400 hover:border-[#1E293B] hover:text-gray-300"
+          ? "bg-[#2563EB] text-white border border-[#2563EB]"
+          : "bg-[#0B1220] border border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/40 hover:text-white"
         }
       `}
     >
       {label}
-      <span className={`text-xs tabular-nums ${active ? "text-[#2563EB]/80" : "text-gray-500"}`}>
+      <span className={`text-xs tabular-nums ${active ? "text-white/80" : dashboard.subtle}`}>
         {count}
       </span>
     </button>
@@ -171,20 +173,20 @@ function FilterChipButton({
 
 function EmailSkeletonList() {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" aria-busy="true" aria-label="Loading emails">
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex gap-4 p-4 sm:p-5 rounded-[16px] bg-[#111827]/40 border border-[#2563EB]/5 animate-pulse"
+          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#0B1220] border border-[#1E293B]"
         >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#2563EB]/10 shrink-0" />
+          <Skeleton className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2.5">
-            <div className="flex justify-between">
-              <div className="h-4 w-28 bg-[#2563EB]/10 rounded" />
-              <div className="h-3 w-12 bg-[#2563EB]/10 rounded" />
+            <div className="flex justify-between gap-4">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-12" />
             </div>
-            <div className="h-4 w-2/3 bg-[#2563EB]/10 rounded" />
-            <div className="h-3 w-full bg-[#2563EB]/10 rounded" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-full" />
           </div>
         </div>
       ))}
@@ -209,11 +211,11 @@ function EmptyInboxState({
 
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-16 h-16 rounded-[16px] bg-[#2563EB]/10 border border-[#1E293B] flex items-center justify-center mb-5">
-        <InboxIcon className="w-8 h-8 text-[#2563EB]/60" />
+      <div className="w-14 h-14 rounded-xl bg-[#2563EB]/10 border border-[#2563EB]/25 flex items-center justify-center mb-5">
+        <InboxIcon className="w-7 h-7 text-[#2563EB]" />
       </div>
-      <p className="text-gray-300 font-medium mb-1">{message}</p>
-      <p className="text-sm text-gray-500">
+      <p className="text-white font-medium mb-1">{message}</p>
+      <p className={`text-sm ${dashboard.subtle}`}>
         {hasSearch
           ? "Try a different search term or clear filters."
           : "New messages will appear here automatically."}

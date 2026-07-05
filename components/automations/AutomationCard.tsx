@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { Automation } from "@/lib/automations/types";
 import { AutomationStatusBadge } from "./AutomationStatusBadge";
 
@@ -18,14 +19,13 @@ export function AutomationCard({ automation, onClick, selected }: AutomationCard
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -3 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={`
-        group relative rounded-[20px] bg-[#111827]/70 border backdrop-blur-xl p-5 cursor-pointer transition-shadow duration-300 overflow-hidden
-        ${selected
-          ? "border-[#1E293B] "
-          : "border-[#1E293B] hover:border-[#1E293B] hover:"
-        }
+        group relative cursor-pointer overflow-hidden p-5
+        ${dashboard.cardInteractive}
+        ${selected ? "border-[#2563EB]/50 ring-1 ring-[#2563EB]/20" : ""}
       `}
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-[#3B82F6]/5 blur-3xl rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />

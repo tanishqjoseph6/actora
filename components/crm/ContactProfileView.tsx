@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { CrmBackLink } from "@/components/crm/CrmBackLink";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatDate } from "@/lib/crm/mock-data";
 import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { Company, Contact, ContactStatus } from "@/lib/crm/types";
@@ -31,7 +32,7 @@ export function ContactProfileView({
         <CrmSubNav />
       </div>
 
-      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-8 backdrop-blur-sm shadow-lg shadow-black/20 mb-6">
+      <div className={`${dashboard.panelLg} mb-6`}>
         <div className="flex flex-col sm:flex-row sm:items-start gap-6">
           <div
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br ${getAvatarGradient(contact.name)} flex items-center justify-center text-xl sm:text-2xl font-bold text-white shrink-0 shadow-lg shadow-black/20`}
@@ -89,7 +90,7 @@ export function ContactProfileView({
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className={`${dashboard.cardLg} p-5 sm:p-6`}>
           <h2 className="text-lg font-bold text-white mb-4">Contact info</h2>
           <dl className="space-y-4 text-sm">
             <Detail
@@ -126,14 +127,14 @@ export function ContactProfileView({
           </dl>
         </section>
 
-        <section className="bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className={`${dashboard.cardLg} p-5 sm:p-6`}>
           <h2 className="text-lg font-bold text-white mb-4">Notes</h2>
           <p className="text-sm text-gray-400 leading-relaxed">{contact.notes}</p>
         </section>
       </div>
 
       {company && (
-        <section className="mt-6 bg-[#0B1220]/80 border border-blue-400/20 rounded-2xl p-5 sm:p-6 backdrop-blur-sm">
+        <section className={`mt-6 ${dashboard.cardLg} p-5 sm:p-6`}>
           <h2 className="text-lg font-bold text-white mb-4">Company</h2>
           <Link
             href={`/dashboard/crm/companies/${company.id}`}

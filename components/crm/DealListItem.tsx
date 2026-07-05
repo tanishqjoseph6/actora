@@ -1,4 +1,5 @@
 import { formatCurrency, formatDate } from "@/lib/crm/mock-data";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { Deal, DealStage } from "@/lib/crm/types";
 
 const STAGE_LABELS: Record<DealStage, string> = {
@@ -23,7 +24,7 @@ export function DealListItem({ deal }: { deal: Deal }) {
   const isClosed = deal.stage === "won" || deal.stage === "lost";
 
   return (
-    <article className="group flex flex-col xl:flex-row xl:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/25 hover:bg-[#111827]/70 transition-all duration-200">
+    <article className={`group flex flex-col xl:flex-row xl:items-center gap-4 p-4 sm:p-5 ${dashboard.cardInteractive}`}>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <h3 className="font-semibold text-white">{deal.title}</h3>
@@ -33,15 +34,15 @@ export function DealListItem({ deal }: { deal: Deal }) {
             {STAGE_LABELS[deal.stage]}
           </span>
         </div>
-        <p className="text-sm text-gray-400">
+        <p className={`text-sm ${dashboard.muted}`}>
           {deal.companyName} · {deal.contactName}
         </p>
-        <p className="text-xs text-gray-500 mt-1">Owner · {deal.owner}</p>
+        <p className={`text-xs ${dashboard.subtle} mt-1`}>Owner · {deal.owner}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4 xl:gap-8 shrink-0">
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500">
+          <p className={`text-[10px] uppercase tracking-wider ${dashboard.subtle}`}>
             Value
           </p>
           <p className="text-lg font-bold text-white">
@@ -51,11 +52,11 @@ export function DealListItem({ deal }: { deal: Deal }) {
 
         {!isClosed && (
           <div className="min-w-[100px]">
-            <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+            <div className={`flex items-center justify-between text-[10px] ${dashboard.subtle} mb-1`}>
               <span>Probability</span>
-              <span className="text-blue-400">{deal.probability}%</span>
+              <span className={dashboard.accent}>{deal.probability}%</span>
             </div>
-            <div className="h-1.5 rounded-full bg-[#0B1220] border border-blue-400/10 overflow-hidden">
+            <div className={`h-1.5 rounded-full ${dashboard.surface} border ${dashboard.border} overflow-hidden`}>
               <div
                 className="h-full rounded-full bg-[#2563EB] transition-all"
                 style={{ width: `${deal.probability}%` }}
@@ -65,10 +66,10 @@ export function DealListItem({ deal }: { deal: Deal }) {
         )}
 
         <div className="text-right min-w-[100px]">
-          <p className="text-[10px] uppercase tracking-wider text-gray-500">
+          <p className={`text-[10px] uppercase tracking-wider ${dashboard.subtle}`}>
             Close date
           </p>
-          <p className="text-sm text-gray-300">{formatDate(deal.closeDate)}</p>
+          <p className={`text-sm ${dashboard.muted}`}>{formatDate(deal.closeDate)}</p>
         </div>
       </div>
     </article>

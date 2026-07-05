@@ -106,7 +106,7 @@ function ToolbarButton({
 }) {
   const styles = {
     primary:
-      "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md  hover:",
+      "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md hover:shadow-lg hover:shadow-[#2563EB]/20",
     secondary:
       "bg-[#111827]/60 border border-[#1E293B] text-gray-300 hover:border-[#1E293B] hover:text-white",
     accent:

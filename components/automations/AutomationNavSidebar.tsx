@@ -80,7 +80,7 @@ export function AutomationMetricsBar({
   ];
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6 lg:mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6 lg:mb-8">
       {metrics.map((m, i) => (
         <motion.div
           key={m.label}
@@ -88,7 +88,7 @@ export function AutomationMetricsBar({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
           whileHover={{ y: -2 }}
-          className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#1E293B] hover: transition-shadow"
+          className="rounded-xl bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#2563EB]/40 hover:shadow-md transition-shadow"
         >
           <p className="text-xs text-gray-500 uppercase tracking-wider">{m.label}</p>
           <p className="text-2xl font-bold text-white mt-1 tabular-nums">{m.value}</p>

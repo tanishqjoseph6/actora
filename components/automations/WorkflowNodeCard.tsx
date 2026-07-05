@@ -59,15 +59,15 @@ export function WorkflowNodeCard({
     >
       <div
         className={`
-          flex items-center gap-3 p-4 rounded-[16px] bg-gradient-to-r border backdrop-blur-xl
+          flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r border backdrop-blur-xl
           ${CATEGORY_STYLES[node.category]}
-          hover: transition-shadow
+          hover:shadow-lg hover:shadow-black/20 transition-shadow
           cursor-grab active:cursor-grabbing
         `}
         {...attributes}
         {...listeners}
       >
-        <div className="w-10 h-10 rounded-xl bg-[#050816]/40 border border-white/10 flex items-center justify-center text-lg shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-[#05070B]/40 border border-[#1E293B] flex items-center justify-center text-lg shrink-0">
           {node.icon}
         </div>
         <div className="flex-1 min-w-0">

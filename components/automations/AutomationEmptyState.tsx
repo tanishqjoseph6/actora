@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 type AutomationEmptyStateProps = {
   onCreate: () => void;
@@ -39,14 +40,14 @@ export function AutomationEmptyState({ onCreate }: AutomationEmptyStateProps) {
       <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
         No automations yet
       </h2>
-      <p className="text-gray-500 max-w-md mb-8">
+      <p className={`${dashboard.muted} max-w-md mb-8 text-sm`}>
         Connect triggers, AI actions, and outputs into powerful workflows — like Zapier, but built for your AI workforce.
       </p>
 
       <button
         type="button"
         onClick={onCreate}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-[14px] text-sm font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-sm hover:  transition-all"
+        className={`${dashboard.btnPrimary} gap-2 px-6 py-3 text-sm`}
       >
         Create Your First Automation
       </button>

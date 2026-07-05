@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatCurrency, MOCK_COMPANIES, MOCK_CONTACTS } from "@/lib/crm/mock-data";
 
 const CRM_MODULES = [
@@ -52,7 +53,7 @@ export default function CrmHomePage() {
         <CrmSubNav />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <CrmStatCard title="Contacts" value={MOCK_CONTACTS.length} />
         <CrmStatCard title="Active contacts" value={activeContacts} />
         <CrmStatCard title="Companies" value={MOCK_COMPANIES.length} />
@@ -64,18 +65,18 @@ export default function CrmHomePage() {
           <Link
             key={module.href}
             href={module.href}
-            className="group block rounded-2xl bg-[#0B1220]/80 border border-blue-400/20 p-5 sm:p-6 backdrop-blur-sm hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-200"
+            className={`group block p-5 sm:p-6 ${dashboard.cardInteractive}`}
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#111827] border border-[#1E293B] flex items-center justify-center text-xl shrink-0">
                 {module.icon}
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors">
+                <h2 className="text-lg font-bold text-white group-hover:text-[#93C5FD] transition-colors">
                   {module.title}
                 </h2>
-                <p className="text-sm text-gray-400 mt-1">{module.description}</p>
-                <p className="text-xs text-blue-400/70 mt-3 font-medium">{module.stat}</p>
+                <p className={`text-sm ${dashboard.muted} mt-1`}>{module.description}</p>
+                <p className={`text-xs ${dashboard.accent} mt-3 font-medium opacity-80`}>{module.stat}</p>
               </div>
             </div>
           </Link>

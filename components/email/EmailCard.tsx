@@ -1,6 +1,7 @@
 "use client";
 
 import type { InboxEmail } from "@/lib/gmail";
+import { motion } from "framer-motion";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 
 type EmailCardProps = {
@@ -29,13 +30,14 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
   const aiSummary = getAiSummary(email.preview);
 
   return (
-    <article
+    <motion.article
+      layout
+      whileTap={{ scale: 0.995 }}
       onClick={() => onSelect(email)}
       className={`
         group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-[16px]
-        bg-[#111827] border transition-all duration-300 ease-out cursor-pointer
-        hover:bg-[#111827] hover:border-[#2563EB]/60 hover:shadow-sm
-        hover:-translate-y-0.5
+        bg-[#111827] border transition-all duration-300 ease-out cursor-pointer interactive-lift
+        hover:border-[#2563EB]/60 hover:shadow-sm hover:shadow-[#2563EB]/5
         ${email.unread ? "border-l-2 border-l-[#2563EB]" : "border-[#1E293B]"}
         ${selected ? "border-[#2563EB]/60 bg-[#111827]" : ""}
       `}
@@ -96,7 +98,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
           {email.preview}
         </p>
 
-        <div className="flex flex-wrap items-center gap-2 mt-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
+        <div className="flex flex-wrap items-center gap-2 mt-3 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
           <button
             type="button"
             onClick={(e) => {
@@ -139,7 +141,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
           </button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 

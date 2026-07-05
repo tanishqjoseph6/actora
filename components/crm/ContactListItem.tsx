@@ -1,13 +1,14 @@
 import Link from "next/link";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { formatDate } from "@/lib/crm/mock-data";
 import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { Contact, ContactStatus } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<ContactStatus, string> = {
-  active: "bg-emerald-500/15 border-emerald-400/25 text-emerald-400",
-  lead: "bg-blue-500/15 border-blue-400/25 text-blue-300",
-  inactive: "bg-gray-500/15 border-gray-400/25 text-gray-400",
+  active: "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]",
+  lead: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
+  inactive: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
 };
 
 type ContactListItemProps = {
@@ -24,7 +25,7 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
       className="block group"
     >
       <article
-        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/30 hover:bg-[#111827]/70 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5 ${compact ? "p-3" : "p-4 sm:p-5"}`}
+        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl ${dashboard.cardInteractive} ${compact ? "p-3" : "p-4 sm:p-5"}`}
       >
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
@@ -34,7 +35,7 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <h3 className="font-semibold text-white truncate group-hover:text-blue-300 transition-colors">
+              <h3 className="font-semibold text-white truncate group-hover:text-[#93C5FD] transition-colors">
                 {contact.name}
               </h3>
               <span
@@ -43,9 +44,9 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
                 {contact.status}
               </span>
             </div>
-            <p className="text-sm text-gray-400 truncate">{contact.title}</p>
+            <p className="text-sm text-[#64748B] truncate">{contact.title}</p>
             {!compact && (
-              <p className="text-sm text-blue-400/80 truncate mt-0.5">
+              <p className="text-sm text-[#3B82F6] truncate mt-0.5">
                 {contact.companyName}
               </p>
             )}

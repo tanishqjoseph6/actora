@@ -18,13 +18,13 @@ export function PipelineColumnEmpty({
       className={`
         flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl
         border border-dashed transition-colors duration-200
-        ${isOver ? "border-blue-400/40 bg-blue-500/5" : "border-blue-400/15 bg-[#111827]/20"}
+        ${isOver ? "border-[#2563EB]/50 bg-[#2563EB]/5" : "border-[#1E293B] bg-transparent"}
       `}
     >
-      <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mb-3">
-        <DropIcon className="w-5 h-5 text-blue-400/50" />
+      <div className="w-10 h-10 rounded-xl bg-[#111827] border border-[#1E293B] flex items-center justify-center mb-3">
+        <DropIcon className={`w-5 h-5 ${isOver ? "text-[#3B82F6]" : "text-[#64748B]"}`} />
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-[#64748B]">
         {isOver ? "Drop deal here" : `No deals in ${stageLabel}`}
       </p>
     </motion.div>
@@ -36,13 +36,13 @@ export function PipelineBoardEmpty() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-3xl bg-[#0B1220]/60 border border-blue-400/15 backdrop-blur-sm"
+      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-xl border border-[#1E293B] bg-[#111827]"
     >
-      <div className="w-16 h-16 rounded-2xl bg-[#111827] border border-[#1E293B] flex items-center justify-center mb-5">
-        <FilterIcon className="w-8 h-8 text-blue-400/60" />
+      <div className="w-16 h-16 rounded-xl bg-[#0B1220] border border-[#1E293B] flex items-center justify-center mb-5">
+        <FilterIcon className="w-8 h-8 text-[#64748B]" />
       </div>
-      <p className="text-gray-300 font-medium mb-1">No deals match your filters</p>
-      <p className="text-sm text-gray-500 max-w-sm">
+      <p className="text-white font-medium mb-1">No deals match your filters</p>
+      <p className="text-sm text-[#64748B] max-w-sm">
         Try adjusting your search, owner, priority, or stage filters to see deals
         in the pipeline.
       </p>

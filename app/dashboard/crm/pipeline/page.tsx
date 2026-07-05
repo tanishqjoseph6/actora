@@ -30,7 +30,7 @@ export default function PipelinePage() {
         <CrmSubNav />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 lg:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <CrmStatCard
           title="Pipeline value"
           value={formatCurrency(stats.totalPipelineValue)}
@@ -51,7 +51,7 @@ export default function PipelinePage() {
         />
       </div>
 
-      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-4 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
+      <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-6 lg:p-8">
         <PipelineBoard />
       </div>
     </>

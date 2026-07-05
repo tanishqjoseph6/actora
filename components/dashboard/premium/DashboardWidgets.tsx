@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "./dashboard-tokens";
 
 const SCHEDULE = [
   { time: "10:00", title: "Investor sync", tag: "Meeting" },
@@ -29,7 +30,7 @@ const SYSTEM_HEALTH = [
 
 export function DashboardWidgets() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5 mb-8 lg:mb-10">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 lg:mb-10">
       <WidgetCard title="Today's Schedule" delay={0}>
         <ul className="space-y-3">
           {SCHEDULE.map((item) => (
@@ -38,10 +39,12 @@ export function DashboardWidgets() {
                 {item.time}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-white truncate group-hover:text-[#2563EB] transition-colors">
+                <p className="text-sm text-white truncate group-hover:text-[#93C5FD] transition-colors">
                   {item.title}
                 </p>
-                <span className="text-[10px] text-gray-500 uppercase tracking-wide">{item.tag}</span>
+                <span className={`text-[10px] uppercase tracking-wide ${dashboard.subtle}`}>
+                  {item.tag}
+                </span>
               </div>
             </li>
           ))}
@@ -56,9 +59,9 @@ export function DashboardWidgets() {
                 <p className="text-sm text-white truncate">
                   <span className="text-[#3B82F6]">{item.action}</span>
                 </p>
-                <p className="text-xs text-gray-500 truncate">{item.target}</p>
+                <p className={`text-xs truncate ${dashboard.subtle}`}>{item.target}</p>
               </div>
-              <span className="text-[10px] text-gray-600 shrink-0">{item.ago}</span>
+              <span className={`text-[10px] shrink-0 ${dashboard.subtle}`}>{item.ago}</span>
             </li>
           ))}
         </ul>
@@ -70,7 +73,7 @@ export function DashboardWidgets() {
             <li key={item.name} className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm text-white truncate">{item.name}</p>
-                <p className="text-xs text-gray-500">{item.runs} runs today</p>
+                <p className={`text-xs ${dashboard.subtle}`}>{item.runs} runs today</p>
               </div>
               <StatusPill status={item.status} />
             </li>
@@ -82,7 +85,7 @@ export function DashboardWidgets() {
         <ul className="space-y-3">
           {SYSTEM_HEALTH.map((item) => (
             <li key={item.label} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-gray-300">{item.label}</span>
+              <span className={`text-sm ${dashboard.muted}`}>{item.label}</span>
               <HealthDot status={item.status} />
             </li>
           ))}
@@ -103,11 +106,11 @@ function WidgetCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35 }}
+      transition={{ delay, duration: 0.3 }}
       whileHover={{ y: -2 }}
-      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 sm:p-5 hover:border-[#1E293B] hover: transition-shadow duration-300"
+      className={`${dashboard.cardBase} ${dashboard.cardHover} p-5`}
     >
       <h3 className="text-sm font-semibold text-white mb-4">{title}</h3>
       {children}
@@ -118,10 +121,10 @@ function WidgetCard({
 function StatusPill({ status }: { status: "active" | "paused" }) {
   return (
     <span
-      className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${
+      className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
         status === "active"
-          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-400/25"
-          : "bg-amber-500/15 text-amber-400 border border-amber-400/25"
+          ? "bg-[#2563EB]/15 text-[#93C5FD] border-[#2563EB]/30"
+          : "bg-[#111827] text-[#64748B] border-[#1E293B]"
       }`}
     >
       {status}
@@ -134,10 +137,10 @@ function HealthDot({ status }: { status: "healthy" | "degraded" }) {
     <span className="flex items-center gap-1.5 text-xs">
       <span
         className={`w-2 h-2 rounded-full ${
-          status === "healthy" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"
+          status === "healthy" ? "bg-[#2563EB]" : "bg-[#64748B] animate-pulse"
         }`}
       />
-      <span className={status === "healthy" ? "text-emerald-400" : "text-amber-400"}>
+      <span className={status === "healthy" ? "text-[#93C5FD]" : "text-[#94A3B8]"}>
         {status === "healthy" ? "Healthy" : "Degraded"}
       </span>
     </span>

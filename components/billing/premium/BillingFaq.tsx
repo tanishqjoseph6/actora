@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BILLING_FAQ } from "../pricing-data";
 
-export function BillingFaq() {
+export function BillingFaq({ embedded = false }: { embedded?: boolean }) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -13,10 +13,14 @@ export function BillingFaq() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.5 }}
-      className="rounded-[24px] bg-[#111827]/60 border border-[#1E293B] backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-black/20"
+      className={`rounded-[24px] bg-[#111827]/60 border border-[#1E293B] backdrop-blur-xl p-6 sm:p-8 shadow-sm ${embedded ? "" : "shadow-xl shadow-black/20"}`}
     >
-      <h2 className="text-2xl font-bold text-white mb-2">FAQ</h2>
-      <p className="text-sm text-gray-500 mb-6">Common questions about billing and plans</p>
+      {!embedded && (
+        <>
+          <h2 className="text-2xl font-bold text-white mb-2">FAQ</h2>
+          <p className="text-sm text-gray-500 mb-6">Common questions about billing and plans</p>
+        </>
+      )}
 
       <div className="divide-y divide-[#2563EB]/10">
         {BILLING_FAQ.map((item, index) => {

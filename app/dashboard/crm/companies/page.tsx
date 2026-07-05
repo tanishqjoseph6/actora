@@ -10,6 +10,7 @@ import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
 import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
   CRM_INDUSTRIES,
   CRM_OWNERS,
@@ -99,14 +100,14 @@ export default function CompaniesPage() {
         <CrmSubNav />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <CrmStatCard title="Total companies" value={MOCK_COMPANIES.length} />
         <CrmStatCard title="Enterprise" value={filterCounts.enterprise} />
         <CrmStatCard title="Total pipeline" value={formatCurrency(totalPipeline)} />
         <CrmStatCard title="Avg. AI score" value={avgAiScore} />
       </div>
 
-      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
+      <div className={dashboard.panelLg}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold">All companies</h2>
           <button
@@ -182,7 +183,7 @@ export default function CompaniesPage() {
 
         {filteredCompanies.length === 0 ? (
           <CrmEmptyState
-            icon={<CompanyEmptyIcon className="w-8 h-8 text-blue-400/60" />}
+            icon={<CompanyEmptyIcon className={`w-8 h-8 ${dashboard.subtle}`} />}
             title={
               hasSearch
                 ? "No companies match your search"

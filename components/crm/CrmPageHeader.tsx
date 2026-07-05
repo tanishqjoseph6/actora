@@ -1,3 +1,5 @@
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+
 type CrmPageHeaderProps = {
   badge: string;
   title: string;
@@ -12,17 +14,17 @@ export function CrmPageHeader({
   description,
 }: CrmPageHeaderProps) {
   return (
-    <div className="mb-6 lg:mb-8">
-      <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full border border-blue-400/30 text-blue-400 text-sm mb-4 bg-[#0B1220]/60 backdrop-blur-sm">
+    <div className="mb-5 sm:mb-6 lg:mb-8">
+      <div
+        className={`inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full border ${dashboard.border} ${dashboard.accent} text-xs sm:text-sm mb-3 sm:mb-4 ${dashboard.surface}`}
+      >
         {badge}
       </div>
-      <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+      <h1 className={dashboard.pageTitle}>
         {title}{" "}
-        <span className="text-white">
-          {titleAccent}
-        </span>
+        <span className="text-white">{titleAccent}</span>
       </h1>
-      <p className="text-gray-400 mt-2 lg:mt-3 text-base lg:text-lg max-w-2xl">
+      <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-2xl`}>
         {description}
       </p>
     </div>

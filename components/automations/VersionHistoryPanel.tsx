@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { WorkflowVersion } from "@/lib/automations/types";
 
 type VersionHistoryPanelProps = {
@@ -18,11 +19,15 @@ export function VersionHistoryPanel({
 }: VersionHistoryPanelProps) {
   if (loading) {
     return (
-      <div className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] p-5 animate-pulse">
-        <div className="h-4 w-32 bg-[#2563EB]/10 rounded mb-3" />
+      <div
+        className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] p-5 space-y-3"
+        aria-busy="true"
+        aria-label="Loading version history"
+      >
+        <Skeleton className="h-4 w-32" />
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-10 bg-[#2563EB]/5 rounded-lg" />
+            <Skeleton key={i} className="h-10 w-full rounded-lg" />
           ))}
         </div>
       </div>

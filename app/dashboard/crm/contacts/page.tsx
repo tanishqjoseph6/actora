@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ContactsTable, ContactsTableSkeleton } from "@/components/crm/contacts/ContactsTable";
 import { ContactListItem } from "@/components/crm/ContactListItem";
 import { CrmEmptyState, ContactEmptyIcon } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
-import { CrmListSkeleton } from "@/components/crm/CrmListSkeleton";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
+import { CrmPagination } from "@/components/crm/CrmPagination";
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
 import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
   CRM_OWNERS,
   filterContacts,
@@ -20,6 +23,8 @@ import type { ContactSort, ContactStatus } from "@/lib/crm/types";
 
 type ContactFilter = "all" | ContactStatus;
 
+const PAGE_SIZE_DEFAULT = 10;
+
 export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +32,8 @@ export default function ContactsPage() {
   const [companyFilter, setCompanyFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [sort, setSort] = useState<ContactSort>("name-asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 300);
@@ -48,6 +55,18 @@ export default function ContactsPage() {
     });
     return sortContacts(filtered, sort);
   }, [searchQuery, activeFilter, companyFilter, ownerFilter, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredContacts.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedContacts = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredContacts.slice(start, start + pageSize);
+  }, [filteredContacts, safePage, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeFilter, companyFilter, ownerFilter, sort, pageSize]);
 
   const chips = [
     { id: "all", label: "All", count: filterCounts.all },
@@ -73,7 +92,21 @@ export default function ContactsPage() {
         <div className="mb-6">
           <CrmSubNav />
         </div>
-        <CrmListSkeleton rows={6} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-5 space-y-3"
+            >
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-5 sm:p-6">
+          <ContactsTableSkeleton />
+        </div>
       </>
     );
   }
@@ -91,20 +124,27 @@ export default function ContactsPage() {
         <CrmSubNav />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <CrmStatCard title="Total contacts" value={MOCK_CONTACTS.length} />
         <CrmStatCard title="Active" value={filterCounts.active} />
         <CrmStatCard title="Leads" value={filterCounts.lead} />
         <CrmStatCard title="Avg. AI score" value={avgAiScore} />
       </div>
 
-      <div className="bg-[#0B1220]/80 border border-blue-400/20 rounded-3xl p-5 sm:p-6 lg:p-8 backdrop-blur-sm shadow-lg shadow-black/20">
+      <div className={dashboard.panelLg}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold">All contacts</h2>
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-white">All contacts</h2>
+            <p className="text-sm text-[#64748B] mt-0.5 tabular-nums">
+              {filteredContacts.length} contact{filteredContacts.length !== 1 ? "s" : ""}
+              {filteredContacts.length !== MOCK_CONTACTS.length &&
+                ` · filtered from ${MOCK_CONTACTS.length}`}
+            </p>
+          </div>
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8] opacity-60 cursor-not-allowed"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] text-white opacity-60 cursor-not-allowed shrink-0"
             title="Coming soon"
           >
             + Add contact
@@ -127,7 +167,7 @@ export default function ContactsPage() {
           />
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
           <CrmSelectFilter
             label="Company"
             value={companyFilter}
@@ -161,7 +201,7 @@ export default function ContactsPage() {
 
         {filteredContacts.length === 0 ? (
           <CrmEmptyState
-            icon={<ContactEmptyIcon className="w-8 h-8 text-blue-400/60" />}
+            icon={<ContactEmptyIcon className="w-8 h-8 text-[#64748B]" />}
             title={
               hasSearch
                 ? "No contacts match your search"
@@ -170,11 +210,23 @@ export default function ContactsPage() {
             description="Try a different search term or adjust your filters."
           />
         ) : (
-          <div className="space-y-2">
-            {filteredContacts.map((contact) => (
-              <ContactListItem key={contact.id} contact={contact} />
-            ))}
-          </div>
+          <>
+            <div className="lg:hidden space-y-2 mb-4">
+              {paginatedContacts.map((contact) => (
+                <ContactListItem key={contact.id} contact={contact} />
+              ))}
+            </div>
+            <div className="hidden lg:block">
+              <ContactsTable contacts={paginatedContacts} />
+            </div>
+            <CrmPagination
+              page={safePage}
+              pageSize={pageSize}
+              totalItems={filteredContacts.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
         )}
       </div>
     </>

@@ -11,13 +11,13 @@ export function CrmSearchInput({
 }: CrmSearchInputProps) {
   return (
     <div className="relative">
-      <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+      <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] pointer-events-none" />
       <input
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#111827] border border-blue-400/10 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:border-blue-400/40 focus:ring-1 focus:ring-blue-400/20 transition-all duration-200"
+        className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#0B1220] border border-[#1E293B] text-white placeholder:text-[#64748B] text-sm focus:outline-none focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/20 transition-all duration-200 focus-ring"
       />
     </div>
   );

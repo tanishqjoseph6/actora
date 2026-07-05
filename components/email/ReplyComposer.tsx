@@ -95,8 +95,8 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
     };
 
     return (
-      <div className="rounded-2xl border border-blue-400/10 bg-[#111827]/60 overflow-hidden focus-within:border-blue-400/40 focus-within:ring-1 focus-within:ring-blue-400/20 transition-all">
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-blue-400/10 bg-[#0B1220]/40">
+      <div className="rounded-2xl border border-[#1E293B] bg-[#111827]/60 overflow-hidden focus-within:border-[#2563EB]/40 focus-within:ring-1 focus-within:ring-[#2563EB]/20 transition-all">
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-[#1E293B] bg-[#0B1220]/40">
           <ToolbarButton
             label="Bold"
             onClick={() => execFormat("bold")}

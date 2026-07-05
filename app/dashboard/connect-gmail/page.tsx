@@ -5,6 +5,8 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 function ConnectGmailContent() {
   const searchParams = useSearchParams();
@@ -44,15 +46,18 @@ function ConnectGmailContent() {
   };
 
   return (
-    <div className="relative z-10 max-w-2xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-      <div className="flex items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1 mb-4 rounded-full border border-[rgba(37, 99, 235,0.25)] text-[#3B82F6] text-sm font-medium bg-[#0B1220]/60 backdrop-blur-sm">
+    <div className="max-w-2xl mx-auto w-full">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 lg:mb-8">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 rounded-full border border-[#1E293B] text-[#3B82F6] text-xs font-medium bg-[#0B1220]">
             📧 Gmail
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold">
-            Connect <span className="text-blue-400">Gmail</span>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            Connect Gmail
           </h1>
+          <p className={`${dashboard.muted} mt-2 text-sm sm:text-base`}>
+            Link a Gmail account to sync inbox and automations.
+          </p>
         </div>
         <CurrentPlanBadge
           subscription={subscription}
@@ -61,14 +66,14 @@ function ConnectGmailContent() {
         />
       </div>
 
-      <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] p-6 sm:p-8 shadow-lg shadow-black/20">
-        <p className="text-gray-400 leading-relaxed">
+      <div className={`${dashboard.cardLg} p-5 sm:p-8`}>
+        <p className={`${dashboard.muted} leading-relaxed text-sm sm:text-base`}>
           Link an additional Gmail account to Actora. Your plan determines how
           many inboxes you can connect.
         </p>
 
         {subscription && (
-          <p className="mt-4 text-sm text-gray-500">
+          <p className={`mt-4 text-sm ${dashboard.subtle}`}>
             Inboxes: {subscription.usage.inboxesConnected} /{" "}
             {subscription.limits.inboxes === Infinity
               ? "Unlimited"
@@ -77,13 +82,14 @@ function ConnectGmailContent() {
         )}
 
         {statusMessage && (
-          <p className="mt-4 text-sm text-emerald-400">{statusMessage}</p>
+          <p className="mt-4 text-sm text-[#93C5FD]">{statusMessage}</p>
         )}
 
         <button
+          type="button"
           onClick={handleConnect}
           disabled={isConnecting}
-          className="mt-6 px-5 py-3 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold hover:bg-[#1D4ED8] transition-all duration-300 shadow-md shadow-blue-500/20 disabled:opacity-50"
+          className={`${dashboard.btnPrimary} mt-6 px-5 py-3 text-sm w-full sm:w-auto disabled:opacity-50`}
         >
           {isConnecting ? "Redirecting…" : "Connect Google Account"}
         </button>
@@ -94,18 +100,19 @@ function ConnectGmailContent() {
 
 export default function ConnectGmailPage() {
   return (
-    <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-blue-500/8 blur-[180px] rounded-full pointer-events-none" />
-      <Suspense
-        fallback={
-          <div className="relative z-10 max-w-2xl mx-auto px-5 sm:px-8 py-12 sm:py-16 animate-pulse">
-            <div className="h-10 w-48 bg-blue-400/10 rounded mb-6" />
-            <div className="h-40 bg-[#0B1220]/80 rounded-2xl" />
+    <Suspense
+      fallback={
+        <div className="max-w-2xl mx-auto w-full space-y-4" aria-busy="true" aria-label="Loading">
+          <Skeleton className="h-10 w-48" />
+          <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-6 space-y-4">
+            <Skeleton className="h-6 w-64 max-w-full" />
+            <SkeletonText lines={3} />
+            <Skeleton className="h-11 w-full rounded-xl" />
           </div>
-        }
-      >
-        <ConnectGmailContent />
-      </Suspense>
-    </main>
+        </div>
+      }
+    >
+      <ConnectGmailContent />
+    </Suspense>
   );
 }

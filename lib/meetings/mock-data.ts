@@ -1,0 +1,171 @@
+import type { Meeting } from "./types";
+
+function at(dayOffset: number, hour: number, minute = 0): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+function end(startIso: string, minutes: number): string {
+  return new Date(new Date(startIso).getTime() + minutes * 60_000).toISOString();
+}
+
+/** Mock meetings anchored to the current week */
+export const MOCK_MEETINGS: Meeting[] = [
+  {
+    id: "m1",
+    title: "Northwind enterprise demo",
+    description: "Walk through Actora CRM + inbox automation for the procurement team.",
+    startAt: at(0, 10, 0),
+    endAt: end(at(0, 10, 0), 45),
+    attendees: ["Sarah Chen", "Tanishq"],
+    companyName: "Northwind Labs",
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/abc-defg-hij",
+  },
+  {
+    id: "m2",
+    title: "Pipeline review",
+    description: "Weekly sync on open deals and forecast adjustments.",
+    startAt: at(0, 14, 30),
+    endAt: end(at(0, 14, 30), 30),
+    attendees: ["Alex Rivera", "Sam Okonkwo", "Tanishq"],
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/xyz-uvwx-rst",
+  },
+  {
+    id: "m3",
+    title: "Meridian Health compliance call",
+    description: "HIPAA workspace requirements and security questionnaire.",
+    startAt: at(1, 9, 0),
+    endAt: end(at(1, 9, 0), 60),
+    attendees: ["Elena Rodriguez", "Tanishq"],
+    companyName: "Meridian Health",
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/med-health-01",
+  },
+  {
+    id: "m4",
+    title: "Nova Finance pilot check-in",
+    description: "Review adoption metrics from the first two weeks.",
+    startAt: at(1, 15, 0),
+    endAt: end(at(1, 15, 0), 30),
+    attendees: ["Aisha Khan", "Alex Rivera"],
+    companyName: "Nova Finance",
+    type: "phone",
+    status: "tentative",
+    organizer: "Alex Rivera",
+  },
+  {
+    id: "m5",
+    title: "Orbit Media partnership",
+    description: "Agency reseller terms and co-marketing plan.",
+    startAt: at(2, 11, 0),
+    endAt: end(at(2, 11, 0), 45),
+    attendees: ["David Park", "Tanishq"],
+    companyName: "Orbit Media",
+    location: "WeWork, SF — Room 4B",
+    type: "in-person",
+    status: "confirmed",
+    organizer: "Tanishq",
+  },
+  {
+    id: "m6",
+    title: "Product roadmap sync",
+    description: "Q3 priorities: automations, CRM polish, billing.",
+    startAt: at(3, 10, 0),
+    endAt: end(at(3, 10, 0), 60),
+    attendees: ["Engineering", "Tanishq"],
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/roadmap-q3",
+  },
+  {
+    id: "m7",
+    title: "Vertex AI integration scoping",
+    description: "Technical discovery for API + webhook requirements.",
+    startAt: at(3, 16, 0),
+    endAt: end(at(3, 16, 0), 45),
+    attendees: ["James Wu", "Sam Okonkwo"],
+    companyName: "Vertex Systems",
+    type: "video",
+    status: "confirmed",
+    organizer: "Sam Okonkwo",
+    meetingLink: "https://meet.google.com/vertex-scope",
+  },
+  {
+    id: "m8",
+    title: "Weekly startup standup",
+    description: "Founders sync — growth, hiring, and runway.",
+    startAt: at(4, 17, 0),
+    endAt: end(at(4, 17, 0), 30),
+    attendees: ["Founders"],
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/startup-standup",
+  },
+  {
+    id: "m9",
+    title: "Customer success roundtable",
+    description: "Share wins, blockers, and expansion plays.",
+    startAt: at(6, 13, 0),
+    endAt: end(at(6, 13, 0), 60),
+    attendees: ["CS Team", "Tanishq"],
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/cs-roundtable",
+  },
+  {
+    id: "m10",
+    title: "Acme Corp renewal",
+    description: "Annual contract renewal and seat expansion.",
+    startAt: at(8, 11, 30),
+    endAt: end(at(8, 11, 30), 45),
+    attendees: ["Lisa Park", "Tanishq"],
+    companyName: "Acme Corp",
+    type: "video",
+    status: "tentative",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/acme-renewal",
+  },
+  {
+    id: "m11",
+    title: "Investor update prep",
+    description: "Draft metrics deck for monthly investor email.",
+    startAt: at(-1, 16, 0),
+    endAt: end(at(-1, 16, 0), 30),
+    attendees: ["Tanishq"],
+    type: "video",
+    status: "confirmed",
+    organizer: "Tanishq",
+    meetingLink: "https://meet.google.com/investor-prep",
+  },
+  {
+    id: "m12",
+    title: "Lunch with prospect",
+    description: "Intro meeting with Brightline SaaS founder.",
+    startAt: at(5, 12, 30),
+    endAt: end(at(5, 12, 30), 60),
+    attendees: ["Maya Singh", "Tanishq"],
+    companyName: "Brightline",
+    location: "Sightglass Coffee, SOMA",
+    type: "in-person",
+    status: "confirmed",
+    organizer: "Tanishq",
+  },
+];
+
+export function getMeetingById(id: string): Meeting | undefined {
+  return MOCK_MEETINGS.find((m) => m.id === id);
+}

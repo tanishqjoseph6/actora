@@ -1,5 +1,6 @@
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { formatLimit, getPlanBadgeStyles, getUsagePercent } from "@/lib/subscription";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type CurrentPlanBadgeProps = {
   subscription: SubscriptionSnapshot | null;
@@ -14,9 +15,7 @@ export function CurrentPlanBadge({
 }: CurrentPlanBadgeProps) {
   if (loading) {
     return (
-      <span className="inline-flex px-2.5 py-0.5 rounded-full bg-blue-400/10 border border-blue-400/20 text-xs text-gray-500 animate-pulse">
-        Loading…
-      </span>
+      <Skeleton className="h-6 w-16 rounded-full" aria-label="Loading plan" />
     );
   }
 
@@ -56,9 +55,9 @@ type PlanUsageDisplayProps = {
 export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProps) {
   if (loading || !subscription) {
     return (
-      <div className="grid sm:grid-cols-2 gap-6 animate-pulse">
-        <div className="h-16 bg-blue-400/10 rounded-xl" />
-        <div className="h-16 bg-blue-400/10 rounded-xl" />
+      <div className="grid sm:grid-cols-2 gap-6" aria-busy="true">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-16 w-full rounded-xl" />
       </div>
     );
   }
@@ -88,13 +87,13 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
         return (
           <div key={stat.label}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">{stat.label}</span>
+              <span className="text-sm text-[#64748B]">{stat.label}</span>
               <span className="text-sm font-medium text-white">
                 {stat.used}
-                <span className="text-gray-500"> / {limitLabel}</span>
+                <span className="text-[#64748B]"> / {limitLabel}</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-[#111827] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#0B1220] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   isAtLimit ? "bg-[#EF4444]" : "bg-[#2563EB]"
@@ -102,7 +101,7 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1.5">{stat.unit}</p>
+            <p className="text-xs text-[#64748B] mt-1.5">{stat.unit}</p>
           </div>
         );
       })}

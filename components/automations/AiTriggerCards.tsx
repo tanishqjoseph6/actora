@@ -22,7 +22,7 @@ export function AiTriggerCards({ onSelectTrigger, disabled }: AiTriggerCardsProp
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {TRIGGER_BLOCKS.map((trigger, i) => (
           <motion.button
             key={trigger.id}
@@ -33,7 +33,7 @@ export function AiTriggerCards({ onSelectTrigger, disabled }: AiTriggerCardsProp
             transition={{ delay: i * 0.04 }}
             whileHover={disabled ? undefined : { y: -4, scale: 1.02 }}
             onClick={() => onSelectTrigger(trigger)}
-            className="group relative text-left rounded-[16px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#1E293B] hover: transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+            className="group relative text-left rounded-xl bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-4 hover:border-[#2563EB]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
           >
             <div className="absolute inset-0 bg-[#2563EB]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             <div className="relative">

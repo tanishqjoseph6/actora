@@ -2,7 +2,6 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { motion } from "framer-motion";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { formatCurrency, formatDate } from "@/lib/crm/mock-data";
 import {
@@ -13,113 +12,173 @@ import {
 
 type PipelineDealCardProps = {
   deal: PipelineDeal;
-  isDragging?: boolean;
+  isSelected?: boolean;
+  onSelect?: (deal: PipelineDeal) => void;
 };
 
-export function PipelineDealCard({ deal, isDragging }: PipelineDealCardProps) {
+export function PipelineDealCard({
+  deal,
+  isSelected,
+  onSelect,
+}: PipelineDealCardProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
-    isDragging: isSortableDragging,
+    isDragging,
   } = useSortable({ id: deal.id, data: { type: "deal", deal } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition ?? "transform 200ms cubic-bezier(0.2, 0, 0, 1)",
   };
 
-  const dragging = isDragging || isSortableDragging;
   const priorityStyle = PRIORITY_STYLES[deal.priority];
   const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
-    <motion.article
+    <article
       ref={setNodeRef}
       style={style}
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: dragging ? 0.9 : 1, y: 0, scale: dragging ? 1.03 : 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={`
-        group relative rounded-2xl border backdrop-blur-sm cursor-grab active:cursor-grabbing
-        bg-[#111827]/70 border-blue-400/15 p-4
-        hover:border-blue-400/35 hover:shadow-lg hover:shadow-blue-500/5
-        ${dragging ? "z-50 shadow-2xl shadow-blue-500/15 border-blue-400/40 ring-2 ring-blue-400/20" : ""}
+        group relative interactive-lift transition-all duration-200
+        rounded-xl border bg-[#111827] shadow-sm
+        ${isDragging ? "opacity-40 scale-[0.98]" : "opacity-100"}
+        ${isSelected ? "border-[#2563EB]/60 ring-1 ring-[#2563EB]/25" : "border-[#1E293B] hover:border-[#2563EB]/35"}
       `}
-      {...attributes}
-      {...listeners}
     >
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-stretch">
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          className="flex items-center justify-center w-8 shrink-0 rounded-l-xl border-r border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] hover:bg-[#0B1220] cursor-grab active:cursor-grabbing touch-none"
+          aria-label={`Drag ${deal.title}`}
+          {...attributes}
+          {...listeners}
+        >
+          <GripIcon className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onSelect?.(deal)}
+          className="flex-1 text-left p-3.5 min-w-0"
+        >
+          <div className="flex items-start gap-2.5 mb-2.5">
+            <div
+              className={`w-9 h-9 rounded-lg bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}
+            >
+              {getInitials(deal.companyName)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-white text-sm leading-tight truncate">
+                {deal.companyName}
+              </h3>
+              <p className="text-xs text-[#64748B] truncate mt-0.5">{deal.title}</p>
+            </div>
+            <span
+              className={`shrink-0 inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wide border ${priorityStyle.badge}`}
+            >
+              {priorityStyle.label}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 mb-2.5 text-xs text-[#94A3B8]">
+            <UserIcon className="w-3 h-3 text-[#64748B] shrink-0" />
+            <span className="truncate">{deal.contactName}</span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <p className="text-sm font-bold text-white tabular-nums">
+              {formatCurrency(deal.value)}
+            </p>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold ${aiTier.badge}`}
+            >
+              <SparkIcon className="w-3 h-3 shrink-0 opacity-80" />
+              {deal.aiScore}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-[#64748B]">
+            <span className="flex items-center gap-1">
+              <CalendarIcon className="w-3 h-3" />
+              {formatDate(deal.closeDate)}
+            </span>
+            <span>{deal.lastActivity}</span>
+          </div>
+
+          {deal.labels.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2.5 pt-2.5 border-t border-[#1E293B]">
+              {deal.labels.slice(0, 3).map((label) => (
+                <span
+                  key={label}
+                  className="px-1.5 py-0.5 rounded-md bg-[#0B1220] border border-[#1E293B] text-[9px] text-[#64748B]"
+                >
+                  {label}
+                </span>
+              ))}
+              {deal.labels.length > 3 && (
+                <span className="text-[9px] text-[#64748B]">+{deal.labels.length - 3}</span>
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-[#1E293B]">
+            <div className="w-5 h-5 rounded-md bg-[#2563EB] flex items-center justify-center text-[8px] font-bold text-white">
+              {getInitials(deal.owner)}
+            </div>
+            <span className="text-[10px] text-[#64748B]">{deal.owner}</span>
+          </div>
+        </button>
+      </div>
+    </article>
+  );
+}
+
+export function PipelineDealCardOverlay({ deal }: { deal: PipelineDeal }) {
+  const priorityStyle = PRIORITY_STYLES[deal.priority];
+  const aiTier = getAiScoreTier(deal.aiScore);
+
+  return (
+    <div className="rounded-xl border border-[#2563EB]/50 bg-[#111827] p-3.5 shadow-xl shadow-black/40 w-[280px] cursor-grabbing rotate-[1.5deg]">
+      <div className="flex items-start gap-2.5 mb-2">
         <div
-          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-md shadow-black/20`}
+          className={`w-9 h-9 rounded-lg bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}
         >
           {getInitials(deal.companyName)}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white text-sm leading-tight truncate">
-            {deal.companyName}
-          </h3>
-          <p className="text-xs text-gray-400 truncate mt-0.5">{deal.title}</p>
+          <h3 className="font-semibold text-white text-sm truncate">{deal.companyName}</h3>
+          <p className="text-xs text-[#64748B] truncate">{deal.title}</p>
         </div>
         <span
-          className={`shrink-0 inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide border ${priorityStyle.badge}`}
+          className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border ${priorityStyle.badge}`}
         >
           {priorityStyle.label}
         </span>
       </div>
+      <p className="text-sm font-bold text-white mb-1">{formatCurrency(deal.value)}</p>
+      <span className={`inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-md border ${aiTier.badge}`}>
+        {aiTier.label} · {deal.aiScore}
+      </span>
+    </div>
+  );
+}
 
-      <div className="flex items-center gap-2 mb-3 text-xs text-gray-400">
-        <UserIcon className="w-3.5 h-3.5 text-blue-400/60 shrink-0" />
-        <span className="truncate">{deal.contactName}</span>
-      </div>
-
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-base font-bold text-white">
-          {formatCurrency(deal.value)}
-        </p>
-        <div
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${aiTier.badge}`}
-          title="AI lead score"
-        >
-          <SparkIcon className="w-3 h-3 shrink-0" />
-          <span className="text-[10px] font-bold">
-            {aiTier.label} · {deal.aiScore}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-[10px] text-gray-500 mb-3">
-        <span className="flex items-center gap-1">
-          <CalendarIcon className="w-3 h-3" />
-          {formatDate(deal.closeDate)}
-        </span>
-        <span>{deal.lastActivity}</span>
-      </div>
-
-      {deal.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {deal.labels.map((label) => (
-            <span
-              key={label}
-              className="px-1.5 py-0.5 rounded-md bg-[#0B1220]/80 border border-blue-400/10 text-[9px] text-gray-400"
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 pt-2 border-t border-blue-400/10">
-        <div className="w-5 h-5 rounded-full bg-[#2563EB] flex items-center justify-center text-[8px] font-bold text-white">
-          {getInitials(deal.owner)}
-        </div>
-        <span className="text-[10px] text-gray-500">{deal.owner}</span>
-      </div>
-    </motion.article>
+function GripIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="currentColor">
+      <circle cx="5" cy="4" r="1.25" />
+      <circle cx="11" cy="4" r="1.25" />
+      <circle cx="5" cy="8" r="1.25" />
+      <circle cx="11" cy="8" r="1.25" />
+      <circle cx="5" cy="12" r="1.25" />
+      <circle cx="11" cy="12" r="1.25" />
+    </svg>
   );
 }
 

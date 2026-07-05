@@ -201,7 +201,7 @@ function PlanButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#050816]/80 border border-[#1E293B] text-white hover:border-[#1E293B] hover:bg-[#111827]/80`}
+        className={`${base} bg-[#05070B]/80 border border-[#1E293B] text-white hover:border-[#2563EB]/40 hover:bg-[#111827]/80`}
       >
         {label}
       </button>

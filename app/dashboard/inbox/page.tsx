@@ -2,6 +2,7 @@
 
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 export default function InboxPage() {
   const { checkAiAction, subscription, loading } = usePlanGate();
@@ -36,45 +37,48 @@ export default function InboxPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white overflow-hidden">
-      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-500/8 blur-[180px] rounded-full pointer-events-none" />
-
-      <div className="relative z-10 max-w-4xl mx-auto px-5 sm:px-8 py-12 sm:py-16">
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <h1 className="text-4xl font-bold">
-            📥 <span className="text-blue-400">Inbox</span>
+    <>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 lg:mb-8">
+        <div>
+          <p className={`text-sm ${dashboard.subtle} mb-2`}>📥 Mail</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            Inbox
           </h1>
-          <CurrentPlanBadge
-            subscription={subscription}
-            loading={loading}
-            compact
-          />
+          <p className={`${dashboard.muted} mt-2 text-sm sm:text-base`}>
+            Review messages and run AI summaries on your threads.
+          </p>
         </div>
-
-        <div className="space-y-4">
-          {emails.map((email, i) => (
-            <div
-              key={i}
-              className="bg-[#0B1220]/80 backdrop-blur-sm p-5 rounded-2xl border border-[rgba(37, 99, 235,0.15)]"
-            >
-              <div className="flex justify-between">
-                <h2 className="font-bold">{email.sender}</h2>
-                <span className="text-gray-400">{email.time}</span>
-              </div>
-
-              <p className="font-medium mt-2">{email.subject}</p>
-              <p className="text-gray-400">{email.preview}</p>
-
-              <button
-                className="mt-4 px-4 py-2 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold hover:bg-[#1D4ED8] transition-all"
-                onClick={handleAiSummary}
-              >
-                AI Summary
-              </button>
-            </div>
-          ))}
-        </div>
+        <CurrentPlanBadge
+          subscription={subscription}
+          loading={loading}
+          compact
+        />
       </div>
-    </main>
+
+      <div className="space-y-3 sm:space-y-4">
+        {emails.map((email, i) => (
+          <div
+            key={i}
+            className={`${dashboard.cardBase} ${dashboard.cardHover} p-4 sm:p-5`}
+          >
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-3">
+              <h2 className="font-semibold text-white truncate">{email.sender}</h2>
+              <span className={`text-sm ${dashboard.subtle} shrink-0`}>{email.time}</span>
+            </div>
+
+            <p className="font-medium mt-2 text-white break-words">{email.subject}</p>
+            <p className={`${dashboard.muted} text-sm mt-1 line-clamp-2`}>{email.preview}</p>
+
+            <button
+              type="button"
+              className={`${dashboard.btnPrimary} mt-4 px-4 py-2 text-sm w-full sm:w-auto`}
+              onClick={handleAiSummary}
+            >
+              AI Summary
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

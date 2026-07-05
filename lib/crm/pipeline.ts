@@ -32,38 +32,38 @@ export const PIPELINE_STAGES: {
   {
     id: "lead",
     label: "Lead",
-    accent: "from-gray-500/20 to-gray-600/10",
-    dot: "bg-gray-400",
+    accent: "from-[#1E293B] to-[#0B1220]",
+    dot: "bg-[#64748B]",
   },
   {
     id: "qualified",
     label: "Qualified",
-    accent: "from-blue-500/20 to-blue-600/10",
-    dot: "bg-blue-400",
+    accent: "from-[#2563EB]/20 to-[#1D4ED8]/10",
+    dot: "bg-[#3B82F6]",
   },
   {
     id: "proposal",
     label: "Proposal Sent",
-    accent: "from-violet-500/20 to-violet-600/10",
-    dot: "bg-violet-400",
+    accent: "from-[#2563EB]/25 to-[#1D4ED8]/15",
+    dot: "bg-[#2563EB]",
   },
   {
     id: "negotiation",
     label: "Negotiation",
-    accent: "from-amber-500/20 to-amber-600/10",
-    dot: "bg-amber-400",
+    accent: "from-[#1D4ED8]/20 to-[#2563EB]/10",
+    dot: "bg-[#1D4ED8]",
   },
   {
     id: "won",
     label: "Won",
-    accent: "from-emerald-500/20 to-emerald-600/10",
-    dot: "bg-emerald-400",
+    accent: "from-[#2563EB]/30 to-[#3B82F6]/10",
+    dot: "bg-[#60A5FA]",
   },
   {
     id: "lost",
     label: "Lost",
-    accent: "from-red-500/20 to-red-600/10",
-    dot: "bg-red-400",
+    accent: "from-[#1E293B] to-[#111827]",
+    dot: "bg-[#475569]",
   },
 ];
 
@@ -95,15 +95,15 @@ export function getAiScoreTier(score: number): {
     return {
       tier: "hot",
       label: "Hot",
-      badge: "bg-rose-500/20 border-rose-400/40 text-rose-300",
-      gradient: "from-rose-500 to-orange-400",
+      badge: "bg-[#2563EB]/20 border-[#3B82F6]/40 text-[#93C5FD]",
+      gradient: "from-[#3B82F6] to-[#2563EB]",
     };
   }
   if (score >= 80) {
     return {
       tier: "high",
       label: "High",
-      badge: "bg-emerald-500/20 border-emerald-400/40 text-emerald-300",
+      badge: "bg-[#2563EB]/15 border-[#2563EB]/40 text-[#BFDBFE]",
       gradient: "from-[#2563EB] to-[#1D4ED8]",
     };
   }
@@ -111,23 +111,23 @@ export function getAiScoreTier(score: number): {
     return {
       tier: "medium",
       label: "Medium",
-      badge: "bg-blue-500/20 border-blue-400/40 text-blue-300",
-      gradient: "from-blue-400 to-blue-400",
+      badge: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
+      gradient: "from-[#3B82F6] to-[#2563EB]",
     };
   }
   if (score >= 40) {
     return {
       tier: "low",
       label: "Low",
-      badge: "bg-amber-500/20 border-amber-400/40 text-amber-300",
-      gradient: "from-amber-400 to-orange-400",
+      badge: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
+      gradient: "from-[#64748B] to-[#475569]",
     };
   }
   return {
     tier: "cold",
     label: "Cold",
-    badge: "bg-gray-500/20 border-gray-400/40 text-gray-400",
-    gradient: "from-gray-500 to-gray-600",
+    badge: "bg-[#0B1220] border-[#1E293B] text-[#475569]",
+    gradient: "from-[#475569] to-[#334155]",
   };
 }
 
@@ -346,15 +346,15 @@ export const PRIORITY_STYLES: Record<
   { badge: string; label: string }
 > = {
   high: {
-    badge: "bg-red-500/15 border-red-400/30 text-red-300",
+    badge: "bg-[#2563EB]/20 border-[#3B82F6]/35 text-[#93C5FD]",
     label: "High",
   },
   medium: {
-    badge: "bg-amber-500/15 border-amber-400/30 text-amber-300",
+    badge: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
     label: "Medium",
   },
   low: {
-    badge: "bg-gray-500/15 border-gray-400/30 text-gray-400",
+    badge: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
     label: "Low",
   },
 };

@@ -6,22 +6,21 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
-  type DragEndEvent,
-  type DragStartEvent,
+  TouchSensor,
   useSensor,
   useSensors,
+  closestCorners,
+  defaultDropAnimationSideEffects,
+  type DragEndEvent,
+  type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { motion } from "framer-motion";
-import { getAvatarGradient, getInitials } from "@/lib/avatar";
-import { formatCurrency, formatDate } from "@/lib/crm/mock-data";
 import {
   MOCK_PIPELINE_DEALS,
   PIPELINE_STAGES,
   filterPipelineDeals,
-  getAiScoreTier,
-  PRIORITY_STYLES,
   sortPipelineDeals,
   type PipelineDeal,
 } from "@/lib/crm/pipeline";
@@ -33,6 +32,10 @@ import {
   getVisibleStages,
   type PipelineFilters,
 } from "./PipelineToolbar";
+import {
+  PipelineDealCardOverlay,
+} from "./PipelineDealCard";
+import { PipelineDealDetailPanel } from "./PipelineDealDetailPanel";
 
 const DEFAULT_FILTERS: PipelineFilters = {
   search: "",
@@ -44,13 +47,25 @@ const DEFAULT_FILTERS: PipelineFilters = {
   sort: "value-desc",
 };
 
+const dropAnimation: DropAnimation = {
+  duration: 280,
+  easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: { active: { opacity: "0.35" } },
+  }),
+};
+
 export function PipelineBoard() {
   const [deals, setDeals] = useState<PipelineDeal[]>(MOCK_PIPELINE_DEALS);
   const [filters, setFilters] = useState<PipelineFilters>(DEFAULT_FILTERS);
   const [activeDeal, setActiveDeal] = useState<PipelineDeal | null>(null);
+  const [selectedDeal, setSelectedDeal] = useState<PipelineDeal | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 120, tolerance: 6 },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -77,6 +92,11 @@ export function PipelineBoard() {
   }, [filteredDeals]);
 
   const hasAnyDeals = filteredDeals.length > 0;
+
+  const selectedDealLive = useMemo(() => {
+    if (!selectedDeal) return null;
+    return deals.find((d) => d.id === selectedDeal.id) ?? selectedDeal;
+  }, [deals, selectedDeal]);
 
   function handleDragStart(event: DragStartEvent) {
     const deal = deals.find((d) => d.id === event.active.id);
@@ -106,6 +126,16 @@ export function PipelineBoard() {
     setDeals((prev) =>
       prev.map((d) => (d.id === dealId ? { ...d, stage: targetStage! } : d))
     );
+
+    if (selectedDeal?.id === dealId) {
+      setSelectedDeal((prev) =>
+        prev ? { ...prev, stage: targetStage! } : null
+      );
+    }
+  }
+
+  function handleDragCancel() {
+    setActiveDeal(null);
   }
 
   return (
@@ -125,67 +155,36 @@ export function PipelineBoard() {
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
         >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="overflow-x-auto pb-4 -mx-2 px-2"
+            className="overflow-x-auto pb-2 premium-scrollbar snap-x snap-mandatory"
           >
-            <div className="flex gap-4 min-w-max">
+            <div className="flex gap-3 min-w-max px-0.5">
               {visibleStages.map((stageId) => (
                 <PipelineColumn
                   key={stageId}
                   stageId={stageId}
                   deals={dealsByStage[stageId]}
+                  selectedDealId={selectedDeal?.id}
+                  onSelectDeal={setSelectedDeal}
                 />
               ))}
             </div>
           </motion.div>
 
-          <DragOverlay dropAnimation={{ duration: 220, easing: "ease" }}>
-            {activeDeal ? <DragOverlayCard deal={activeDeal} /> : null}
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeDeal ? <PipelineDealCardOverlay deal={activeDeal} /> : null}
           </DragOverlay>
         </DndContext>
       )}
+
+      <PipelineDealDetailPanel
+        deal={selectedDealLive}
+        onClose={() => setSelectedDeal(null)}
+      />
     </>
-  );
-}
-
-function DragOverlayCard({ deal }: { deal: PipelineDeal }) {
-  const priorityStyle = PRIORITY_STYLES[deal.priority];
-  const aiTier = getAiScoreTier(deal.aiScore);
-
-  return (
-    <div className="rounded-2xl border border-blue-400/40 bg-[#111827]/95 backdrop-blur-xl p-4 shadow-2xl shadow-blue-500/20 w-[280px] rotate-1 cursor-grabbing">
-      <div className="flex items-start gap-3 mb-3">
-        <div
-          className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-xs font-bold text-white shrink-0`}
-        >
-          {getInitials(deal.companyName)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-white text-sm truncate">
-            {deal.companyName}
-          </h3>
-          <p className="text-xs text-gray-400 truncate">{deal.title}</p>
-        </div>
-        <span
-          className={`shrink-0 inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border ${priorityStyle.badge}`}
-        >
-          {priorityStyle.label}
-        </span>
-      </div>
-      <p className="text-base font-bold text-blue-400 mb-2">
-        {formatCurrency(deal.value)}
-      </p>
-      <div className="flex items-center justify-between text-[10px] text-gray-500">
-        <span>{formatDate(deal.closeDate)}</span>
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border ${aiTier.badge}`}
-        >
-          {aiTier.label} · {deal.aiScore}
-        </span>
-      </div>
-    </div>
   );
 }

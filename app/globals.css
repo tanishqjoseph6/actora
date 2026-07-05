@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --actora-bg: #050816;
+  --actora-bg: #05070b;
   --actora-surface: #0b1220;
   --actora-card: #111827;
   --actora-border: #1e293b;
@@ -123,6 +123,74 @@ body {
 
 .premium-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(37, 99, 235, 0.35);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0%,
+    #273449 40%,
+    #334155 50%,
+    #273449 60%,
+    #1e293b 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background: #1e293b;
+  }
+
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-right {
+    animation: none;
+  }
+}
+
+/* Micro-interactions */
+.interactive-lift {
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .interactive-lift:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.interactive-press {
+  transition: transform 0.12s ease;
+}
+
+.interactive-press:active {
+  transform: scale(0.98);
+}
+
+.focus-ring {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 @keyframes dash {

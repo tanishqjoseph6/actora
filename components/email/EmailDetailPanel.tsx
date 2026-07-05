@@ -21,6 +21,7 @@ import {
   type ReplyTone,
 } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
@@ -318,12 +319,12 @@ export function EmailDetailPanel({
       />
 
       <aside
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] lg:w-[540px] bg-[#0B1220] border-l border-blue-400/20 shadow-2xl shadow-black/50 flex flex-col animate-slide-in-right"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] lg:w-[540px] bg-[#0B1220] border-l border-[#1E293B] shadow-2xl shadow-black/50 flex flex-col animate-slide-in-right"
         role="dialog"
         aria-modal
         aria-label="Email detail"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-blue-400/10 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#1E293B] shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={`shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-sm font-semibold text-white`}
@@ -332,12 +333,12 @@ export function EmailDetailPanel({
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-white truncate">{email.sender}</p>
-              <p className="text-xs text-gray-500">{email.date}</p>
+              <p className="text-xs text-[#64748B]">{email.date}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-blue-500/10 transition-colors"
+            className="shrink-0 p-2 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#2563EB]/10 transition-colors"
             aria-label="Close panel"
           >
             <CloseIcon className="w-5 h-5" />
@@ -346,13 +347,11 @@ export function EmailDetailPanel({
 
         <div className="flex-1 overflow-y-auto">
           {panelState === "loading" && (
-            <div className="p-5 space-y-4 animate-pulse">
-              <div className="h-6 w-3/4 bg-blue-400/10 rounded" />
-              <div className="h-4 w-1/4 bg-blue-400/10 rounded" />
-              <div className="space-y-2 pt-4">
-                <div className="h-3 w-full bg-blue-400/10 rounded" />
-                <div className="h-3 w-full bg-blue-400/10 rounded" />
-                <div className="h-3 w-2/3 bg-blue-400/10 rounded" />
+            <div className="p-5 space-y-4" aria-busy="true" aria-label="Loading email">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <div className="pt-4">
+                <SkeletonText lines={5} />
               </div>
             </div>
           )}
@@ -361,10 +360,10 @@ export function EmailDetailPanel({
             <div className="p-5">
               <div className="bg-[#111827] border border-red-400/20 rounded-2xl p-6 text-center">
                 <p className="text-red-300 font-medium mb-2">Could not load email</p>
-                <p className="text-gray-400 text-sm mb-4">{panelError}</p>
+                <p className="text-[#94A3B8] text-sm mb-4">{panelError}</p>
                 <button
                   onClick={loadDetail}
-                  className="px-4 py-2 rounded-lg border border-blue-400/30 text-blue-400 hover:bg-blue-500/10 transition-colors"
+                  className="px-4 py-2 rounded-lg border border-[#2563EB]/30 text-[#3B82F6] hover:bg-[#2563EB]/10 transition-colors"
                 >
                   Try again
                 </button>
@@ -375,7 +374,7 @@ export function EmailDetailPanel({
           {panelState === "ready" && detail && (
             <div className="p-5">
               <h2 className="text-xl font-bold text-white mb-1">{detail.subject}</h2>
-              <time className="text-sm text-gray-500">{detail.date}</time>
+              <time className="text-sm text-[#64748B]">{detail.date}</time>
 
               {/* Reply / Forward / AI Reply actions */}
               <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -407,7 +406,7 @@ export function EmailDetailPanel({
               </div>
 
               {showTonePicker && (
-                <div className="mt-3 p-4 rounded-2xl bg-[#111827]/60 border border-blue-400/15 backdrop-blur-sm animate-fade-in">
+                <div className="mt-3 p-4 rounded-2xl bg-[#111827]/60 border border-[#1E293B] backdrop-blur-sm animate-fade-in">
                   <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-3">
                     Choose tone
                   </p>
@@ -419,8 +418,8 @@ export function EmailDetailPanel({
                         disabled={isGenerating}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
                           selectedTone === tone
-                            ? "bg-blue-500/20 border-blue-400/40 text-blue-300"
-                            : "border-blue-400/15 text-gray-400 hover:border-blue-400/30 hover:text-white"
+                            ? "bg-[#2563EB]/20 border-[#2563EB]/40 text-[#93C5FD]"
+                            : "border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/30 hover:text-white"
                         } disabled:opacity-50`}
                       >
                         {REPLY_TONE_LABELS[tone]}
@@ -430,21 +429,21 @@ export function EmailDetailPanel({
                 </div>
               )}
 
-              <div className="mt-6 p-4 rounded-2xl bg-[#111827]/60 border border-blue-400/10">
-                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
+              <div className="mt-6 p-4 rounded-2xl bg-[#111827]/60 border border-[#1E293B]">
+                <p className="text-sm text-[#94A3B8] whitespace-pre-wrap leading-relaxed">
                   {detail.body || "No content available."}
                 </p>
               </div>
 
               {composerOpen && (
-                <div className="mt-6 pt-6 border-t border-blue-400/10 animate-fade-in">
+                <div className="mt-6 pt-6 border-t border-[#1E293B] animate-fade-in">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <SparkleIcon className="w-5 h-5 text-blue-400" />
+                      <SparkleIcon className="w-5 h-5 text-[#3B82F6]" />
                       {isGenerating ? "Generating…" : "Compose Reply"}
                     </h3>
                     {selectedTone && !isGenerating && (
-                      <span className="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300">
+                      <span className="text-xs px-2.5 py-1 rounded-full bg-[#2563EB]/10 border border-[#1E293B] text-[#93C5FD]">
                         {REPLY_TONE_LABELS[selectedTone]}
                       </span>
                     )}
@@ -471,7 +470,7 @@ export function EmailDetailPanel({
                       <button
                         onClick={handleCopy}
                         disabled={isComposerEmpty(reply.plain, reply.html)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-400/20 text-gray-300 text-sm font-medium hover:bg-blue-500/10 hover:text-white transition-all duration-200 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#1E293B] text-[#94A3B8] text-sm font-medium hover:bg-[#2563EB]/10 hover:text-white transition-all duration-200 disabled:opacity-50"
                       >
                         <CopyIcon className="w-4 h-4" />
                         {copySuccess ? "Copied!" : "Copy"}
@@ -479,7 +478,7 @@ export function EmailDetailPanel({
                       <button
                         onClick={handleRegenerate}
                         disabled={isGenerating || isSending}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-400/20 text-gray-300 text-sm font-medium hover:bg-blue-500/10 hover:text-white transition-all duration-200 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#1E293B] text-[#94A3B8] text-sm font-medium hover:bg-[#2563EB]/10 hover:text-white transition-all duration-200 disabled:opacity-50"
                       >
                         <RefreshIcon className="w-4 h-4" />
                         Regenerate
@@ -489,7 +488,7 @@ export function EmailDetailPanel({
                         disabled={
                           isSending || isComposerEmpty(reply.plain, reply.html)
                         }
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold hover:bg-[#1D4ED8] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#2563EB]/20"
                       >
                         {isSending ? (
                           <>
@@ -506,7 +505,7 @@ export function EmailDetailPanel({
                       <button
                         onClick={handleCancelComposer}
                         disabled={isSending}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[rgba(37, 99, 235,0.15)] text-gray-400 text-sm font-medium hover:border-blue-400/30 hover:text-white transition-all duration-200 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[rgba(37, 99, 235,0.15)] text-[#94A3B8] text-sm font-medium hover:border-[#2563EB]/30 hover:text-white transition-all duration-200 disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -524,14 +523,14 @@ export function EmailDetailPanel({
 
 function ComposerSkeleton() {
   return (
-    <div className="rounded-2xl border border-blue-400/10 bg-[#111827]/60 overflow-hidden animate-pulse">
-      <div className="h-10 border-b border-blue-400/10 bg-[#0B1220]/40" />
+    <div
+      className="rounded-2xl border border-[#1E293B] bg-[#111827]/60 overflow-hidden"
+      aria-busy="true"
+      aria-label="Loading composer"
+    >
+      <Skeleton className="h-10 w-full rounded-none" />
       <div className="p-4 space-y-3 min-h-[180px]">
-        <div className="h-3 w-full bg-blue-400/10 rounded" />
-        <div className="h-3 w-11/12 bg-blue-400/10 rounded" />
-        <div className="h-3 w-10/12 bg-blue-400/10 rounded" />
-        <div className="h-3 w-full bg-blue-400/10 rounded" />
-        <div className="h-3 w-8/12 bg-blue-400/10 rounded" />
+        <SkeletonText lines={5} />
       </div>
     </div>
   );
@@ -556,7 +555,7 @@ function ActionButton({
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md shadow-blue-500/15 hover:bg-[#1D4ED8]`}
+        className={`${base} bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-md shadow-[#2563EB]/15`}
       >
         {children}
       </button>
@@ -567,7 +566,7 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`${base} border border-blue-400/20 text-gray-300 hover:bg-blue-500/10 hover:text-white`}
+      className={`${base} border border-[#1E293B] text-[#94A3B8] hover:bg-[#2563EB]/10 hover:text-white`}
     >
       {children}
     </button>
@@ -576,8 +575,8 @@ function ActionButton({
 
 function LoadingSpinner({ dark = false }: { dark?: boolean }) {
   const colorClass = dark
-    ? "border-white/30 border-t-[#050816]"
-    : "border-blue-400/30 border-t-blue-400";
+    ? "border-white/30 border-t-[#05070B]"
+    : "border-[#2563EB]/30 border-t-[#2563EB]";
 
   return (
     <span

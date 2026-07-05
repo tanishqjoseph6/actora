@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 type AutomationHeaderProps = {
   onNewAutomation: () => void;
@@ -26,12 +27,10 @@ export function AutomationHeader({
 
       <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
-            <span className="text-white">
-              AI Automation Builder
-            </span>
+          <h1 className={dashboard.pageTitle}>
+            <span className="text-white">AI Automation Builder</span>
           </h1>
-          <p className="text-gray-500 mt-2 text-base lg:text-lg max-w-xl">
+          <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>
             Build workflows that let AI run repetitive work automatically.
           </p>
         </div>
@@ -40,7 +39,7 @@ export function AutomationHeader({
           <button
             type="button"
             onClick={onNewAutomation}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-sm font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-sm hover:  transition-all"
+            className={`${dashboard.btnPrimary} gap-2 px-4 py-2.5 text-sm`}
           >
             <span aria-hidden>+</span>
             New Automation
@@ -48,14 +47,14 @@ export function AutomationHeader({
           <button
             type="button"
             onClick={onImport}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-sm font-medium bg-[#111827]/60 border border-[#1E293B] text-gray-300 hover:border-[#1E293B] hover:text-white transition-all"
+            className={`${dashboard.btnSecondary} gap-2 px-4 py-2.5 text-sm ${dashboard.muted} hover:text-white`}
           >
             Import Workflow
           </button>
           <button
             type="button"
             onClick={onShowTemplates}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] text-sm font-medium bg-[#111827]/60 border border-[#1E293B] text-gray-300 hover:border-[#1E293B] hover:text-white transition-all"
+            className={`${dashboard.btnSecondary} gap-2 px-4 py-2.5 text-sm ${dashboard.muted} hover:text-white`}
           >
             Templates
           </button>

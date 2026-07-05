@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import {
   formatCurrency,
@@ -39,10 +40,10 @@ export function CompanyListItem({ company }: { company: Company }) {
 
   return (
     <Link href={`/dashboard/crm/companies/${company.id}`} className="block group">
-      <article className="flex flex-col lg:flex-row lg:items-center gap-4 p-4 sm:p-5 rounded-2xl bg-[#111827]/40 border border-blue-400/10 hover:border-blue-400/30 hover:bg-[#111827]/70 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5">
+      <article className={`flex flex-col lg:flex-row lg:items-center gap-4 p-4 sm:p-5 ${dashboard.cardInteractive}`}>
         <div className="flex items-start gap-4 flex-1 min-w-0">
           <div
-            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-sm font-bold text-white shrink-0 border border-blue-400/20`}
+            className={`w-11 h-11 rounded-xl bg-gradient-to-br ${getAvatarGradient(company.name)} flex items-center justify-center text-sm font-bold text-white shrink-0 border ${dashboard.border}`}
           >
             {getInitials(company.name)}
           </div>
@@ -106,7 +107,7 @@ function Metric({
     <div>
       <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
       <p
-        className={`text-sm font-semibold mt-0.5 ${accent ? "text-blue-400" : "text-white"}`}
+        className={`text-sm font-semibold mt-0.5 ${accent ? dashboard.accent : "text-white"}`}
       >
         {value}
       </p>

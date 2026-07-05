@@ -18,7 +18,7 @@ export function TemplateGrid({ templates, onUseTemplate }: TemplateGridProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
           whileHover={{ y: -4 }}
-          className="group rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 hover:border-[#1E293B] hover: transition-all duration-300"
+          className="group rounded-xl bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 hover:border-[#2563EB]/40 transition-all duration-300"
         >
           <div className="flex items-start gap-3 mb-3">
             <div className="w-12 h-12 rounded-[14px] bg-[#111827] border border-[#1E293B] flex items-center justify-center text-2xl">

@@ -1,7 +1,7 @@
 type FilterChip = {
   id: string;
   label: string;
-  count: number;
+  count?: number;
 };
 
 type CrmFilterChipsProps = {
@@ -25,21 +25,23 @@ export function CrmFilterChips({
             type="button"
             onClick={() => onChange(chip.id)}
             className={`
-              inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium
-              transition-all duration-200
+              inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium
+              transition-all duration-200 interactive-press
               ${
                 active
-                  ? "bg-blue-500/20 border border-blue-400/40 text-blue-300 shadow-sm shadow-blue-500/10"
-                  : "bg-[#111827] border border-blue-400/10 text-gray-400 hover:border-blue-400/25 hover:text-gray-300"
+                  ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-[#93C5FD]"
+                  : "bg-[#0B1220] border border-[#1E293B] text-[#64748B] hover:border-[#2563EB]/35 hover:text-[#94A3B8]"
               }
             `}
           >
             {chip.label}
-            <span
-              className={`text-xs tabular-nums ${active ? "text-blue-400/80" : "text-gray-500"}`}
-            >
-              {chip.count}
-            </span>
+            {chip.count !== undefined && (
+              <span
+                className={`text-xs tabular-nums ${active ? "text-[#3B82F6]" : "text-[#64748B]"}`}
+              >
+                {chip.count}
+              </span>
+            )}
           </button>
         );
       })}
