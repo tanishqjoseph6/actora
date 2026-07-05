@@ -118,3 +118,69 @@ export async function generateEmailReplyWithRetry(
     }
   }
 }
+
+export async function generateEmailSummary({
+  sender,
+  subject,
+  body,
+  threadContext,
+}: {
+  sender: string;
+  subject: string;
+  body: string;
+  threadContext?: string;
+}): Promise<string> {
+  const openai = getOpenAIClient();
+
+  const threadSection = threadContext?.trim()
+    ? `\n\nPrior messages in this thread:\n${threadContext.slice(0, 6000)}`
+    : "";
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.4,
+    messages: [
+      {
+        role: "system",
+        content: `You are Actora, an email assistant. Summarize emails clearly for a busy professional.
+- 2–4 short bullet points covering key facts, requests, and deadlines
+- Note any action items for the recipient
+- Keep under 120 words
+- Use plain text bullets starting with "•"
+- No markdown headers or subject line repetition`,
+      },
+      {
+        role: "user",
+        content: `Summarize this email.
+
+From: ${sender}
+Subject: ${subject}
+
+Email body:
+${body.slice(0, 12000)}${threadSection}`,
+      },
+    ],
+  });
+
+  const summary = response.choices[0]?.message?.content?.trim();
+
+  if (!summary) {
+    throw new Error("OpenAI returned an empty summary.");
+  }
+
+  return summary;
+}
+
+export async function generateEmailSummaryWithRetry(
+  input: Parameters<typeof generateEmailSummary>[0]
+): Promise<string> {
+  try {
+    return await generateEmailSummary(input);
+  } catch (firstError) {
+    try {
+      return await generateEmailSummary(input);
+    } catch {
+      throw firstError;
+    }
+  }
+}

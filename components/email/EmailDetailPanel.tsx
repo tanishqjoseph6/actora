@@ -16,6 +16,10 @@ import {
   setCachedReply,
 } from "@/lib/email/reply-cache";
 import {
+  getCachedSummary,
+  setCachedSummary,
+} from "@/lib/email/summary-cache";
+import {
   REPLY_TONE_LABELS,
   REPLY_TONES,
   type ReplyTone,
@@ -29,6 +33,8 @@ type EmailDetailPanelProps = {
   /** Opens tone picker once the email detail has loaded. */
   openAiReply?: boolean;
   onAiReplyOpened?: () => void;
+  onMarkRead?: () => void;
+  onArchive?: () => Promise<boolean>;
 };
 
 type PanelState = "loading" | "ready" | "error";
@@ -40,6 +46,8 @@ export function EmailDetailPanel({
   onClose,
   openAiReply,
   onAiReplyOpened,
+  onMarkRead,
+  onArchive,
 }: EmailDetailPanelProps) {
   const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
   const composerRef = useRef<ReplyComposerHandle>(null);
@@ -56,6 +64,12 @@ export function EmailDetailPanel({
   const [isSending, setIsSending] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [toast, setToast] = useState<AppToastState>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryState, setSummaryState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isMarkingRead, setIsMarkingRead] = useState(false);
 
   const resetComposer = useCallback(() => {
     setReply(EMPTY_REPLY);
@@ -65,10 +79,72 @@ export function EmailDetailPanel({
     setCopySuccess(false);
   }, []);
 
+  const generateSummary = useCallback(
+    async (emailDetail: EmailDetail, options?: { skipCache?: boolean }) => {
+      if (!checkAiAction()) return;
+
+      if (!options?.skipCache) {
+        const cached = getCachedSummary(email.id);
+        if (cached) {
+          setSummary(cached);
+          setSummaryState("ready");
+          return;
+        }
+      }
+
+      setSummaryState("loading");
+
+      try {
+        const res = await fetch("/api/gmail/ai-summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: emailDetail.sender,
+            subject: emailDetail.subject,
+            emailBody: emailDetail.body,
+            threadContext: emailDetail.threadContext,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (isPlanLimitError(data)) {
+            showLimitModal(data.error, data.limitType);
+            setSummaryState("idle");
+            return;
+          }
+          setSummaryState("error");
+          setToast({
+            type: "error",
+            title: "Summary failed",
+            message: data.error ?? "Failed to generate summary.",
+          });
+          return;
+        }
+
+        setSummary(data.summary);
+        setSummaryState("ready");
+        setCachedSummary(email.id, data.summary);
+        await refreshSubscription();
+      } catch {
+        setSummaryState("error");
+        setToast({
+          type: "error",
+          title: "Summary failed",
+          message: "Failed to generate summary. Please try again.",
+        });
+      }
+    },
+    [checkAiAction, email.id, showLimitModal, refreshSubscription]
+  );
+
   const loadDetail = useCallback(async () => {
     setPanelState("loading");
     setPanelError(null);
     resetComposer();
+    setSummary(null);
+    setSummaryState("idle");
 
     try {
       const res = await fetch(`/api/gmail/${email.id}`);
@@ -80,24 +156,47 @@ export function EmailDetailPanel({
         return;
       }
 
-      setDetail(data.email);
+      const loadedDetail = data.email as EmailDetail;
+      setDetail(loadedDetail);
       setPanelState("ready");
+
+      const cachedSummary = getCachedSummary(email.id);
+      if (cachedSummary) {
+        setSummary(cachedSummary);
+        setSummaryState("ready");
+      } else {
+        void generateSummary(loadedDetail);
+      }
+
+      if (openAiReply) {
+        setShowTonePicker(true);
+        onAiReplyOpened?.();
+      }
+
+      if (email.unread && onMarkRead) {
+        setIsMarkingRead(true);
+        onMarkRead();
+        setIsMarkingRead(false);
+      }
     } catch {
       setPanelState("error");
       setPanelError("Failed to load email. Please try again.");
     }
-  }, [email.id, resetComposer]);
+  }, [
+    email.id,
+    email.unread,
+    generateSummary,
+    onAiReplyOpened,
+    onMarkRead,
+    openAiReply,
+    resetComposer,
+  ]);
 
   useEffect(() => {
-    loadDetail();
+    queueMicrotask(() => {
+      void loadDetail();
+    });
   }, [loadDetail]);
-
-  useEffect(() => {
-    if (panelState === "ready" && openAiReply) {
-      setShowTonePicker(true);
-      onAiReplyOpened?.();
-    }
-  }, [panelState, openAiReply, onAiReplyOpened]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -220,6 +319,43 @@ export function EmailDetailPanel({
 
   const handleCancelComposer = () => {
     resetComposer();
+  };
+
+  const handleMarkRead = () => {
+    if (!email.unread || !onMarkRead) return;
+    setIsMarkingRead(true);
+    onMarkRead();
+    setIsMarkingRead(false);
+    setToast({
+      type: "success",
+      title: "Marked as read",
+      message: "This email is now marked as read.",
+    });
+  };
+
+  const handleArchive = async () => {
+    if (!onArchive) return;
+
+    setIsArchiving(true);
+    try {
+      const success = await onArchive();
+      if (success) {
+        setToast({
+          type: "success",
+          title: "Archived",
+          message: "Email moved out of your inbox.",
+        });
+        onClose();
+      } else {
+        setToast({
+          type: "error",
+          title: "Archive failed",
+          message: "Could not archive this email.",
+        });
+      }
+    } finally {
+      setIsArchiving(false);
+    }
   };
 
   const handleCopy = async () => {
@@ -376,33 +512,41 @@ export function EmailDetailPanel({
               <h2 className="text-xl font-bold text-white mb-1">{detail.subject}</h2>
               <time className="text-sm text-[#64748B]">{detail.date}</time>
 
-              {/* Reply / Forward / AI Reply actions */}
               <div className="mt-5 flex flex-wrap items-center gap-2">
-                <ActionButton onClick={handleManualReply} disabled={isGenerating || isSending}>
-                  <ReplyIcon className="w-4 h-4" />
-                  Reply
-                </ActionButton>
-                <ActionButton
-                  onClick={() =>
-                    setToast({
-                      type: "info",
-                      title: "Forward",
-                      message: "Forward is coming soon.",
-                    })
-                  }
-                  disabled={isGenerating || isSending}
-                >
-                  <ForwardIcon className="w-4 h-4" />
-                  Forward
-                </ActionButton>
                 <ActionButton
                   variant="primary"
                   onClick={handleAiReplyClick}
-                  disabled={isGenerating || isSending}
+                  disabled={isGenerating || isSending || isArchiving}
                 >
                   <SparkleIcon className="w-4 h-4" />
-                  AI Reply
+                  Reply with AI
                 </ActionButton>
+                <ActionButton onClick={handleManualReply} disabled={isGenerating || isSending || isArchiving}>
+                  <ReplyIcon className="w-4 h-4" />
+                  Reply
+                </ActionButton>
+                {onArchive && (
+                  <ActionButton
+                    onClick={() => void handleArchive()}
+                    disabled={isArchiving || isGenerating || isSending}
+                  >
+                    {isArchiving ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <ArchiveIcon className="w-4 h-4" />
+                    )}
+                    Archive
+                  </ActionButton>
+                )}
+                {email.unread && onMarkRead && (
+                  <ActionButton
+                    onClick={handleMarkRead}
+                    disabled={isMarkingRead || isArchiving}
+                  >
+                    <ReadIcon className="w-4 h-4" />
+                    Mark as Read
+                  </ActionButton>
+                )}
               </div>
 
               {showTonePicker && (
@@ -429,7 +573,63 @@ export function EmailDetailPanel({
                 </div>
               )}
 
+              <div className="mt-6 p-4 rounded-2xl bg-[#111827] border border-[#2563EB]/20">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <SparkleIcon className="w-4 h-4 text-[#3B82F6]" />
+                    AI Summary
+                  </h3>
+                  {summaryState === "ready" && (
+                    <button
+                      type="button"
+                      onClick={() => detail && void generateSummary(detail, { skipCache: true })}
+                      className="text-xs text-[#3B82F6] hover:text-[#93C5FD] transition-colors"
+                    >
+                      Regenerate
+                    </button>
+                  )}
+                </div>
+
+                {summaryState === "loading" && (
+                  <div aria-busy="true">
+                    <SkeletonText lines={3} />
+                  </div>
+                )}
+
+                {summaryState === "error" && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-[#94A3B8]">Could not generate a summary.</p>
+                    <button
+                      type="button"
+                      onClick={() => detail && void generateSummary(detail, { skipCache: true })}
+                      className="text-xs font-medium text-[#3B82F6] hover:text-[#93C5FD]"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )}
+
+                {summaryState === "ready" && summary && (
+                  <p className="text-sm text-[#CBD5E1] whitespace-pre-wrap leading-relaxed">
+                    {summary}
+                  </p>
+                )}
+
+                {summaryState === "idle" && (
+                  <button
+                    type="button"
+                    onClick={() => detail && void generateSummary(detail)}
+                    className="text-sm font-medium text-[#3B82F6] hover:text-[#93C5FD] transition-colors"
+                  >
+                    Summarize with AI
+                  </button>
+                )}
+              </div>
+
               <div className="mt-6 p-4 rounded-2xl bg-[#111827]/60 border border-[#1E293B]">
+                <p className="text-xs font-medium uppercase tracking-wider text-[#64748B] mb-3">
+                  Full message
+                </p>
                 <p className="text-sm text-[#94A3B8] whitespace-pre-wrap leading-relaxed">
                   {detail.body || "No content available."}
                 </p>
@@ -609,10 +809,18 @@ function ReplyIcon({ className }: { className?: string }) {
   );
 }
 
-function ForwardIcon({ className }: { className?: string }) {
+function ArchiveIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+    </svg>
+  );
+}
+
+function ReadIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
     </svg>
   );
 }

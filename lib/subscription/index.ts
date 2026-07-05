@@ -22,11 +22,23 @@ export {
 export {
   canConnectInbox,
   canUseAiAction,
+  canAccessFeature,
   getUpgradeRecommendation,
   getUsagePercent,
   hasFeatureAccess,
   isPlanLimitError,
 } from "./gates";
+
+export type { PlanFeature, PlanFeatureFlags } from "./features";
+export {
+  FEATURE_META,
+  PLAN_FEATURES,
+  getFeatureUpgradePlan,
+  getPlanFeatures,
+  hasPlanFeature,
+} from "./features";
+
+export { requirePlanFeature } from "./require-feature";
 
 export type { FeatureGateResult, LimitType } from "./gates";
 

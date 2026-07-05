@@ -112,32 +112,34 @@ export function usePaymentToastFromUrl(
   useEffect(() => {
     if (handled) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get("payment");
+    queueMicrotask(() => {
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get("payment");
 
-    if (!payment) return;
+      if (!payment) return;
 
-    if (payment === "success") {
-      onToast({
-        type: "success",
-        title: "Payment successful",
-        message: "Your subscription has been upgraded.",
-      });
-    } else if (payment === "failed") {
-      onToast({
-        type: "error",
-        title: "Payment failed",
-        message: "Something went wrong. Please try again.",
-      });
-    } else if (payment === "cancelled") {
-      onToast({
-        type: "info",
-        title: "Payment cancelled",
-        message: "No charges were made to your account.",
-      });
-    }
+      if (payment === "success") {
+        onToast({
+          type: "success",
+          title: "Payment successful",
+          message: "Your subscription has been upgraded.",
+        });
+      } else if (payment === "failed") {
+        onToast({
+          type: "error",
+          title: "Payment failed",
+          message: "Something went wrong. Please try again.",
+        });
+      } else if (payment === "cancelled") {
+        onToast({
+          type: "info",
+          title: "Payment cancelled",
+          message: "No charges were made to your account.",
+        });
+      }
 
-    window.history.replaceState({}, "", "/billing");
-    setHandled(true);
+      window.history.replaceState({}, "", "/billing");
+      setHandled(true);
+    });
   }, [handled, onToast]);
 }

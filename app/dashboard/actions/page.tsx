@@ -1,6 +1,7 @@
 "use client";
 
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 
 const ACTIONS = [
   {
@@ -22,6 +23,7 @@ const ACTIONS = [
 
 export default function ActionsPage() {
   return (
+    <FeatureGate feature="automations" fullPage>
     <>
       <div className="mb-6 lg:mb-8">
         <p className={`text-sm ${dashboard.subtle} mb-2`}>⚡ Automation</p>
@@ -50,5 +52,6 @@ export default function ActionsPage() {
         ))}
       </div>
     </>
+    </FeatureGate>
   );
 }

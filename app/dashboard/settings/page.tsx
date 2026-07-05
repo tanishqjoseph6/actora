@@ -20,15 +20,18 @@ import {
   SettingsToggle,
 } from "@/components/settings/SettingsSection";
 import { SettingsHeader, SettingsSidebar } from "@/components/settings/SettingsSidebar";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { formatLimit } from "@/lib/subscription";
 import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/openai";
 
 export default function SettingsPage() {
   const { subscription, loading } = usePlanGate();
   const { data: session } = useSession();
+  const { connected: gmailConnected, primaryAccount } = useGmailAccounts();
 
   const displayName = session?.user?.name ?? "";
-  const email = session?.user?.email ?? "";
+  const email = primaryAccount?.email ?? session?.user?.email ?? "";
 
   const [name, setName] = useState("");
   const [dailyDigest, setDailyDigest] = useState(true);
@@ -37,14 +40,6 @@ export default function SettingsPage() {
   const [productUpdates, setProductUpdates] = useState(false);
   const [timezone, setTimezone] = useState("America/Los_Angeles");
   const [defaultTone, setDefaultTone] = useState("professional");
-
-  const inboxesConnected = subscription?.usage.inboxesConnected ?? 0;
-  const gmailConnected = inboxesConnected > 0 || Boolean(session?.user?.email);
-
-  useEffect(() => {
-    if (session?.user?.name) setName(session.user.name);
-  }, [session?.user?.name]);
-
   const [activeSection, setActiveSection] = useState("profile");
 
   useEffect(() => {
@@ -52,7 +47,7 @@ export default function SettingsPage() {
       const hash = window.location.hash.slice(1);
       if (hash) setActiveSection(hash);
     };
-    syncFromHash();
+    queueMicrotask(syncFromHash);
     window.addEventListener("hashchange", syncFromHash);
     return () => window.removeEventListener("hashchange", syncFromHash);
   }, []);
@@ -129,7 +124,7 @@ export default function SettingsPage() {
               <SettingsField label="Display name" htmlFor="display-name" hint="Shown in comments and activity.">
                 <SettingsInput
                   id="display-name"
-                  value={name}
+                  value={name || displayName}
                   onChange={setName}
                   placeholder="Your name"
                 />
@@ -236,6 +231,32 @@ export default function SettingsPage() {
               <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border border-[#1E293B] text-[#64748B]">
                 Coming soon
               </span>
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            id="team"
+            title="Team"
+            description="Collaboration features for your organization."
+          >
+            <FeatureGate feature="team_workspace" compact>
+              <div className={`p-4 rounded-xl border ${dashboard.border} ${dashboard.surface}`}>
+                <p className="text-sm font-medium text-white">Team workspace</p>
+                <p className={`text-xs ${dashboard.subtle} mt-1`}>
+                  Invite members, assign roles, and manage your org from one workspace.
+                </p>
+              </div>
+            </FeatureGate>
+
+            <div className="mt-4">
+              <FeatureGate feature="shared_inbox" compact>
+                <div className={`p-4 rounded-xl border ${dashboard.border} ${dashboard.surface}`}>
+                  <p className="text-sm font-medium text-white">Shared inbox</p>
+                  <p className={`text-xs ${dashboard.subtle} mt-1`}>
+                    Your team can collaborate on email threads in a unified inbox.
+                  </p>
+                </div>
+              </FeatureGate>
             </div>
           </SettingsSection>
 

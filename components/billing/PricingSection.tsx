@@ -145,35 +145,37 @@ export function PricingSection({
   useEffect(() => {
     if (!syncFromUrl) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const planParam = params.get("plan");
-    const periodParam = params.get("period");
-    const currencyParam = parseBillingCurrency(params.get("currency"));
-    const billingPeriod: BillingPeriod =
-      periodParam === "yearly" ? "yearly" : "monthly";
+    queueMicrotask(() => {
+      const params = new URLSearchParams(window.location.search);
+      const planParam = params.get("plan");
+      const periodParam = params.get("period");
+      const currencyParam = parseBillingCurrency(params.get("currency"));
+      const billingPeriod: BillingPeriod =
+        periodParam === "yearly" ? "yearly" : "monthly";
 
-    if (currencyParam) {
-      setCurrency(currencyParam);
-    }
-
-    if (periodParam === "yearly" || periodParam === "monthly") {
-      setPeriod(billingPeriod);
-    }
-
-    if (planParam === "starter" || planParam === "pro") {
-      const plan = getPlanById(
-        planParam,
-        currencyParam ?? currency,
-        billingPeriod
-      );
-      if (plan) {
-        openUpgrade(plan, billingPeriod, currencyParam ?? currency);
+      if (currencyParam) {
+        setCurrency(currencyParam);
       }
-    }
 
-    if (params.has("plan") || params.has("period") || params.has("currency")) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+      if (periodParam === "yearly" || periodParam === "monthly") {
+        setPeriod(billingPeriod);
+      }
+
+      if (planParam === "starter" || planParam === "pro") {
+        const plan = getPlanById(
+          planParam,
+          currencyParam ?? currency,
+          billingPeriod
+        );
+        if (plan) {
+          openUpgrade(plan, billingPeriod, currencyParam ?? currency);
+        }
+      }
+
+      if (params.has("plan") || params.has("period") || params.has("currency")) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    });
   }, [syncFromUrl, openUpgrade, setCurrency, currency]);
 
   useEffect(() => {

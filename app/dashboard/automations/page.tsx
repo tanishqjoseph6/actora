@@ -17,6 +17,7 @@ import { WorkflowCanvas } from "@/components/automations/WorkflowCanvas";
 import { WorkflowEditorToolbar } from "@/components/automations/WorkflowEditorToolbar";
 import { ExecutionLogPanel } from "@/components/automations/ExecutionLogPanel";
 import { VersionHistoryPanel } from "@/components/automations/VersionHistoryPanel";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useAutomations } from "@/hooks/useAutomations";
 import { MOCK_TEMPLATES } from "@/lib/automations/mock-data";
 import { blockToNode, getBlockById } from "@/lib/automations/constants";
@@ -326,6 +327,7 @@ export default function AutomationsPage() {
   };
 
   return (
+    <FeatureGate feature="automations" fullPage>
     <main className="min-h-screen bg-[#05070B] text-white">
       <div className="flex min-h-screen min-w-0">
         <PremiumSidebar
@@ -502,5 +504,6 @@ export default function AutomationsPage() {
         )}
       </AnimatePresence>
     </main>
+    </FeatureGate>
   );
 }

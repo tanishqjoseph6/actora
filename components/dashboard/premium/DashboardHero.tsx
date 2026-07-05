@@ -4,13 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { dashboard } from "./dashboard-tokens";
-
-const QUICK_ACTIONS: { href: string; label: string; primary?: boolean }[] = [
-  { href: "/dashboard/connect-gmail", label: "Connect Gmail", primary: true },
-  { href: "/dashboard/automations", label: "Automations" },
-  { href: "/dashboard/crm", label: "Open CRM" },
-  { href: "/dashboard/inbox", label: "Inbox" },
-];
+import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -21,10 +15,33 @@ function getGreeting(): string {
 
 export function DashboardHero() {
   const { data: session } = useSession();
+  const { connected, primaryAccount, loading: gmailLoading } = useGmailAccounts();
+
   const firstName =
     session?.user?.name?.split(" ")[0] ??
     session?.user?.email?.split("@")[0] ??
     "there";
+
+  const quickActions = [
+    connected
+      ? {
+          href: "/dashboard/connect-gmail",
+          label: primaryAccount
+            ? `Gmail · ${primaryAccount.email.split("@")[0]}`
+            : "Gmail Connected",
+          primary: true,
+          disabled: false,
+        }
+      : {
+          href: "/dashboard/connect-gmail",
+          label: "Connect Gmail",
+          primary: true,
+          disabled: false,
+        },
+    { href: "/dashboard/automations", label: "Automations" },
+    { href: "/dashboard/crm", label: "Open CRM" },
+    { href: "/dashboard/inbox", label: "AI Inbox" },
+  ];
 
   return (
     <motion.section
@@ -43,8 +60,14 @@ export function DashboardHero() {
         Email, CRM, automations, and insights — in one place.
       </p>
 
+      {!gmailLoading && connected && primaryAccount && (
+        <p className={`text-xs ${dashboard.accent} mt-3`}>
+          Gmail connected as {primaryAccount.email}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2 sm:gap-3 mt-6">
-        {QUICK_ACTIONS.map((action, i) => (
+        {quickActions.map((action, i) => (
           <motion.div
             key={action.href + action.label}
             initial={{ opacity: 0, y: 6 }}
@@ -55,7 +78,7 @@ export function DashboardHero() {
               href={action.href}
               className={
                 action.primary
-                  ? `${dashboard.btnPrimary} px-4 py-2.5 text-sm`
+                  ? `${dashboard.btnPrimary} px-4 py-2.5 text-sm max-w-full truncate`
                   : `${dashboard.btnSecondary} px-4 py-2.5 text-sm`
               }
             >

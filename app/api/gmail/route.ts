@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGmailAuthClient } from "@/lib/gmail-auth";
+import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { fetchInboxEmails } from "@/lib/gmail";
 
 export async function GET(request: NextRequest) {
@@ -12,6 +13,12 @@ export async function GET(request: NextRequest) {
   try {
     const emails = await fetchInboxEmails(auth.oauth2Client);
     const unreadCount = emails.filter((email) => email.unread).length;
+
+    await gmailAccountRepository.updateSyncStatus(
+      auth.userId,
+      auth.accountEmail,
+      emails.length
+    );
 
     return NextResponse.json({ emails, unreadCount });
   } catch (error) {

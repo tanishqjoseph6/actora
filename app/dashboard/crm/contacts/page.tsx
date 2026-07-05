@@ -64,10 +64,6 @@ export default function ContactsPage() {
     return filteredContacts.slice(start, start + pageSize);
   }, [filteredContacts, safePage, pageSize]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery, activeFilter, companyFilter, ownerFilter, sort, pageSize]);
-
   const chips = [
     { id: "all", label: "All", count: filterCounts.all },
     { id: "active", label: "Active", count: filterCounts.active },

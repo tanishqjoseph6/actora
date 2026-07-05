@@ -9,6 +9,7 @@ type EmailCardProps = {
   selected?: boolean;
   onSelect: (email: InboxEmail) => void;
   onAiReply?: (email: InboxEmail) => void;
+  onArchive?: (email: InboxEmail) => void;
 };
 
 function getPriority(email: InboxEmail): "high" | "normal" | null {
@@ -17,17 +18,16 @@ function getPriority(email: InboxEmail): "high" | "normal" | null {
   return email.unread ? "normal" : null;
 }
 
-function getAiSummary(preview: string): string {
-  const trimmed = preview.trim();
-  if (trimmed.length <= 80) return trimmed;
-  return `${trimmed.slice(0, 77)}…`;
-}
-
-export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardProps) {
+export function EmailCard({
+  email,
+  selected,
+  onSelect,
+  onAiReply,
+  onArchive,
+}: EmailCardProps) {
   const initials = getInitials(email.sender);
   const gradient = getAvatarGradient(email.sender);
   const priority = getPriority(email);
-  const aiSummary = getAiSummary(email.preview);
 
   return (
     <motion.article
@@ -43,7 +43,7 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
       `}
     >
       {email.unread && (
-        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#2563EB] " aria-hidden />
+        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#2563EB]" aria-hidden />
       )}
 
       <div
@@ -57,58 +57,43 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <p
               className={`truncate text-sm sm:text-base ${
-                email.unread ? "text-white font-semibold" : "text-gray-200"
+                email.unread ? "text-white font-semibold" : "text-[#E2E8F0]"
               }`}
             >
               {email.sender}
             </p>
             {priority === "high" && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-300 uppercase tracking-wide">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#2563EB]/15 border border-[#2563EB]/30 text-[#93C5FD] uppercase tracking-wide">
                 Priority
               </span>
             )}
             {email.unread && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#2563EB]">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#3B82F6]">
                 Unread
               </span>
             )}
             {email.starred && (
-              <StarIcon className="shrink-0 w-3.5 h-3.5 text-amber-400" />
+              <StarIcon className="shrink-0 w-3.5 h-3.5 text-[#3B82F6]" />
             )}
           </div>
-          <time className="shrink-0 text-xs sm:text-sm text-gray-500 group-hover:text-gray-400 transition-colors">
+          <time className="shrink-0 text-xs sm:text-sm text-[#64748B] group-hover:text-[#94A3B8] transition-colors">
             {email.date}
           </time>
         </div>
 
         <p
           className={`mt-1 truncate text-sm sm:text-base ${
-            email.unread ? "font-medium text-white" : "text-gray-300"
+            email.unread ? "font-medium text-white" : "text-[#CBD5E1]"
           }`}
         >
           {email.subject}
         </p>
 
-        <p className="mt-1.5 text-xs text-[#94A3B8] line-clamp-1">
-          <span className="text-gray-600 mr-1">AI:</span>
-          {aiSummary}
-        </p>
-
-        <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-1 leading-relaxed">
+        <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] line-clamp-2 leading-relaxed">
           {email.preview}
         </p>
 
         <div className="flex flex-wrap items-center gap-2 mt-3 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(email);
-            }}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#1E293B] text-gray-400 text-xs hover:text-white hover:border-[#1E293B] transition-colors"
-          >
-            Quick Reply
-          </button>
           {onAiReply && (
             <button
               type="button"
@@ -117,28 +102,25 @@ export function EmailCard({ email, selected, onSelect, onAiReply }: EmailCardPro
                 onAiReply(email);
               }}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2563EB] text-white text-xs font-medium hover:bg-[#1D4ED8] transition-colors"
-              aria-label={`AI Reply to ${email.sender}`}
+              aria-label={`Reply with AI to ${email.sender}`}
             >
               <SparkleIcon className="w-3 h-3" />
-              AI Reply
+              Reply with AI
             </button>
           )}
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-transparent text-gray-500 text-xs hover:text-gray-300 hover:bg-[#111827] transition-colors"
-            aria-label="Archive"
-          >
-            Archive
-          </button>
-          <button
-            type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-transparent text-gray-500 text-xs hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-            aria-label="Delete"
-          >
-            Delete
-          </button>
+          {onArchive && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onArchive(email);
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#1E293B] text-[#94A3B8] text-xs hover:text-white hover:border-[#2563EB]/40 transition-colors"
+              aria-label={`Archive email from ${email.sender}`}
+            >
+              Archive
+            </button>
+          )}
         </div>
       </div>
     </motion.article>

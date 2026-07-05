@@ -5,11 +5,15 @@ import { toAutomationCard } from "@/lib/automations/mappers";
 import { ensureSampleWorkflows } from "@/lib/automations/ensure-samples";
 import { apiError, apiOk } from "@/lib/automations/api-utils";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
+import { requirePlanFeature } from "@/lib/subscription/require-feature";
 import type { CreateWorkflowInput, WorkflowStatus } from "@/lib/automations/types";
 
 export async function GET(request: NextRequest) {
   const userId = await getAutomationUserId();
   if (!userId) return apiError("Not authenticated.", 401);
+
+  const gate = await requirePlanFeature("automations");
+  if (!gate.ok) return gate.response;
 
   try {
     if (isSupabaseConfigured()) {
@@ -39,6 +43,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const userId = await getAutomationUserId();
   if (!userId) return apiError("Not authenticated.", 401);
+
+  const gate = await requirePlanFeature("automations");
+  if (!gate.ok) return gate.response;
 
   try {
     const body = (await request.json()) as CreateWorkflowInput;

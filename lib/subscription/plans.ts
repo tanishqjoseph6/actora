@@ -5,14 +5,14 @@ export const DEFAULT_PLAN_ID: PlanId = "free";
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
-    aiActionsPerMonth: 50,
+    aiActionsPerMonth: 100,
     inboxes: 1,
     unlimited: false,
   },
   starter: {
-    aiActionsPerMonth: 1000,
-    inboxes: 3,
-    unlimited: false,
+    aiActionsPerMonth: Infinity,
+    inboxes: Infinity,
+    unlimited: true,
   },
   pro: {
     aiActionsPerMonth: Infinity,
@@ -66,7 +66,7 @@ export function getPlanBadgeStyles(planId: PlanId): {
       };
     case "enterprise":
       return {
-        badge: "bg-[#050816] border-[#1E293B] text-[#94A3B8]",
+        badge: "bg-[#05070B] border-[#1E293B] text-[#94A3B8]",
         dot: "bg-[#64748B]",
       };
     default:

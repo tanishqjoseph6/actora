@@ -7,6 +7,7 @@ import { AnalyticsAreaChart } from "@/components/analytics/AnalyticsAreaChart";
 import { AnalyticsBarChart } from "@/components/analytics/AnalyticsBarChart";
 import { AnalyticsDonutChart } from "@/components/analytics/AnalyticsDonutChart";
 import { AnalyticsHeader } from "@/components/analytics/AnalyticsHeader";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { formatKpiCurrency, getAnalyticsSnapshot } from "@/lib/analytics/mock-data";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
@@ -30,6 +31,7 @@ export default function AnalyticsPage() {
   const { kpis } = snapshot;
 
   return (
+    <FeatureGate feature="analytics" fullPage>
     <>
       <AnalyticsHeader />
 
@@ -120,5 +122,6 @@ export default function AnalyticsPage() {
 
       <AnalyticsActivityFeed items={snapshot.recentActivity} />
     </>
+    </FeatureGate>
   );
 }

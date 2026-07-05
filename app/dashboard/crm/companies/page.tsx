@@ -10,6 +10,7 @@ import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
 import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
   CRM_INDUSTRIES,
@@ -88,6 +89,7 @@ export default function CompaniesPage() {
   }
 
   return (
+    <FeatureGate feature="full_crm" fullPage>
     <>
       <CrmPageHeader
         badge="🏢 CRM · Companies"
@@ -200,5 +202,6 @@ export default function CompaniesPage() {
         )}
       </div>
     </>
+    </FeatureGate>
   );
 }

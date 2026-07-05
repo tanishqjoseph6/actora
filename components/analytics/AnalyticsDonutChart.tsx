@@ -19,21 +19,34 @@ export function AnalyticsDonutChart({
   const total = data.reduce((s, d) => s + d.value, 0);
 
   const segments = useMemo(() => {
-    let offset = 0;
     const circumference = 2 * Math.PI * 40;
-    return data.map((d) => {
-      const pct = total > 0 ? d.value / total : 0;
+    return data.reduce<
+      Array<
+        StageBreakdown & {
+          pct: number;
+          dashArray: string;
+          dashOffset: number;
+        }
+      >
+    >((segmentsAcc, d, index, arr) => {
+      const totalValue = arr.reduce((s, item) => s + item.value, 0);
+      const pct = totalValue > 0 ? d.value / totalValue : 0;
       const length = pct * circumference;
-      const segment = {
+      const priorLength = segmentsAcc.reduce(
+        (sum, segment) => sum + segment.pct * circumference,
+        0
+      );
+
+      segmentsAcc.push({
         ...d,
         pct,
         dashArray: `${length} ${circumference - length}`,
-        dashOffset: -offset,
-      };
-      offset += length;
-      return segment;
-    });
-  }, [data, total]);
+        dashOffset: -priorLength,
+      });
+
+      return segmentsAcc;
+    }, []);
+  }, [data]);
 
   return (
     <div className={`${dashboard.cardLg} p-4 sm:p-5 h-full`}>

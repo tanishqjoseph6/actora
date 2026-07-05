@@ -44,3 +44,15 @@ export function isMissingAutomationSchemaError(message: string): boolean {
     lower.includes("pgrst205")
   );
 }
+
+/** True when PostgREST reports the gmail_accounts schema is missing. */
+export function isMissingGmailSchemaError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("gmail_accounts") &&
+    (lower.includes("does not exist") ||
+      lower.includes("could not find the table") ||
+      lower.includes("schema cache") ||
+      lower.includes("pgrst205"))
+  );
+}

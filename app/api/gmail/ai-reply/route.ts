@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { recordAiReply } from "@/lib/dashboard/user-usage";
 import { generateEmailReplyWithRetry, isReplyTone } from "@/lib/openai";
 import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
 
@@ -51,12 +52,17 @@ export async function POST(request: NextRequest) {
       tone: replyTone,
     });
 
-    const updated = await subscriptionProvider.recordAiAction(userId);
+    const updated = await recordAiReply(userId);
+    const refreshed = await subscriptionProvider.getSubscription(userId);
 
     return NextResponse.json({
       reply,
       tone: replyTone,
-      usage: updated.usage,
+      usage: {
+        aiActionsUsed: updated.aiActionsUsed,
+        aiRepliesCount: updated.aiRepliesCount,
+        inboxesConnected: refreshed.usage.inboxesConnected,
+      },
     });
   } catch (error) {
     console.error("[ai-reply] Failed to generate reply:", error);

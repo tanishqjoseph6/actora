@@ -1,15 +1,33 @@
 import type { PlanId, PlanLimits, UsageMetrics } from "./types";
-import { getPlanLimits, isUnlimited } from "./plans";
+import {
+  FEATURE_META,
+  getFeatureUpgradePlan,
+  hasPlanFeature,
+  type PlanFeature,
+} from "./features";
+import { getPlanLimits, getPlanDisplayName, isUnlimited } from "./plans";
 
-export type LimitType = "ai_actions" | "inboxes";
+export type LimitType = "ai_actions" | "inboxes" | "feature";
 
 export type FeatureGateResult =
   | { allowed: true }
-  | { allowed: false; reason: string; limitType: LimitType };
+  | {
+      allowed: false;
+      reason: string;
+      limitType: LimitType;
+      feature?: PlanFeature;
+      recommendedPlan: PlanId;
+    };
 
-export function getUpgradeRecommendation(planId: PlanId): PlanId {
-  if (planId === "free") return "starter";
-  if (planId === "starter") return "pro";
+export function getUpgradeRecommendation(
+  planId: PlanId,
+  feature?: PlanFeature
+): PlanId {
+  if (feature) {
+    return getFeatureUpgradePlan(feature);
+  }
+  if (planId === "free") return "pro";
+  if (planId === "pro") return "starter";
   return "pro";
 }
 
@@ -27,7 +45,8 @@ export function canUseAiAction(
     return {
       allowed: false,
       limitType: "ai_actions",
-      reason: `You've used all ${limits.aiActionsPerMonth} AI actions for this month. Upgrade your plan to keep automating your inbox.`,
+      recommendedPlan: "pro",
+      reason: `You've used all ${limits.aiActionsPerMonth} AI actions for this month. Upgrade to Pro for unlimited AI actions.`,
     };
   }
 
@@ -48,11 +67,38 @@ export function canConnectInbox(
     return {
       allowed: false,
       limitType: "inboxes",
-      reason: `Your ${planId === "free" ? "Free" : "Starter"} plan includes ${limits.inboxes} inbox. Upgrade to connect more accounts.`,
+      recommendedPlan: "pro",
+      reason: `Your Free plan includes ${limits.inboxes} Gmail account. Upgrade to Pro for unlimited inboxes.`,
     };
   }
 
   return { allowed: true };
+}
+
+export function canAccessFeature(
+  planId: PlanId,
+  feature: PlanFeature
+): FeatureGateResult {
+  if (hasPlanFeature(planId, feature)) {
+    return { allowed: true };
+  }
+
+  const recommendedPlan = getFeatureUpgradePlan(feature);
+  const planName = getPlanDisplayName(recommendedPlan);
+  const { label } = FEATURE_META[feature];
+
+  const reason =
+    recommendedPlan === "starter"
+      ? `${label} is available on the Team plan. Upgrade to collaborate with shared inboxes and team workspace.`
+      : `${label} requires Pro or above. Upgrade to unlock this feature on your workspace.`;
+
+  return {
+    allowed: false,
+    limitType: "feature",
+    feature,
+    recommendedPlan,
+    reason,
+  };
 }
 
 export function getUsagePercent(used: number, limit: number): number {
@@ -76,7 +122,11 @@ export function hasFeatureAccess(
 
 export function isPlanLimitError(
   payload: unknown
-): payload is { code: "PLAN_LIMIT"; limitType: LimitType; error: string } {
+): payload is {
+  code: "PLAN_LIMIT";
+  limitType: LimitType;
+  error: string;
+} {
   return (
     typeof payload === "object" &&
     payload !== null &&

@@ -5,6 +5,8 @@ import type {
   UserSubscription,
 } from "./types";
 import { DEFAULT_PLAN_ID, getPlanDisplayName, getPlanLimits } from "./plans";
+import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard/user-usage";
+import { gmailAccountRepository } from "@/lib/gmail/repository";
 
 export interface SubscriptionProvider {
   getSubscription(userId: string): Promise<UserSubscription>;
@@ -62,12 +64,24 @@ class MockSubscriptionProvider implements SubscriptionProvider {
   private store = new Map<string, UserSubscription>();
 
   async getSubscription(userId: string): Promise<UserSubscription> {
-    const existing = this.store.get(userId);
-    if (existing) return existing;
+    const existing = this.store.get(userId) ?? createDefaultSubscription(userId);
 
-    const subscription = createDefaultSubscription(userId);
-    this.store.set(userId, subscription);
-    return subscription;
+    const [usage, accounts] = await Promise.all([
+      getUserUsage(userId),
+      gmailAccountRepository.listAccounts(userId),
+    ]);
+
+    const updated: UserSubscription = {
+      ...existing,
+      usage: {
+        aiActionsUsed: usage.aiActionsUsed,
+        inboxesConnected: accounts.length,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.store.set(userId, updated);
+    return updated;
   }
 
   async setPlan(
@@ -89,12 +103,13 @@ class MockSubscriptionProvider implements SubscriptionProvider {
   }
 
   async recordAiAction(userId: string): Promise<UserSubscription> {
+    const usage = await persistAiAction(userId);
     const current = await this.getSubscription(userId);
     const updated: UserSubscription = {
       ...current,
       usage: {
         ...current.usage,
-        aiActionsUsed: current.usage.aiActionsUsed + 1,
+        aiActionsUsed: usage.aiActionsUsed,
       },
       updatedAt: new Date().toISOString(),
     };
@@ -103,17 +118,7 @@ class MockSubscriptionProvider implements SubscriptionProvider {
   }
 
   async recordInboxConnection(userId: string): Promise<UserSubscription> {
-    const current = await this.getSubscription(userId);
-    const updated: UserSubscription = {
-      ...current,
-      usage: {
-        ...current.usage,
-        inboxesConnected: current.usage.inboxesConnected + 1,
-      },
-      updatedAt: new Date().toISOString(),
-    };
-    this.store.set(userId, updated);
-    return updated;
+    return this.getSubscription(userId);
   }
 }
 

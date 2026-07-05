@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CRM_TABS } from "@/components/dashboard/nav-config";
+import { UpgradeButton } from "@/components/subscription/UpgradeButton";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { getFeatureUpgradePlan } from "@/lib/subscription";
 
 export function CrmSubNav() {
   const pathname = usePathname();
+  const { canAccessFeature } = usePlanGate();
 
   return (
     <div className="relative -mx-1">
@@ -18,6 +22,22 @@ export function CrmSubNav() {
             tab.href === "/dashboard/crm"
               ? pathname === "/dashboard/crm"
               : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+
+          const locked =
+            tab.feature != null && !canAccessFeature(tab.feature);
+
+          if (locked) {
+            return (
+              <div
+                key={tab.href}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shrink-0 bg-[#111827] border border-[#1E293B] opacity-75"
+              >
+                <span aria-hidden>{tab.icon}</span>
+                <span className="text-[#64748B]">{tab.label}</span>
+                <UpgradeButton plan={getFeatureUpgradePlan(tab.feature!)} />
+              </div>
+            );
+          }
 
           return (
             <Link

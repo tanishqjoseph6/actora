@@ -5,6 +5,7 @@ import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { PipelineBoard } from "@/components/crm/pipeline/PipelineBoard";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { formatCurrency } from "@/lib/crm/mock-data";
 import {
   computePipelineMetrics,
@@ -18,6 +19,7 @@ export default function PipelinePage() {
   );
 
   return (
+    <FeatureGate feature="full_crm" fullPage>
     <>
       <CrmPageHeader
         badge="📊 CRM · Pipeline"
@@ -55,5 +57,6 @@ export default function PipelinePage() {
         <PipelineBoard />
       </div>
     </>
+    </FeatureGate>
   );
 }

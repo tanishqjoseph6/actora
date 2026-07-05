@@ -363,3 +363,33 @@ export async function sendEmailReply(
 
   return { id: response.data.id };
 }
+
+export async function markEmailAsRead(
+  auth: GmailAuth,
+  messageId: string
+): Promise<void> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      removeLabelIds: ["UNREAD"],
+    },
+  });
+}
+
+export async function archiveEmail(
+  auth: GmailAuth,
+  messageId: string
+): Promise<void> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      removeLabelIds: ["INBOX"],
+    },
+  });
+}

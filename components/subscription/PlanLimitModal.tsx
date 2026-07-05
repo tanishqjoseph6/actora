@@ -16,6 +16,7 @@ type PlanLimitModalProps = {
 const LIMIT_HEADINGS: Record<LimitType, string> = {
   ai_actions: "AI action limit reached",
   inboxes: "Inbox limit reached",
+  feature: "Feature not available",
 };
 
 const LIMIT_FEATURES: Record<LimitType, string[]> = {
@@ -28,6 +29,11 @@ const LIMIT_FEATURES: Record<LimitType, string[]> = {
     "Connect multiple Gmail accounts",
     "Manage team inboxes in one place",
     "Scale automation across accounts",
+  ],
+  feature: [
+    "Unlock premium workspace features",
+    "Unlimited AI actions on Pro",
+    "Team collaboration on Team plan",
   ],
 };
 

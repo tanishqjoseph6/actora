@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import type { InboxEmail } from "@/lib/gmail";
 import { EmailCard } from "@/components/email/EmailCard";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LockedFeaturePanel } from "@/components/subscription/FeatureGate";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { dashboard } from "./dashboard-tokens";
 
 type FilterChip = "all" | "unread" | "starred";
@@ -44,6 +46,8 @@ export function DashboardInboxSection({
   onAiReply,
   onRetry,
 }: DashboardInboxSectionProps) {
+  const { canAccessFeature } = usePlanGate();
+
   return (
     <motion.section
       id="inbox"
@@ -52,6 +56,12 @@ export function DashboardInboxSection({
       transition={{ delay: 0.15, duration: 0.4 }}
       className={`${dashboard.cardLg} p-5 sm:p-6 lg:p-7`}
     >
+      {!canAccessFeature("shared_inbox") && (
+        <div className="mb-5">
+          <LockedFeaturePanel feature="shared_inbox" compact />
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-white">Inbox</h2>

@@ -59,7 +59,9 @@ export function useSubscription(): UseSubscriptionResult {
   }, [status, userId, sessionPlanId, updateSession]);
 
   useEffect(() => {
-    refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   const upgradePlan = useCallback(

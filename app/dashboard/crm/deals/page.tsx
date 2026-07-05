@@ -8,6 +8,7 @@ import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatCurrency, MOCK_DEALS } from "@/lib/crm/mock-data";
 import type { DealStage } from "@/lib/crm/types";
@@ -80,6 +81,7 @@ export default function DealsPage() {
   const hasSearch = searchQuery.trim().length > 0;
 
   return (
+    <FeatureGate feature="full_crm" fullPage>
     <>
       <CrmPageHeader
         badge="💼 CRM · Deals"
@@ -154,5 +156,6 @@ export default function DealsPage() {
         )}
       </div>
     </>
+    </FeatureGate>
   );
 }

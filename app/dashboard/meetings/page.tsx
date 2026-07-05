@@ -5,6 +5,7 @@ import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricC
 import { MeetingsHeader } from "@/components/meetings/MeetingsHeader";
 import { MeetingsWeekCalendar } from "@/components/meetings/MeetingsWeekCalendar";
 import { UpcomingMeetingsSection } from "@/components/meetings/UpcomingMeetingsSection";
+import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { MOCK_MEETINGS } from "@/lib/meetings/mock-data";
 import { computeMeetingMetrics, startOfDay } from "@/lib/meetings/utils";
 
@@ -31,6 +32,7 @@ export default function MeetingsPage() {
   };
 
   return (
+    <FeatureGate feature="meetings" fullPage>
     <>
       <MeetingsHeader />
 
@@ -80,5 +82,6 @@ export default function MeetingsPage() {
         />
       </div>
     </>
+    </FeatureGate>
   );
 }

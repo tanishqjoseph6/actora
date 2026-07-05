@@ -11,16 +11,21 @@ import {
 import { PlanLimitModal } from "@/components/subscription/PlanLimitModal";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
+  canAccessFeature as checkFeatureAccess,
   canConnectInbox,
   canUseAiAction,
   getUpgradeRecommendation,
+  hasPlanFeature,
   type LimitType,
+  type PlanFeature,
+  type PlanId,
   type SubscriptionSnapshot,
 } from "@/lib/subscription";
 
 type LimitModalState = {
   reason: string;
   limitType: LimitType;
+  recommendedPlan: PlanId;
 } | null;
 
 type PlanGateContextValue = {
@@ -29,7 +34,13 @@ type PlanGateContextValue = {
   refreshSubscription: () => Promise<void>;
   checkAiAction: () => boolean;
   checkInbox: () => boolean;
-  showLimitModal: (reason: string, limitType: LimitType) => void;
+  checkFeature: (feature: PlanFeature) => boolean;
+  canAccessFeature: (feature: PlanFeature, planId?: PlanId) => boolean;
+  showLimitModal: (
+    reason: string,
+    limitType: LimitType,
+    recommendedPlan?: PlanId
+  ) => void;
 };
 
 const PlanGateContext = createContext<PlanGateContextValue | null>(null);
@@ -38,16 +49,32 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
   const { subscription, loading, refresh } = useSubscription();
   const [limitModal, setLimitModal] = useState<LimitModalState>(null);
 
-  const showLimitModal = useCallback((reason: string, limitType: LimitType) => {
-    setLimitModal({ reason, limitType });
-  }, []);
+  const showLimitModal = useCallback(
+    (reason: string, limitType: LimitType, recommendedPlan?: PlanId) => {
+      setLimitModal({
+        reason,
+        limitType,
+        recommendedPlan:
+          recommendedPlan ??
+          getUpgradeRecommendation(subscription?.planId ?? "free"),
+      });
+    },
+    [subscription?.planId]
+  );
+
+  const canAccessFeatureFn = useCallback(
+    (feature: PlanFeature, planId?: PlanId) => {
+      return hasPlanFeature(planId ?? subscription?.planId ?? "free", feature);
+    },
+    [subscription?.planId]
+  );
 
   const checkAiAction = useCallback(() => {
     if (!subscription) return true;
 
     const gate = canUseAiAction(subscription.planId, subscription.usage);
     if (!gate.allowed) {
-      showLimitModal(gate.reason, gate.limitType);
+      showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
@@ -59,12 +86,27 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
 
     const gate = canConnectInbox(subscription.planId, subscription.usage);
     if (!gate.allowed) {
-      showLimitModal(gate.reason, gate.limitType);
+      showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
     return true;
   }, [subscription, showLimitModal]);
+
+  const checkFeature = useCallback(
+    (feature: PlanFeature) => {
+      if (!subscription) return true;
+
+      const gate = checkFeatureAccess(subscription.planId, feature);
+      if (!gate.allowed) {
+        showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
+        return false;
+      }
+
+      return true;
+    },
+    [subscription, showLimitModal]
+  );
 
   const value = useMemo(
     () => ({
@@ -73,14 +115,21 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
       refreshSubscription: refresh,
       checkAiAction,
       checkInbox,
+      checkFeature,
+      canAccessFeature: canAccessFeatureFn,
       showLimitModal,
     }),
-    [subscription, loading, refresh, checkAiAction, checkInbox, showLimitModal]
+    [
+      subscription,
+      loading,
+      refresh,
+      checkAiAction,
+      checkInbox,
+      checkFeature,
+      canAccessFeatureFn,
+      showLimitModal,
+    ]
   );
-
-  const recommendedPlanId = subscription
-    ? getUpgradeRecommendation(subscription.planId)
-    : "starter";
 
   return (
     <PlanGateContext.Provider value={value}>
@@ -90,7 +139,10 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
         reason={limitModal?.reason ?? ""}
         limitType={limitModal?.limitType ?? "ai_actions"}
         currentPlanId={subscription?.planId ?? "free"}
-        recommendedPlanId={recommendedPlanId}
+        recommendedPlanId={
+          limitModal?.recommendedPlan ??
+          getUpgradeRecommendation(subscription?.planId ?? "free")
+        }
         onClose={() => setLimitModal(null)}
       />
     </PlanGateContext.Provider>

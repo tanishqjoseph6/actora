@@ -12,6 +12,8 @@ import {
   MAIN_NAV,
   type NavItem,
 } from "@/components/dashboard/nav-config";
+import { UpgradeButton } from "@/components/subscription/UpgradeButton";
+import { getFeatureUpgradePlan, type PlanFeature, type PlanId } from "@/lib/subscription";
 
 type PremiumSidebarProps = {
   collapsed: boolean;
@@ -28,24 +30,26 @@ export function PremiumSidebar({
 }: PremiumSidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { subscription, loading } = usePlanGate();
+  const { subscription, loading, canAccessFeature } = usePlanGate();
 
   const displayName = session?.user?.name ?? session?.user?.email ?? "User";
   const displayInitial = displayName.charAt(0).toUpperCase();
 
+  const panelProps = {
+    pathname,
+    displayName,
+    displayInitial,
+    email: session?.user?.email,
+    subscription,
+    loading,
+    canAccessFeature,
+    onToggle,
+  };
+
   return (
     <>
       <div className="hidden lg:block h-screen sticky top-0">
-        <SidebarPanel
-          collapsed={collapsed}
-          onToggle={onToggle}
-          pathname={pathname}
-          displayName={displayName}
-          displayInitial={displayInitial}
-          email={session?.user?.email}
-          subscription={subscription}
-          loading={loading}
-        />
+        <SidebarPanel collapsed={collapsed} {...panelProps} />
       </div>
 
       <AnimatePresence>
@@ -68,13 +72,7 @@ export function PremiumSidebar({
             >
               <SidebarPanel
                 collapsed={false}
-                onToggle={onToggle}
-                pathname={pathname}
-                displayName={displayName}
-                displayInitial={displayInitial}
-                email={session?.user?.email}
-                subscription={subscription}
-                loading={loading}
+                {...panelProps}
                 onNavigate={onMobileClose}
                 onClose={onMobileClose}
                 isMobile
@@ -96,6 +94,7 @@ function SidebarPanel({
   email,
   subscription,
   loading,
+  canAccessFeature,
   onNavigate,
   onClose,
   isMobile,
@@ -108,6 +107,7 @@ function SidebarPanel({
   email?: string | null;
   subscription: ReturnType<typeof usePlanGate>["subscription"];
   loading: boolean;
+  canAccessFeature: (feature: PlanFeature, planId?: PlanId) => boolean;
   onNavigate?: () => void;
   onClose?: () => void;
   isMobile?: boolean;
@@ -141,15 +141,38 @@ function SidebarPanel({
             className="hidden lg:flex p-2 rounded-xl border border-[#1E293B] text-[#64748B] hover:text-white hover:border-[#2563EB]/40 transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <ChevronIcon className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+            <ChevronIcon
+              className={`w-4 h-4 transition-transform ${collapsed ? "rotate-180" : ""}`}
+            />
           </button>
         )}
       </div>
 
       <nav className="flex-1 overflow-y-auto premium-scrollbar p-3 space-y-6">
-        <NavSection title="Workspace" items={MAIN_NAV} pathname={pathname} collapsed={collapsed && !isMobile} onNavigate={onNavigate} />
-        <NavSection title="CRM" items={CRM_NAV} pathname={pathname} collapsed={collapsed && !isMobile} onNavigate={onNavigate} />
-        <NavSection title="" items={FOOTER_NAV} pathname={pathname} collapsed={collapsed && !isMobile} onNavigate={onNavigate} />
+        <NavSection
+          title="Workspace"
+          items={MAIN_NAV}
+          pathname={pathname}
+          collapsed={collapsed && !isMobile}
+          onNavigate={onNavigate}
+          canAccessFeature={canAccessFeature}
+        />
+        <NavSection
+          title="CRM"
+          items={CRM_NAV}
+          pathname={pathname}
+          collapsed={collapsed && !isMobile}
+          onNavigate={onNavigate}
+          canAccessFeature={canAccessFeature}
+        />
+        <NavSection
+          title=""
+          items={FOOTER_NAV}
+          pathname={pathname}
+          collapsed={collapsed && !isMobile}
+          onNavigate={onNavigate}
+          canAccessFeature={canAccessFeature}
+        />
       </nav>
 
       <div className="p-4 border-t border-[#1E293B]">
@@ -180,12 +203,14 @@ function NavSection({
   pathname,
   collapsed,
   onNavigate,
+  canAccessFeature,
 }: {
   title: string;
   items: NavItem[];
   pathname: string;
   collapsed: boolean;
   onNavigate?: () => void;
+  canAccessFeature: (feature: PlanFeature, planId?: PlanId) => boolean;
 }) {
   return (
     <div>
@@ -196,11 +221,37 @@ function NavSection({
       )}
       <div className="space-y-1">
         {items.map((item) => {
+          const locked =
+            item.feature != null && !canAccessFeature(item.feature);
           const active = item.exact
             ? pathname === item.href
             : item.matchPrefix
-              ? pathname === item.href || pathname.startsWith(`${item.matchPrefix}/`)
+              ? pathname === item.href ||
+                pathname.startsWith(`${item.matchPrefix}/`)
               : pathname === item.href;
+
+          if (locked) {
+            const upgradePlan = getFeatureUpgradePlan(item.feature!);
+            return (
+              <div
+                key={item.href}
+                title={collapsed ? item.label : undefined}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-transparent opacity-70"
+              >
+                <span className="text-lg shrink-0 grayscale" aria-hidden>
+                  {item.icon}
+                </span>
+                {!collapsed && (
+                  <>
+                    <span className="truncate text-sm font-medium text-[#64748B] flex-1 min-w-0">
+                      {item.label}
+                    </span>
+                    <UpgradeButton plan={upgradePlan} />
+                  </>
+                )}
+              </div>
+            );
+          }
 
           return (
             <Link
@@ -210,13 +261,16 @@ function NavSection({
               title={collapsed ? item.label : undefined}
               className={`
               group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 interactive-press
-              ${active
+              ${
+                active
                   ? "bg-[#2563EB]/15 border border-[#2563EB]/35 text-white"
                   : "border border-transparent text-[#94A3B8] hover:text-white hover:bg-[#111827] hover:border-[#1E293B]"
-                }
+              }
               `}
             >
-              <span className="text-lg shrink-0" aria-hidden>{item.icon}</span>
+              <span className="text-lg shrink-0" aria-hidden>
+                {item.icon}
+              </span>
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
