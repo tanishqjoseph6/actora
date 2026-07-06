@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Actora favicon: white A mark on blue rounded square (no envelope) -->
+  <rect width="512" height="512" rx="112" fill="#2563EB"/>
+  <!-- Chevron A -->
+  <path
+    fill="#FFFFFF"
+    d="M118 372 L256 108 L394 372 L348 372 L256 196 L164 372 Z"
+  />
+  <!-- Base triangle -->
+  <path
+    fill="#FFFFFF"
+    d="M224 372 L256 308 L288 372 Z"
+  />
+</svg>
