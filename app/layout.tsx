@@ -20,14 +20,6 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png", sizes: "1024x1024" },
-    ],
-    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "1024x1024" }],
-    shortcut: ["/favicon.ico"],
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
