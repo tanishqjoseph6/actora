@@ -16,6 +16,8 @@ type UpcomingMeetingsSectionProps = {
   selectedDay: Date;
   dayFilterActive: boolean;
   onClearDayFilter?: () => void;
+  onEditMeeting?: (meeting: Meeting) => void;
+  onDeleteMeeting?: (meeting: Meeting) => void;
 };
 
 export function UpcomingMeetingsSection({
@@ -23,6 +25,8 @@ export function UpcomingMeetingsSection({
   selectedDay,
   dayFilterActive,
   onClearDayFilter,
+  onEditMeeting,
+  onDeleteMeeting,
 }: UpcomingMeetingsSectionProps) {
   const displayMeetings = dayFilterActive
     ? getMeetingsForDay(meetings, selectedDay).filter(
@@ -91,7 +95,13 @@ export function UpcomingMeetingsSection({
               </div>
               <div className="space-y-3">
                 {group.meetings.map((meeting, i) => (
-                  <MeetingEventCard key={meeting.id} meeting={meeting} index={i} />
+                  <MeetingEventCard
+                    key={meeting.id}
+                    meeting={meeting}
+                    index={i}
+                    onEdit={onEditMeeting}
+                    onDelete={onDeleteMeeting}
+                  />
                 ))}
               </div>
             </div>

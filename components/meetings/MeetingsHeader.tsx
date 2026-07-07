@@ -21,9 +21,7 @@ export function MeetingsHeader({ onSchedule }: MeetingsHeaderProps) {
       <button
         type="button"
         onClick={onSchedule}
-        disabled
-        className={`${dashboard.btnPrimary} px-4 py-2.5 text-sm opacity-60 cursor-not-allowed shrink-0`}
-        title="Coming soon"
+        className={`${dashboard.btnPrimary} px-4 py-2.5 text-sm shrink-0`}
       >
         + Schedule meeting
       </button>

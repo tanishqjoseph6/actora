@@ -1,6 +1,6 @@
 export type MeetingType = "video" | "in-person" | "phone";
 
-export type MeetingStatus = "confirmed" | "tentative" | "cancelled";
+export type MeetingStatus = "scheduled" | "completed" | "cancelled";
 
 export type Meeting = {
   id: string;

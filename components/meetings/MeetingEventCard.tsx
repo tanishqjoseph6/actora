@@ -33,11 +33,18 @@ const TYPE_STYLES: Record<
 type MeetingEventCardProps = {
   meeting: Meeting;
   index?: number;
+  onEdit?: (meeting: Meeting) => void;
+  onDelete?: (meeting: Meeting) => void;
 };
 
-export function MeetingEventCard({ meeting, index = 0 }: MeetingEventCardProps) {
+export function MeetingEventCard({
+  meeting,
+  index = 0,
+  onEdit,
+  onDelete,
+}: MeetingEventCardProps) {
   const typeStyle = TYPE_STYLES[meeting.type];
-  const isTentative = meeting.status === "tentative";
+  const isScheduled = meeting.status === "scheduled";
 
   return (
     <motion.article
@@ -64,9 +71,9 @@ export function MeetingEventCard({ meeting, index = 0 }: MeetingEventCardProps) 
             <h3 className="text-base font-semibold text-white group-hover:text-[#93C5FD] transition-colors">
               {meeting.title}
             </h3>
-            {isTentative && (
+            {isScheduled && (
               <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border border-[#334155] text-[#64748B] bg-[#0B1220]">
-                Tentative
+                Scheduled
               </span>
             )}
             <span
@@ -129,14 +136,24 @@ export function MeetingEventCard({ meeting, index = 0 }: MeetingEventCardProps) 
               Join
             </button>
           )}
-          <button
-            type="button"
-            disabled
-            className={`${dashboard.btnSecondary} px-3 py-2 text-xs opacity-50 cursor-not-allowed w-full sm:w-auto`}
-            title="Coming soon"
-          >
-            Details
-          </button>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(meeting)}
+              className={`${dashboard.btnSecondary} px-3 py-2 text-xs w-full sm:w-auto`}
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(meeting)}
+              className="px-3 py-2 text-xs rounded-lg border border-[#7F1D1D] text-[#FCA5A5] bg-[#7F1D1D]/10 hover:bg-[#7F1D1D]/20 w-full sm:w-auto"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </motion.article>
