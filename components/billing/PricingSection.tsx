@@ -27,6 +27,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import type { BillingCurrency } from "@/lib/billing/currency";
 import { getPlanDisplayName, type PlanId } from "@/lib/subscription";
 import { queuePlanActivationToast } from "@/components/billing/PlanActivationToastListener";
+import { isDevBillingEnabled } from "@/lib/billing/config";
 
 const ENTERPRISE_MAILTO =
   "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
@@ -72,14 +73,16 @@ export function PricingSection({
   );
 
   const { openCheckout } = useRazorpayCheckout({
-    onSuccess: async (_planId, planName) => {
+    onSuccess: async (planId, planName) => {
+      await refreshSubscription();
+      await updateSession({ planId });
       closeUpgrade();
       await onPaymentSuccess?.();
-      setToast({
-        type: "success",
-        title: "Payment successful!",
-        message: `Welcome to Actora ${planName}. Your plan is now active.`,
-      });
+      queuePlanActivationToast(
+        "Payment successful!",
+        `Welcome to Actora ${planName}. Your plan is now active.`
+      );
+      router.push(devUpgradeRedirectTo);
     },
     onFailure: (message) => {
       setToast({
@@ -287,7 +290,7 @@ export function PricingSection({
         selection={selection}
         currency={currency}
         onClose={closeUpgrade}
-        onDevUpgrade={handleDevUpgrade}
+        onDevUpgrade={isDevBillingEnabled() ? handleDevUpgrade : undefined}
         onCheckout={handleCheckout}
         currentPlanId={currentPlanId}
       />

@@ -1,5 +1,5 @@
 import { createRazorpayOrder } from "../razorpay";
-import { isRazorpayCheckoutAvailable } from "../config";
+import { isRazorpayCheckoutAvailableServer } from "../config";
 import type { PaymentProvider } from "./types";
 
 export const razorpayProvider: PaymentProvider = {
@@ -10,7 +10,7 @@ export const razorpayProvider: PaymentProvider = {
   },
 
   isAvailable() {
-    return isRazorpayCheckoutAvailable();
+    return isRazorpayCheckoutAvailableServer();
   },
 
   async createOrder(request) {

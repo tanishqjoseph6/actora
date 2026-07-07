@@ -7,8 +7,8 @@ import type { BillingCurrency } from "@/lib/billing/currency";
 import {
   getCheckoutButtonLabel,
   getCheckoutDescription,
-  isCheckoutAvailable,
 } from "@/lib/billing/providers";
+import { isDevBillingEnabled } from "@/lib/billing/config";
 import type { PlanId } from "@/lib/subscription";
 
 type UpgradeModalProps = {
@@ -36,7 +36,7 @@ export function UpgradeModal({
   const isOpen = selection !== null;
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const checkoutAvailable = isCheckoutAvailable(currency);
+  const devBilling = isDevBillingEnabled();
 
   useEffect(() => {
     if (!isOpen) {
@@ -68,20 +68,24 @@ export function UpgradeModal({
     setIsProcessing(true);
     setActionError(null);
     try {
-      if (checkoutAvailable && onCheckout) {
+      if (devBilling) {
+        if (!onDevUpgrade) {
+          setActionError("Plan activation is unavailable right now.");
+          return;
+        }
+        const success = await onDevUpgrade(plan.id);
+        if (!success) {
+          setActionError("Could not activate your plan. Please try again.");
+        }
+      } else if (onCheckout) {
         await onCheckout(
           plan.id,
           period,
           selectionCurrency,
           plan.razorpayPlanId
         );
-      } else if (onDevUpgrade) {
-        const success = await onDevUpgrade(plan.id);
-        if (!success) {
-          setActionError("Could not activate your plan. Please try again.");
-        }
       } else {
-        setActionError("Plan activation is unavailable right now.");
+        setActionError("Checkout is unavailable right now.");
       }
     } catch {
       setActionError("Something went wrong. Please try again.");
@@ -91,9 +95,9 @@ export function UpgradeModal({
   };
 
   const primaryLabel = isProcessing
-    ? checkoutAvailable
-      ? "Opening checkout…"
-      : "Activating…"
+    ? devBilling
+      ? "Activating…"
+      : "Opening checkout…"
     : isCurrentPlan
       ? "Current Plan"
       : getCheckoutButtonLabel(selectionCurrency);

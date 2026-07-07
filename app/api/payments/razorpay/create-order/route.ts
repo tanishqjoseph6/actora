@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth/auth-options";
 import { isBillingCurrency } from "@/lib/billing/currency";
 import {
   getPaymentProviderForCurrency,
-  isCheckoutAvailable,
+  isCheckoutAvailableServer,
 } from "@/lib/billing/providers";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isPaidPlan } from "@/lib/billing/pricing";
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isCheckoutAvailable(currency)) {
+    if (!isCheckoutAvailableServer(currency)) {
       return NextResponse.json(
         { error: "Checkout is not configured for this currency." },
         { status: 503 }

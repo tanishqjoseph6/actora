@@ -1,4 +1,5 @@
 import type { BillingCurrency } from "../currency";
+import { isDevBillingEnabled } from "../config";
 import type { PaymentProvider, PaymentProviderId } from "./types";
 import { razorpayProvider } from "./razorpay";
 import { stripeProvider } from "./stripe";
@@ -20,16 +21,33 @@ export function getPaymentProviderForCurrency(
   return razorpayProvider;
 }
 
-export function isCheckoutAvailable(currency: BillingCurrency): boolean {
+/** Server-side checkout availability (API routes). */
+export function isCheckoutAvailableServer(currency: BillingCurrency): boolean {
   return getPaymentProviderForCurrency(currency).isAvailable();
 }
 
-export function getCheckoutButtonLabel(currency: BillingCurrency): string {
-  const provider = getPaymentProviderForCurrency(currency);
+/**
+ * Client-side checkout routing.
+ * Production never falls back to dev billing.
+ */
+export function isCheckoutAvailable(currency: BillingCurrency): boolean {
+  if (isDevBillingEnabled()) {
+    return false;
+  }
 
-  if (!provider.isAvailable()) {
+  if (typeof window !== "undefined") {
+    return true;
+  }
+
+  return isCheckoutAvailableServer(currency);
+}
+
+export function getCheckoutButtonLabel(currency: BillingCurrency): string {
+  if (isDevBillingEnabled()) {
     return "Activate Plan (Dev)";
   }
+
+  const provider = getPaymentProviderForCurrency(currency);
 
   if (provider.id === "stripe") {
     return "Pay with Stripe";
@@ -39,11 +57,11 @@ export function getCheckoutButtonLabel(currency: BillingCurrency): string {
 }
 
 export function getCheckoutDescription(currency: BillingCurrency): string {
-  const provider = getPaymentProviderForCurrency(currency);
-
-  if (!provider.isAvailable()) {
+  if (isDevBillingEnabled()) {
     return "Development mode — activate plan without payment.";
   }
+
+  const provider = getPaymentProviderForCurrency(currency);
 
   if (provider.id === "stripe") {
     return "Secure checkout powered by Stripe.";
