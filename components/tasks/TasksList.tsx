@@ -8,6 +8,9 @@ import { TaskCard } from "./TaskCard";
 type TasksListProps = {
   tasks: Task[];
   onToggleTask?: (id: string) => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (task: Task) => void;
+  onAddTask?: () => void;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
 };
@@ -15,6 +18,9 @@ type TasksListProps = {
 export function TasksList({
   tasks,
   onToggleTask,
+  onEditTask,
+  onDeleteTask,
+  onAddTask,
   hasActiveFilters = false,
   onClearFilters,
 }: TasksListProps) {
@@ -38,10 +44,7 @@ export function TasksList({
         illustration="tasks"
         title="Stay on top of every deliverable"
         description="Tasks bring due dates, priorities, and assignees into one view — so nothing slips through while your AI agents handle the inbox."
-        cta={{
-          label: "Go to inbox",
-          href: "/dashboard/inbox",
-        }}
+        cta={{ label: "Add your first task", onClick: onAddTask ?? (() => {}) }}
         className="border-dashed bg-[#111827]/50"
       />
     );
@@ -71,6 +74,8 @@ export function TasksList({
                 task={task}
                 index={i}
                 onToggle={onToggleTask}
+                onEdit={onEditTask}
+                onDelete={onDeleteTask}
               />
             ))}
           </div>

@@ -22,9 +22,17 @@ type TaskCardProps = {
   task: Task;
   index?: number;
   onToggle?: (id: string) => void;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 };
 
-export function TaskCard({ task, index = 0, onToggle }: TaskCardProps) {
+export function TaskCard({
+  task,
+  index = 0,
+  onToggle,
+  onEdit,
+  onDelete,
+}: TaskCardProps) {
   const isDone = task.status === "done";
   const priority = PRIORITY_STYLES[task.priority];
   const dueTone = getDueTone(task);
@@ -119,6 +127,29 @@ export function TaskCard({ task, index = 0, onToggle }: TaskCardProps) {
                 {tag}
               </span>
             ))}
+          </div>
+        )}
+
+        {(onEdit || onDelete) && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#1E293B]">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(task)}
+                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#2563EB]/20"
+              >
+                Edit
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(task)}
+                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#FCA5A5] hover:bg-[#7F1D1D]/30"
+              >
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>

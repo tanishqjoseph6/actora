@@ -2,7 +2,11 @@
 
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
-export function TasksHeader() {
+type TasksHeaderProps = {
+  onAddTask?: () => void;
+};
+
+export function TasksHeader({ onAddTask }: TasksHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6 lg:mb-8">
       <div>
@@ -16,9 +20,8 @@ export function TasksHeader() {
       </div>
       <button
         type="button"
-        disabled
-        className={`${dashboard.btnPrimary} px-4 py-2.5 text-sm opacity-60 cursor-not-allowed shrink-0`}
-        title="Coming soon"
+        onClick={onAddTask}
+        className={`${dashboard.btnPrimary} px-4 py-2.5 text-sm shrink-0`}
       >
         + Add task
       </button>
