@@ -240,6 +240,28 @@ export class GmailAccountRepository {
 
     return data ? mapRow(data as GmailAccountRow) : null;
   }
+
+  async deleteAccount(userId: string, email: string): Promise<boolean> {
+    const db = this.client();
+    if (!db) {
+      return memoryGmailAccountStore.deleteAccount(userId, email);
+    }
+
+    const { error, count } = await db
+      .from("gmail_accounts")
+      .delete({ count: "exact" })
+      .eq("user_id", userId)
+      .eq("email", email);
+
+    if (error) {
+      if (isMissingGmailSchemaError(error.message)) {
+        return memoryGmailAccountStore.deleteAccount(userId, email);
+      }
+      this.handleDbError(error);
+    }
+
+    return (count ?? 0) > 0;
+  }
 }
 
 export const gmailAccountRepository = new GmailAccountRepository();

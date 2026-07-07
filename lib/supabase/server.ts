@@ -47,9 +47,18 @@ export function isMissingAutomationSchemaError(message: string): boolean {
 
 /** True when PostgREST reports the gmail_accounts schema is missing. */
 export function isMissingGmailSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "gmail_accounts");
+}
+
+/** True when PostgREST reports the user_usage schema is missing. */
+export function isMissingUserUsageSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "user_usage");
+}
+
+function isMissingTableSchemaError(message: string, table: string): boolean {
   const lower = message.toLowerCase();
   return (
-    lower.includes("gmail_accounts") &&
+    lower.includes(table) &&
     (lower.includes("does not exist") ||
       lower.includes("could not find the table") ||
       lower.includes("schema cache") ||

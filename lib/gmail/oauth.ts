@@ -60,6 +60,15 @@ export async function refreshOAuthTokens(refreshToken: string): Promise<{
   };
 }
 
+export async function revokeOAuthToken(accessToken: string): Promise<void> {
+  const client = createOAuth2Client();
+  try {
+    await client.revokeToken(accessToken);
+  } catch {
+    // Local disconnect still proceeds if revoke fails.
+  }
+}
+
 export function isTokenExpired(
   tokenExpiresAt: string | null | undefined,
   bufferMs = 60_000

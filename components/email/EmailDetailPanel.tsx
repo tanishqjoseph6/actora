@@ -29,6 +29,7 @@ import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
+  accountEmail?: string | null;
   onClose: () => void;
   /** Opens tone picker once the email detail has loaded. */
   openAiReply?: boolean;
@@ -43,6 +44,7 @@ const EMPTY_REPLY: ReplyContent = { plain: "", html: "" };
 
 export function EmailDetailPanel({
   email,
+  accountEmail,
   onClose,
   openAiReply,
   onAiReplyOpened,
@@ -147,7 +149,10 @@ export function EmailDetailPanel({
     setSummaryState("idle");
 
     try {
-      const res = await fetch(`/api/gmail/${email.id}`);
+      const accountQuery = accountEmail
+        ? `?account=${encodeURIComponent(accountEmail)}`
+        : "";
+      const res = await fetch(`/api/gmail/${email.id}${accountQuery}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -183,6 +188,7 @@ export function EmailDetailPanel({
       setPanelError("Failed to load email. Please try again.");
     }
   }, [
+    accountEmail,
     email.id,
     email.unread,
     generateSummary,
@@ -397,7 +403,10 @@ export function EmailDetailPanel({
     setIsSending(true);
 
     try {
-      const res = await fetch("/api/gmail/send", {
+      const accountQuery = accountEmail
+        ? `?account=${encodeURIComponent(accountEmail)}`
+        : "";
+      const res = await fetch(`/api/gmail/send${accountQuery}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

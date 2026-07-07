@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { InboxEmail } from "@/lib/gmail";
+import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 
 type FetchState = "loading" | "error" | "success";
 export type InboxFilter = "all" | "unread" | "starred";
 
 export function useInbox() {
+  const { selectedEmail: activeAccountEmail, connected } = useGmailAccounts();
   const [emails, setEmails] = useState<InboxEmail[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [fetchState, setFetchState] = useState<FetchState>("loading");
@@ -17,7 +19,28 @@ export function useInbox() {
   const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
   const [openAiReply, setOpenAiReply] = useState(false);
 
+  const inboxUrl = useMemo(() => {
+    if (!activeAccountEmail) return "/api/gmail";
+    return `/api/gmail?account=${encodeURIComponent(activeAccountEmail)}`;
+  }, [activeAccountEmail]);
+
+  const accountQuery = useMemo(
+    () =>
+      activeAccountEmail
+        ? `?account=${encodeURIComponent(activeAccountEmail)}`
+        : "",
+    [activeAccountEmail]
+  );
+
   const loadEmails = useCallback(async (silent = false) => {
+    if (!connected) {
+      setFetchState("error");
+      setError("Gmail is not connected. Connect your account to load the inbox.");
+      setEmails([]);
+      setUnreadCount(0);
+      return;
+    }
+
     if (!silent) {
       setFetchState("loading");
     } else {
@@ -27,7 +50,7 @@ export function useInbox() {
     setError(null);
 
     try {
-      const res = await fetch("/api/gmail");
+      const res = await fetch(inboxUrl);
       const data = await res.json();
 
       if (!res.ok) {
@@ -53,19 +76,19 @@ export function useInbox() {
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [connected, inboxUrl]);
 
   useEffect(() => {
     queueMicrotask(() => {
-      loadEmails();
+      void loadEmails();
     });
 
     const interval = setInterval(() => {
-      loadEmails(true);
+      void loadEmails(true);
     }, 60_000);
 
     return () => clearInterval(interval);
-  }, [loadEmails]);
+  }, [loadEmails, activeAccountEmail]);
 
   const filteredEmails = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -101,14 +124,16 @@ export function useInbox() {
     );
 
     try {
-      const res = await fetch(`/api/gmail/${emailId}/read`, { method: "POST" });
+      const res = await fetch(`/api/gmail/${emailId}/read${accountQuery}`, {
+        method: "POST",
+      });
       if (!res.ok) {
         await loadEmails(true);
       }
     } catch {
       await loadEmails(true);
     }
-  }, [loadEmails]);
+  }, [accountQuery, loadEmails]);
 
   const archiveEmailById = useCallback(
     async (emailId: string) => {
@@ -116,7 +141,7 @@ export function useInbox() {
       setSelectedEmail((prev) => (prev?.id === emailId ? null : prev));
 
       try {
-        const res = await fetch(`/api/gmail/${emailId}/archive`, {
+        const res = await fetch(`/api/gmail/${emailId}/archive${accountQuery}`, {
           method: "POST",
         });
 
@@ -132,7 +157,7 @@ export function useInbox() {
         return false;
       }
     },
-    [loadEmails]
+    [accountQuery, loadEmails]
   );
 
   const openEmail = useCallback((email: InboxEmail) => {
@@ -171,5 +196,6 @@ export function useInbox() {
     openEmailWithAiReply,
     closeEmail,
     setOpenAiReply,
+    activeAccountEmail,
   };
 }

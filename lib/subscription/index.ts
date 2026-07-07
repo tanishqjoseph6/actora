@@ -38,8 +38,6 @@ export {
   hasPlanFeature,
 } from "./features";
 
-export { requirePlanFeature } from "./require-feature";
-
 export type { FeatureGateResult, LimitType } from "./gates";
 
 export {

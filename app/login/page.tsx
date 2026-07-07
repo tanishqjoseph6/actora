@@ -19,7 +19,8 @@ import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Check OAuth client configuration.",
-  OAuthCallback: "Google sign-in callback failed. Verify redirect URIs match your environment.",
+  OAuthCallback:
+    "Google sign-in callback failed. The redirect URI likely does not match this environment.",
   OAuthAccountNotLinked: "This Google account is not linked to an existing session.",
   AccessDenied: "Access was denied. Approve the requested permissions to continue.",
   Configuration: "Auth is misconfigured. Contact support.",
@@ -27,6 +28,22 @@ const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: "Incorrect email or password.",
   Default: "Sign-in failed. Please try again.",
 };
+
+const KNOWN_ERROR_CODES = new Set(Object.keys(ERROR_MESSAGES));
+
+function resolveAuthErrorMessage(errorCode: string | null): string | null {
+  if (!errorCode) return null;
+
+  if (KNOWN_ERROR_CODES.has(errorCode)) {
+    return ERROR_MESSAGES[errorCode];
+  }
+
+  try {
+    return decodeURIComponent(errorCode);
+  } catch {
+    return errorCode;
+  }
+}
 
 const EMAIL_NOT_CONFIRMED = "Email not confirmed";
 
@@ -45,9 +62,7 @@ function LoginContent() {
     searchParams.get("unverified") === "1"
   );
 
-  const oauthErrorMessage = errorCode
-    ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
-    : null;
+  const oauthErrorMessage = resolveAuthErrorMessage(errorCode);
 
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,7 +123,24 @@ function LoginContent() {
       )}
 
       {oauthErrorMessage && (
-        <AuthMessage variant="error">{oauthErrorMessage}</AuthMessage>
+        <AuthMessage variant="error">
+          {oauthErrorMessage}
+          {errorCode === "OAuthCallback" && (
+            <span className="block mt-2 text-xs opacity-80">
+              Check server logs for{" "}
+              <code className="font-mono">[next-auth] OAuth callback failure details</code>.
+              Local callback:{" "}
+              <code className="font-mono">
+                http://localhost:3000/api/auth/callback/google
+              </code>
+              . Production callback:{" "}
+              <code className="font-mono">
+                https://useactora.com/api/auth/callback/google
+              </code>
+              .
+            </span>
+          )}
+        </AuthMessage>
       )}
 
       {needsVerification && (

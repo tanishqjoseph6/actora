@@ -1,12 +1,5 @@
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
-
-type UserUsageRow = {
-  user_id: string;
-  ai_actions_used: number;
-  ai_replies_count: number;
-  period_start: string;
-  updated_at: string;
-};
+import { getSupabaseAdmin, isMissingUserUsageSchemaError } from "@/lib/supabase-admin";
+import type { UserUsageRow } from "@/lib/supabase/database.types";
 
 export type UserUsage = {
   userId: string;
@@ -80,8 +73,7 @@ export async function getUserUsage(userId: string): Promise<UserUsage> {
     .maybeSingle();
 
   if (error) {
-    const msg = error.message.toLowerCase();
-    if (msg.includes("user_usage") && msg.includes("does not exist")) {
+    if (isMissingUserUsageSchemaError(error.message)) {
       return memoryUsage.get(userId) ?? defaultUsage(userId);
     }
     throw new Error(error.message);
@@ -89,12 +81,18 @@ export async function getUserUsage(userId: string): Promise<UserUsage> {
 
   if (!data) {
     const created = defaultUsage(userId);
-    await db.from("user_usage").insert({
+    const { error: insertError } = await db.from("user_usage").insert({
       user_id: userId,
       ai_actions_used: 0,
       ai_replies_count: 0,
       period_start: created.periodStart,
     });
+    if (insertError && !isMissingUserUsageSchemaError(insertError.message)) {
+      throw new Error(insertError.message);
+    }
+    if (!insertError) {
+      memoryUsage.set(userId, created);
+    }
     return created;
   }
 
@@ -139,6 +137,9 @@ async function persistUsage(usage: UserUsage): Promise<UserUsage> {
     .single();
 
   if (error) {
+    if (!isMissingUserUsageSchemaError(error.message)) {
+      console.error("[user-usage] Failed to persist usage:", error.message);
+    }
     memoryUsage.set(usage.userId, usage);
     return usage;
   }

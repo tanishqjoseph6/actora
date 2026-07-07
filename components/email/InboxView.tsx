@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
@@ -18,7 +19,7 @@ type InboxViewProps = {
 
 export function InboxView({ compact = false }: InboxViewProps) {
   const { subscription, loading: planLoading } = usePlanGate();
-  const { connected, loading: accountsLoading } = useGmailAccounts();
+  const { connected, loading: accountsLoading, accounts, selectedEmail: activeAccountEmail, setSelectedEmail: setActiveAccount } = useGmailAccounts();
   const inbox = useInbox();
 
   const showConnectPrompt = !accountsLoading && !connected;
@@ -63,6 +64,26 @@ export function InboxView({ compact = false }: InboxViewProps) {
           )}
         </div>
 
+        {!showConnectPrompt && accounts.length > 1 && (
+          <div className="mb-4">
+            <label htmlFor="inbox-account" className={`block text-xs font-medium ${dashboard.subtle} mb-2`}>
+              Gmail account
+            </label>
+            <select
+              id="inbox-account"
+              value={activeAccountEmail ?? ""}
+              onChange={(event) => setActiveAccount(event.target.value)}
+              className={`${dashboard.input} px-4 py-2.5 max-w-md`}
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.email}>
+                  {account.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="relative mb-4">
           <SearchIcon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${dashboard.subtle}`} />
           <input
@@ -104,7 +125,10 @@ export function InboxView({ compact = false }: InboxViewProps) {
         )}
 
         {!showConnectPrompt && inbox.fetchState === "error" && (
-          <ErrorState error={inbox.error} onRetry={() => inbox.loadEmails()} />
+          <ErrorState
+            error={inbox.error}
+            onRetry={() => inbox.loadEmails()}
+          />
         )}
 
         {!showConnectPrompt &&
@@ -152,6 +176,7 @@ export function InboxView({ compact = false }: InboxViewProps) {
       {inbox.selectedEmail && (
         <EmailDetailPanel
           email={inbox.selectedEmail}
+          accountEmail={inbox.activeAccountEmail}
           onClose={inbox.closeEmail}
           openAiReply={inbox.openAiReply}
           onAiReplyOpened={() => inbox.setOpenAiReply(false)}
@@ -219,13 +244,25 @@ function ErrorState({
   error: string | null;
   onRetry: () => void;
 }) {
+  const needsReconnect =
+    error?.toLowerCase().includes("reconnect") ||
+    error?.toLowerCase().includes("expired") ||
+    error?.toLowerCase().includes("not connected");
+
   return (
     <div className={`${dashboard.cardBase} border-[#EF4444]/20 p-6`}>
       <p className="text-[#FCA5A5] font-medium mb-2">Could not load Gmail inbox</p>
       <p className={`${dashboard.muted} text-sm mb-4`}>{error}</p>
-      <button type="button" onClick={onRetry} className={`${dashboard.btnSecondary} px-4 py-2 text-sm`}>
-        Try again
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={onRetry} className={`${dashboard.btnSecondary} px-4 py-2 text-sm`}>
+          Try again
+        </button>
+        {needsReconnect && (
+          <Link href="/dashboard/connect-gmail" className={`${dashboard.btnPrimary} px-4 py-2 text-sm`}>
+            Reconnect Gmail
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

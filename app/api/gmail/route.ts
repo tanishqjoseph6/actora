@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGmailAuthClient } from "@/lib/gmail-auth";
+import { gmailErrorResponse } from "@/lib/gmail/errors";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { fetchInboxEmails } from "@/lib/gmail";
+import { toPublicGmailAccount } from "@/lib/gmail/types";
 
 export async function GET(request: NextRequest) {
   const auth = await getGmailAuthClient(request);
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      { error: auth.error, code: auth.code },
+      { status: auth.status }
+    );
   }
 
   try {
@@ -20,13 +25,18 @@ export async function GET(request: NextRequest) {
       emails.length
     );
 
-    return NextResponse.json({ emails, unreadCount });
+    return NextResponse.json({
+      emails,
+      unreadCount,
+      account: toPublicGmailAccount(auth.account),
+    });
   } catch (error) {
     console.error("[gmail] Failed to fetch inbox:", error);
+    const mapped = gmailErrorResponse(error);
 
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch Gmail inbox";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: mapped.error, code: mapped.code },
+      { status: mapped.status }
+    );
   }
 }

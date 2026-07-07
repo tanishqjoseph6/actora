@@ -3,4 +3,5 @@ export {
   isSupabaseConfigured,
   isMissingAutomationSchemaError,
   isMissingGmailSchemaError,
+  isMissingUserUsageSchemaError,
 } from "./supabase/server";

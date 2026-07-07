@@ -2,7 +2,7 @@ import { google } from "googleapis";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth/auth-options";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import {
   applyOAuthCredentials,
@@ -10,6 +10,7 @@ import {
   isTokenExpired,
   refreshOAuthTokens,
 } from "@/lib/gmail/oauth";
+import type { GmailAccountRecord } from "@/lib/gmail/types";
 
 export type GmailAuthResult =
   | {
@@ -17,11 +18,13 @@ export type GmailAuthResult =
       oauth2Client: InstanceType<typeof google.auth.OAuth2>;
       accountEmail: string;
       userId: string;
+      account: GmailAccountRecord;
     }
   | {
       ok: false;
-      status: 401 | 403;
+      status: 401 | 403 | 404;
       error: string;
+      code?: string;
     };
 
 async function resolveUserId(): Promise<string | null> {
@@ -46,8 +49,60 @@ async function resolveSessionTokens(request: NextRequest) {
   };
 }
 
+function resolveAccountEmail(
+  request: NextRequest,
+  explicitEmail?: string
+): string | undefined {
+  return (
+    explicitEmail ??
+    request.nextUrl.searchParams.get("account") ??
+    undefined
+  );
+}
+
+async function refreshStoredAccountTokens(
+  userId: string,
+  account: GmailAccountRecord
+): Promise<
+  | { ok: true; accessToken: string; refreshToken: string; tokenExpiresAt: string }
+  | { ok: false; error: string; code: string }
+> {
+  if (!account.refreshToken) {
+    return {
+      ok: false,
+      error:
+        "Gmail session expired. Reconnect your Gmail account to continue syncing.",
+      code: "OAUTH_EXPIRED",
+    };
+  }
+
+  try {
+    const refreshed = await refreshOAuthTokens(account.refreshToken);
+    await gmailAccountRepository.updateTokens(userId, account.email, {
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken,
+      tokenExpiresAt: refreshed.expiresAt,
+    });
+
+    return {
+      ok: true,
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken,
+      tokenExpiresAt: refreshed.expiresAt,
+    };
+  } catch {
+    return {
+      ok: false,
+      error:
+        "Gmail session expired. Reconnect your Gmail account to continue syncing.",
+      code: "OAUTH_EXPIRED",
+    };
+  }
+}
+
 export async function getGmailAuthClient(
-  request: NextRequest
+  request: NextRequest,
+  options?: { accountEmail?: string }
 ): Promise<GmailAuthResult> {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.email;
@@ -56,54 +111,52 @@ export async function getGmailAuthClient(
     return {
       ok: false,
       status: 401,
-      error: "Not authenticated. Please sign in with Google.",
+      error: "Not authenticated. Please sign in.",
+      code: "GMAIL_NOT_CONNECTED",
     };
   }
 
-  const sessionTokens = await resolveSessionTokens(request);
-  const storedAccount = await gmailAccountRepository.getPrimaryAccount(userId);
+  const requestedEmail = resolveAccountEmail(request, options?.accountEmail);
+  const storedAccount = requestedEmail
+    ? await gmailAccountRepository.getAccount(userId, requestedEmail)
+    : await gmailAccountRepository.getPrimaryAccount(userId);
 
-  let accessToken = sessionTokens?.accessToken ?? storedAccount?.accessToken;
-  let refreshToken =
-    sessionTokens?.refreshToken ?? storedAccount?.refreshToken ?? undefined;
-  let tokenExpiresAt =
-    sessionTokens?.accessTokenExpires != null
-      ? new Date(sessionTokens.accessTokenExpires).toISOString()
-      : storedAccount?.tokenExpiresAt;
+  if (!storedAccount) {
+    if (requestedEmail) {
+      return {
+        ok: false,
+        status: 404,
+        error: "That Gmail account is not connected to your workspace.",
+        code: "GMAIL_NOT_CONNECTED",
+      };
+    }
 
-  if (!accessToken) {
     return {
       ok: false,
       status: 403,
       error:
         "Gmail is not connected. Connect your Gmail account from the dashboard.",
+      code: "GMAIL_NOT_CONNECTED",
     };
   }
 
-  if (
-    refreshToken &&
-    isTokenExpired(tokenExpiresAt) &&
-    storedAccount?.email
-  ) {
-    try {
-      const refreshed = await refreshOAuthTokens(refreshToken);
-      accessToken = refreshed.accessToken;
-      refreshToken = refreshed.refreshToken;
-      tokenExpiresAt = refreshed.expiresAt;
+  let accessToken = storedAccount.accessToken;
+  let refreshToken = storedAccount.refreshToken ?? undefined;
+  let tokenExpiresAt = storedAccount.tokenExpiresAt;
 
-      await gmailAccountRepository.updateTokens(userId, storedAccount.email, {
-        accessToken: refreshed.accessToken,
-        refreshToken: refreshed.refreshToken,
-        tokenExpiresAt: refreshed.expiresAt,
-      });
-    } catch {
+  if (isTokenExpired(tokenExpiresAt)) {
+    const refreshed = await refreshStoredAccountTokens(userId, storedAccount);
+    if (!refreshed.ok) {
       return {
         ok: false,
         status: 403,
-        error:
-          "Gmail session expired. Reconnect your Gmail account to continue syncing.",
+        error: refreshed.error,
+        code: refreshed.code,
       };
     }
+    accessToken = refreshed.accessToken;
+    refreshToken = refreshed.refreshToken;
+    tokenExpiresAt = refreshed.tokenExpiresAt;
   }
 
   const oauth2Client = applyOAuthCredentials(createOAuth2Client(), {
@@ -111,9 +164,17 @@ export async function getGmailAuthClient(
     refreshToken,
   });
 
-  const accountEmail = storedAccount?.email ?? session.user?.email ?? userId;
+  const latestAccount =
+    (await gmailAccountRepository.getAccount(userId, storedAccount.email)) ??
+    storedAccount;
 
-  return { ok: true, oauth2Client, accountEmail, userId };
+  return {
+    ok: true,
+    oauth2Client,
+    accountEmail: latestAccount.email,
+    userId,
+    account: latestAccount,
+  };
 }
 
 export async function getConnectableTokens(request: NextRequest): Promise<
@@ -124,11 +185,16 @@ export async function getConnectableTokens(request: NextRequest): Promise<
       refreshToken?: string;
       tokenExpiresAt: string | null;
     }
-  | { ok: false; status: 401 | 403; error: string }
+  | { ok: false; status: 401 | 403; error: string; code: string }
 > {
   const userId = await resolveUserId();
   if (!userId) {
-    return { ok: false, status: 401, error: "Not authenticated." };
+    return {
+      ok: false,
+      status: 401,
+      error: "Not authenticated.",
+      code: "GMAIL_NOT_CONNECTED",
+    };
   }
 
   const sessionTokens = await resolveSessionTokens(request);
@@ -138,6 +204,7 @@ export async function getConnectableTokens(request: NextRequest): Promise<
       status: 403,
       error:
         "Gmail access not granted. Sign in with Google to authorize Gmail.",
+      code: "OAUTH_DENIED",
     };
   }
 
@@ -166,4 +233,31 @@ export async function syncGmailInboxForUser(
     emails.length
   );
   return emails;
+}
+
+export async function buildAuthClientForAccount(
+  userId: string,
+  account: GmailAccountRecord
+): Promise<
+  | { ok: true; oauth2Client: InstanceType<typeof google.auth.OAuth2> }
+  | { ok: false; error: string; code: string }
+> {
+  let accessToken = account.accessToken;
+  let refreshToken = account.refreshToken ?? undefined;
+
+  if (isTokenExpired(account.tokenExpiresAt)) {
+    const refreshed = await refreshStoredAccountTokens(userId, account);
+    if (!refreshed.ok) {
+      return { ok: false, error: refreshed.error, code: refreshed.code };
+    }
+    accessToken = refreshed.accessToken;
+    refreshToken = refreshed.refreshToken;
+  }
+
+  const oauth2Client = applyOAuthCredentials(createOAuth2Client(), {
+    accessToken,
+    refreshToken,
+  });
+
+  return { ok: true, oauth2Client };
 }

@@ -3,6 +3,7 @@ import {
   getConnectableTokens,
   syncGmailInboxForUser,
 } from "@/lib/gmail-auth";
+import { gmailErrorResponse } from "@/lib/gmail/errors";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import {
   applyOAuthCredentials,
@@ -20,7 +21,10 @@ export async function POST(request: NextRequest) {
   const auth = await getConnectableTokens(request);
 
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return NextResponse.json(
+      { error: auth.error, code: auth.code },
+      { status: auth.status }
+    );
   }
 
   const { userId, accessToken, refreshToken, tokenExpiresAt } = auth;
@@ -77,23 +81,25 @@ export async function POST(request: NextRequest) {
     const updatedAccount =
       (await gmailAccountRepository.getAccount(userId, gmailEmail)) ?? account;
 
+    const accounts = await gmailAccountRepository.listAccounts(userId);
     const subscription = await subscriptionProvider.getSubscription(userId);
 
     return NextResponse.json({
       account: toPublicGmailAccount(updatedAccount),
       isNew,
+      reconnected: !isNew,
       syncedCount: emails.length,
       unreadCount: emails.filter((email) => email.unread).length,
+      accounts: accounts.map(toPublicGmailAccount),
       subscription: toSubscriptionSnapshot(subscription),
     });
   } catch (error) {
     console.error("[gmail] Failed to connect account:", error);
+    const mapped = gmailErrorResponse(error);
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to connect Gmail account.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: mapped.error, code: mapped.code },
+      { status: mapped.status }
+    );
   }
 }

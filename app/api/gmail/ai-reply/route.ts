@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth/auth-options";
 import { recordAiReply } from "@/lib/dashboard/user-usage";
 import { generateEmailReplyWithRetry, isReplyTone } from "@/lib/openai";
 import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";

@@ -111,6 +111,14 @@ class MemoryGmailAccountStore {
     this.accounts.set(userId, next);
     return updated;
   }
+
+  async deleteAccount(userId: string, email: string): Promise<boolean> {
+    const list = this.accounts.get(userId) ?? [];
+    const next = list.filter((a) => a.email !== email);
+    if (next.length === list.length) return false;
+    this.accounts.set(userId, next);
+    return true;
+  }
 }
 
 export const memoryGmailAccountStore = new MemoryGmailAccountStore();
