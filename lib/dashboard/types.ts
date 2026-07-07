@@ -1,9 +1,8 @@
 export type DashboardStats = {
   emailCount: number;
-  aiReplies: number;
-  aiActionsUsed: number;
   connectedGmailAccounts: number;
   automations: number;
+  activeWorkflows: number;
   meetings: number;
   crmContacts: number;
 };
@@ -39,10 +38,9 @@ export type DashboardData = {
 
 export const EMPTY_DASHBOARD_STATS: DashboardStats = {
   emailCount: 0,
-  aiReplies: 0,
-  aiActionsUsed: 0,
   connectedGmailAccounts: 0,
   automations: 0,
+  activeWorkflows: 0,
   meetings: 0,
   crmContacts: 0,
 };

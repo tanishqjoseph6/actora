@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePlanGate } from "@/components/subscription/PlanGateProvider";
-import { formatLimit } from "@/lib/subscription";
 import { PremiumDashboardShell } from "@/components/dashboard/premium/PremiumDashboardShell";
 import { DashboardHero } from "@/components/dashboard/premium/DashboardHero";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
@@ -12,7 +10,6 @@ import { CrmPreviewSection } from "@/components/dashboard/premium/CrmPreviewSect
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
-  const { subscription } = usePlanGate();
   const {
     stats,
     todaysMeetings,
@@ -20,14 +17,6 @@ export default function Dashboard() {
     topContacts,
     loading: statsLoading,
   } = useDashboardStats();
-
-  const aiActionsDisplay = useMemo(() => {
-    if (statsLoading) return "—";
-    const limit = subscription
-      ? formatLimit(subscription.limits.aiActionsPerMonth)
-      : "—";
-    return `${stats.aiActionsUsed}/${limit}`;
-  }, [stats.aiActionsUsed, statsLoading, subscription]);
 
   const emailCountDisplay = useMemo(() => {
     if (statsLoading) return "—";
@@ -46,20 +35,20 @@ export default function Dashboard() {
           delay={0}
         />
         <PremiumMetricCard
-          title="AI Replies"
-          value={statsLoading ? "—" : stats.aiReplies}
+          title="Gmail Accounts"
+          value={statsLoading ? "—" : stats.connectedGmailAccounts}
           loading={statsLoading}
           delay={0.03}
         />
         <PremiumMetricCard
-          title="AI Actions Used"
-          value={aiActionsDisplay}
+          title="CRM Contacts"
+          value={statsLoading ? "—" : stats.crmContacts}
           loading={statsLoading}
           delay={0.06}
         />
         <PremiumMetricCard
-          title="Gmail Accounts"
-          value={statsLoading ? "—" : stats.connectedGmailAccounts}
+          title="Meetings"
+          value={statsLoading ? "—" : stats.meetings}
           loading={statsLoading}
           delay={0.09}
         />
@@ -70,16 +59,10 @@ export default function Dashboard() {
           delay={0.12}
         />
         <PremiumMetricCard
-          title="Meetings"
-          value={statsLoading ? "—" : stats.meetings}
+          title="Active Workflows"
+          value={statsLoading ? "—" : stats.activeWorkflows}
           loading={statsLoading}
           delay={0.15}
-        />
-        <PremiumMetricCard
-          title="CRM Contacts"
-          value={statsLoading ? "—" : stats.crmContacts}
-          loading={statsLoading}
-          delay={0.18}
         />
       </div>
 
