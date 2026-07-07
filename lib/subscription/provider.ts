@@ -7,6 +7,11 @@ import type {
 import { DEFAULT_PLAN_ID, getPlanDisplayName, getPlanLimits } from "./plans";
 import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard/user-usage";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
+import {
+  getStoredSubscription,
+  setStoredPlan,
+  type StoredSubscription,
+} from "./repository";
 
 export interface SubscriptionProvider {
   getSubscription(userId: string): Promise<UserSubscription>;
@@ -19,14 +24,19 @@ export interface SubscriptionProvider {
   recordInboxConnection(userId: string): Promise<UserSubscription>;
 }
 
-function getNextRenewalDate(billingInterval: BillingInterval = "monthly"): string {
-  const date = new Date();
-  if (billingInterval === "yearly") {
-    date.setFullYear(date.getFullYear() + 1);
-  } else {
-    date.setMonth(date.getMonth() + 1);
-  }
-  return date.toISOString();
+function toUserSubscription(
+  stored: StoredSubscription,
+  usage: UserSubscription["usage"]
+): UserSubscription {
+  return {
+    userId: stored.userId,
+    planId: stored.planId,
+    status: stored.status,
+    billingInterval: stored.billingInterval,
+    currentPeriodEnd: stored.currentPeriodEnd,
+    usage,
+    updatedAt: stored.updatedAt,
+  };
 }
 
 export function createDefaultSubscription(userId: string): UserSubscription {
@@ -35,7 +45,7 @@ export function createDefaultSubscription(userId: string): UserSubscription {
     planId: DEFAULT_PLAN_ID,
     status: "active",
     billingInterval: "monthly",
-    currentPeriodEnd: getNextRenewalDate(),
+    currentPeriodEnd: new Date(Date.now() + 30 * 86_400_000).toISOString(),
     usage: {
       aiActionsUsed: 0,
       inboxesConnected: 0,
@@ -56,32 +66,18 @@ export function toSubscriptionSnapshot(
   };
 }
 
-/**
- * In-memory mock provider for development.
- * Replace with Razorpay-backed provider via webhook + database.
- */
-class MockSubscriptionProvider implements SubscriptionProvider {
-  private store = new Map<string, UserSubscription>();
-
+class SupabaseSubscriptionProvider implements SubscriptionProvider {
   async getSubscription(userId: string): Promise<UserSubscription> {
-    const existing = this.store.get(userId) ?? createDefaultSubscription(userId);
-
-    const [usage, accounts] = await Promise.all([
+    const [stored, usage, accounts] = await Promise.all([
+      getStoredSubscription(userId),
       getUserUsage(userId),
       gmailAccountRepository.listAccounts(userId),
     ]);
 
-    const updated: UserSubscription = {
-      ...existing,
-      usage: {
-        aiActionsUsed: usage.aiActionsUsed,
-        inboxesConnected: accounts.length,
-      },
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.store.set(userId, updated);
-    return updated;
+    return toUserSubscription(stored, {
+      aiActionsUsed: usage.aiActionsUsed,
+      inboxesConnected: accounts.length,
+    });
   }
 
   async setPlan(
@@ -89,32 +85,21 @@ class MockSubscriptionProvider implements SubscriptionProvider {
     planId: PlanId,
     billingInterval: BillingInterval = "monthly"
   ): Promise<UserSubscription> {
-    const current = await this.getSubscription(userId);
-    const updated: UserSubscription = {
-      ...current,
-      planId,
-      billingInterval,
-      status: "active",
-      currentPeriodEnd: getNextRenewalDate(billingInterval),
-      updatedAt: new Date().toISOString(),
-    };
-    this.store.set(userId, updated);
-    return updated;
+    const stored = await setStoredPlan(userId, planId, billingInterval);
+    const [usage, accounts] = await Promise.all([
+      getUserUsage(userId),
+      gmailAccountRepository.listAccounts(userId),
+    ]);
+
+    return toUserSubscription(stored, {
+      aiActionsUsed: usage.aiActionsUsed,
+      inboxesConnected: accounts.length,
+    });
   }
 
   async recordAiAction(userId: string): Promise<UserSubscription> {
-    const usage = await persistAiAction(userId);
-    const current = await this.getSubscription(userId);
-    const updated: UserSubscription = {
-      ...current,
-      usage: {
-        ...current.usage,
-        aiActionsUsed: usage.aiActionsUsed,
-      },
-      updatedAt: new Date().toISOString(),
-    };
-    this.store.set(userId, updated);
-    return updated;
+    await persistAiAction(userId);
+    return this.getSubscription(userId);
   }
 
   async recordInboxConnection(userId: string): Promise<UserSubscription> {
@@ -122,9 +107,8 @@ class MockSubscriptionProvider implements SubscriptionProvider {
   }
 }
 
-// TODO: Swap to RazorpaySubscriptionProvider when webhooks are live.
 export const subscriptionProvider: SubscriptionProvider =
-  new MockSubscriptionProvider();
+  new SupabaseSubscriptionProvider();
 
 /**
  * Called by Razorpay webhook handler to sync subscription state.

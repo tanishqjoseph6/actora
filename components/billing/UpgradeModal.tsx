@@ -15,7 +15,7 @@ type UpgradeModalProps = {
   selection: UpgradeSelection | null;
   currency: BillingCurrency;
   onClose: () => void;
-  onDevUpgrade?: (planId: PlanId) => Promise<void>;
+  onDevUpgrade?: (planId: PlanId) => Promise<boolean>;
   onCheckout?: (
     planId: PlanId,
     period: BillingPeriod,
@@ -35,10 +35,14 @@ export function UpgradeModal({
 }: UpgradeModalProps) {
   const isOpen = selection !== null;
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const checkoutAvailable = isCheckoutAvailable(currency);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setActionError(null);
+      return;
+    }
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -62,6 +66,7 @@ export function UpgradeModal({
     if (isCurrentPlan) return;
 
     setIsProcessing(true);
+    setActionError(null);
     try {
       if (checkoutAvailable && onCheckout) {
         await onCheckout(
@@ -71,8 +76,15 @@ export function UpgradeModal({
           plan.razorpayPlanId
         );
       } else if (onDevUpgrade) {
-        await onDevUpgrade(plan.id);
+        const success = await onDevUpgrade(plan.id);
+        if (!success) {
+          setActionError("Could not activate your plan. Please try again.");
+        }
+      } else {
+        setActionError("Plan activation is unavailable right now.");
       }
+    } catch {
+      setActionError("Something went wrong. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -159,6 +171,12 @@ export function UpgradeModal({
             <p className="text-center text-sm text-gray-500 mb-6">
               {getCheckoutDescription(selectionCurrency)}
             </p>
+
+            {actionError && (
+              <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {actionError}
+              </p>
+            )}
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button

@@ -55,6 +55,11 @@ export function isMissingUserUsageSchemaError(message: string): boolean {
   return isMissingTableSchemaError(message, "user_usage");
 }
 
+/** True when PostgREST reports the user_subscriptions schema is missing. */
+export function isMissingUserSubscriptionsSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "user_subscriptions");
+}
+
 function isMissingTableSchemaError(message: string, table: string): boolean {
   const lower = message.toLowerCase();
   return (

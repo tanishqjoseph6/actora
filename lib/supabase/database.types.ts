@@ -7,3 +7,12 @@ export type UserUsageRow = {
   period_start: string;
   updated_at: string;
 };
+
+export type UserSubscriptionRow = {
+  user_id: string;
+  plan_id: string;
+  status: string;
+  billing_interval: string;
+  current_period_end: string;
+  updated_at: string;
+};

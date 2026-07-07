@@ -23,8 +23,10 @@ import {
 import { parseBillingCurrency } from "@/lib/billing/currency";
 import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
+import { useSubscription } from "@/hooks/useSubscription";
 import type { BillingCurrency } from "@/lib/billing/currency";
-import type { PlanId } from "@/lib/subscription";
+import { getPlanDisplayName, type PlanId } from "@/lib/subscription";
+import { queuePlanActivationToast } from "@/components/billing/PlanActivationToastListener";
 
 const ENTERPRISE_MAILTO =
   "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
@@ -38,7 +40,8 @@ type PricingSectionProps = {
   className?: string;
   syncFromUrl?: boolean;
   onPaymentSuccess?: () => void | Promise<void>;
-  onDevUpgrade?: (planId: PlanId) => Promise<void>;
+  onDevUpgrade?: (planId: PlanId) => Promise<boolean>;
+  devUpgradeRedirectTo?: string;
   proUpgradeRequest?: number;
 };
 
@@ -52,10 +55,12 @@ export function PricingSection({
   syncFromUrl = false,
   onPaymentSuccess,
   onDevUpgrade,
+  devUpgradeRedirectTo = "/dashboard",
   proUpgradeRequest = 0,
 }: PricingSectionProps) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
+  const { upgradePlan, refresh: refreshSubscription } = useSubscription();
   const { currency, setCurrency } = useBillingCurrency();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
@@ -119,6 +124,46 @@ export function PricingSection({
       openUpgrade(plan, period, currency);
     },
     [mode, session, period, currency, openUpgrade, router]
+  );
+
+  const handleDevUpgrade = useCallback(
+    async (planId: PlanId): Promise<boolean> => {
+      const success = onDevUpgrade
+        ? await onDevUpgrade(planId)
+        : await upgradePlan(planId, period);
+
+      if (!success) {
+        setToast({
+          type: "error",
+          title: "Activation failed",
+          message: "Could not update your plan. Please try again.",
+        });
+        return false;
+      }
+
+      await refreshSubscription();
+      await updateSession({ planId });
+      closeUpgrade();
+      await onPaymentSuccess?.();
+      const planName = getPlanDisplayName(planId);
+      queuePlanActivationToast(
+        "Plan activated",
+        `You're now on Actora ${planName}.`
+      );
+      router.push(devUpgradeRedirectTo);
+      return true;
+    },
+    [
+      onDevUpgrade,
+      upgradePlan,
+      period,
+      refreshSubscription,
+      updateSession,
+      closeUpgrade,
+      onPaymentSuccess,
+      devUpgradeRedirectTo,
+      router,
+    ]
   );
 
   const handleCheckout = useCallback(
@@ -242,7 +287,7 @@ export function PricingSection({
         selection={selection}
         currency={currency}
         onClose={closeUpgrade}
-        onDevUpgrade={onDevUpgrade}
+        onDevUpgrade={handleDevUpgrade}
         onCheckout={handleCheckout}
         currentPlanId={currentPlanId}
       />

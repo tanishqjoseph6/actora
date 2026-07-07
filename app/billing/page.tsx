@@ -17,10 +17,9 @@ import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
 import { BillingFaq } from "@/components/billing/premium/BillingFaq";
 import { CurrentPlanSection } from "@/components/billing/premium/CurrentPlanSection";
 import { useSubscription } from "@/hooks/useSubscription";
-import type { PlanId } from "@/lib/subscription";
 
 export default function Billing() {
-  const { subscription, loading, upgradePlan, refresh } = useSubscription();
+  const { subscription, loading, refresh } = useSubscription();
   const [toast, setToast] = useState<PaymentToastState>(null);
   const [proUpgradeRequest, setProUpgradeRequest] = useState(0);
 
@@ -29,21 +28,6 @@ export default function Billing() {
   const handleUpgradePlan = useCallback(() => {
     setProUpgradeRequest((n) => n + 1);
   }, []);
-
-  const handleDevUpgrade = useCallback(
-    async (planId: PlanId) => {
-      const success = await upgradePlan(planId, "monthly");
-      if (success) {
-        await refresh();
-        setToast({
-          type: "success",
-          title: "Plan activated",
-          message: "Your subscription has been updated.",
-        });
-      }
-    },
-    [upgradePlan, refresh]
-  );
 
   return (
     <main className="min-h-screen bg-[#05070B] text-white overflow-hidden">
@@ -66,7 +50,6 @@ export default function Billing() {
           currentPlanId={subscription?.planId}
           syncFromUrl
           onPaymentSuccess={refresh}
-          onDevUpgrade={handleDevUpgrade}
           proUpgradeRequest={proUpgradeRequest}
           className="mb-16 lg:mb-20"
         />

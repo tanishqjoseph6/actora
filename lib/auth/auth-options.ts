@@ -10,6 +10,7 @@ import {
   resolveAuthUrl,
   shouldUseSecureCookies,
 } from "@/lib/auth/nextauth-url";
+import { getStoredSubscription } from "@/lib/subscription/repository";
 
 configureNextAuthEnv();
 
@@ -171,8 +172,19 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, account, trigger, session }) {
+    async jwt({ token, account, trigger, session, user }) {
       if (account) {
+        let planId = token.planId ?? "free";
+        const email = user?.email ?? token.email;
+        if (email) {
+          try {
+            const stored = await getStoredSubscription(email);
+            planId = stored.planId;
+          } catch (error) {
+            console.error("[next-auth] Failed to load subscription plan:", error);
+          }
+        }
+
         return {
           ...token,
           accessToken: account.access_token,
@@ -180,7 +192,7 @@ export const authOptions: NextAuthOptions = {
           accessTokenExpires: account.expires_at
             ? account.expires_at * 1000
             : Date.now() + 3600 * 1000,
-          planId: token.planId ?? "free",
+          planId,
         };
       }
 
