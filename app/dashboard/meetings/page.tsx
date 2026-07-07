@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { MeetingsHeader } from "@/components/meetings/MeetingsHeader";
+import { MeetingsContentSkeleton } from "@/components/meetings/MeetingsContentSkeleton";
 import { MeetingsWeekCalendar } from "@/components/meetings/MeetingsWeekCalendar";
 import { UpcomingMeetingsSection } from "@/components/meetings/UpcomingMeetingsSection";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
@@ -68,18 +69,24 @@ export default function MeetingsPage() {
       </div>
 
       <div className="space-y-6 lg:space-y-8">
-        <MeetingsWeekCalendar
-          meetings={MOCK_MEETINGS}
-          selectedDay={selectedDay}
-          onSelectDay={handleSelectDay}
-        />
+        {loading ? (
+          <MeetingsContentSkeleton />
+        ) : (
+          <>
+            <MeetingsWeekCalendar
+              meetings={MOCK_MEETINGS}
+              selectedDay={selectedDay}
+              onSelectDay={handleSelectDay}
+            />
 
-        <UpcomingMeetingsSection
-          meetings={MOCK_MEETINGS}
-          selectedDay={selectedDay}
-          dayFilterActive={dayFilterActive}
-          onClearDayFilter={handleClearDayFilter}
-        />
+            <UpcomingMeetingsSection
+              meetings={MOCK_MEETINGS}
+              selectedDay={selectedDay}
+              dayFilterActive={dayFilterActive}
+              onClearDayFilter={handleClearDayFilter}
+            />
+          </>
+        )}
       </div>
     </>
     </FeatureGate>

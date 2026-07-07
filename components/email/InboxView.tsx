@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
@@ -10,6 +9,7 @@ import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { useInbox } from "@/hooks/useInbox";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 
 type InboxViewProps = {
   /** Compact layout for embedding on the dashboard overview */
@@ -113,6 +113,11 @@ export function InboxView({ compact = false }: InboxViewProps) {
             <EmptyState
               filter={inbox.activeFilter}
               hasSearch={inbox.searchQuery.trim().length > 0}
+              onClearFilters={() => {
+                inbox.setSearchQuery("");
+                inbox.setActiveFilter("all");
+              }}
+              onRefresh={() => inbox.loadEmails()}
             />
           )}
 
@@ -194,19 +199,16 @@ function FilterChip({
 
 function ConnectGmailState({ error }: { error: string | null }) {
   return (
-    <div className={`${dashboard.cardBase} p-8 text-center`}>
-      <div className="w-14 h-14 rounded-xl bg-[#2563EB]/10 border border-[#2563EB]/25 flex items-center justify-center mx-auto mb-5">
-        <InboxIcon className="w-7 h-7 text-[#2563EB]" />
-      </div>
-      <p className="text-white font-semibold mb-2">Connect Gmail to get started</p>
-      <p className={`text-sm ${dashboard.muted} mb-6 max-w-md mx-auto`}>
-        {error ??
-          "Link your Gmail account to fetch messages, generate AI summaries, and reply from Actora."}
-      </p>
-      <Link href="/dashboard/connect-gmail" className={`${dashboard.btnPrimary} px-5 py-2.5 text-sm`}>
-        Connect Gmail
-      </Link>
-    </div>
+    <PremiumEmptyState
+      illustration="inbox"
+      title="Connect Gmail to unlock your AI inbox"
+      description={
+        error ??
+        "Link Gmail to pull in messages, get AI summaries on every thread, and draft smart replies without leaving Actora."
+      }
+      cta={{ label: "Connect Gmail", href: "/dashboard/connect-gmail" }}
+      className="border-dashed bg-[#0B1220]/50"
+    />
   );
 }
 
@@ -231,30 +233,42 @@ function ErrorState({
 function EmptyState({
   filter,
   hasSearch,
+  onClearFilters,
+  onRefresh,
 }: {
   filter: "all" | "unread" | "starred";
   hasSearch: boolean;
+  onClearFilters: () => void;
+  onRefresh: () => void;
 }) {
-  const message = hasSearch
-    ? "No emails match your search."
-    : filter === "unread"
-      ? "You're all caught up — no unread emails."
-      : filter === "starred"
-        ? "No starred emails yet."
-        : "Your inbox is empty.";
+  const hasActiveFilters = hasSearch || filter !== "all";
+
+  if (hasActiveFilters) {
+    return (
+      <PremiumEmptyState
+        illustration="inbox"
+        title={
+          hasSearch
+            ? "No emails match your search"
+            : filter === "unread"
+              ? "No unread emails"
+              : "No starred emails"
+        }
+        description="Try a different search term or reset your filters to see all messages."
+        cta={{ label: "Clear filters", onClick: onClearFilters }}
+        className="border-0 bg-transparent shadow-none"
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-14 h-14 rounded-xl bg-[#2563EB]/10 border border-[#2563EB]/25 flex items-center justify-center mb-5">
-        <InboxIcon className="w-7 h-7 text-[#2563EB]" />
-      </div>
-      <p className="text-white font-medium mb-1">{message}</p>
-      <p className={`text-sm ${dashboard.subtle}`}>
-        {hasSearch
-          ? "Try a different search term or clear filters."
-          : "New messages will appear here automatically."}
-      </p>
-    </div>
+    <PremiumEmptyState
+      illustration="inbox"
+      title="Your inbox is clear"
+      description="New Gmail messages will sync here automatically. AI summaries and one-click replies are ready when they arrive."
+      cta={{ label: "Refresh inbox", onClick: onRefresh }}
+      className="border-0 bg-transparent shadow-none"
+    />
   );
 }
 
@@ -289,10 +303,3 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
-function InboxIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3" />
-    </svg>
-  );
-}

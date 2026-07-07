@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CompanyListItem } from "@/components/crm/CompanyListItem";
-import { CrmEmptyState, CompanyEmptyIcon } from "@/components/crm/CrmEmptyState";
+import { CrmEmptyState } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
 import { CrmListSkeleton } from "@/components/crm/CrmListSkeleton";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
@@ -67,6 +67,20 @@ export default function CompaniesPage() {
   ];
 
   const hasSearch = searchQuery.trim().length > 0;
+  const hasActiveFilters =
+    hasSearch ||
+    activeFilter !== "all" ||
+    statusFilter !== "all" ||
+    industryFilter !== "all" ||
+    ownerFilter !== "all";
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setActiveFilter("all");
+    setStatusFilter("all");
+    setIndustryFilter("all");
+    setOwnerFilter("all");
+  };
   const avgAiScore = Math.round(
     MOCK_COMPANIES.reduce((s, c) => s + c.aiScore, 0) / MOCK_COMPANIES.length
   );
@@ -185,13 +199,23 @@ export default function CompaniesPage() {
 
         {filteredCompanies.length === 0 ? (
           <CrmEmptyState
-            icon={<CompanyEmptyIcon className={`w-8 h-8 ${dashboard.subtle}`} />}
             title={
-              hasSearch
-                ? "No companies match your search"
-                : "No companies match your filters"
+              hasActiveFilters
+                ? hasSearch
+                  ? "No companies match your search"
+                  : "No companies match your filters"
+                : "Map every account in your pipeline"
             }
-            description="Try a different search term or adjust your filters."
+            description={
+              hasActiveFilters
+                ? "Try a different search term or reset your filters to browse all companies."
+                : "Track firmographics, pipeline value, and AI scores per account — so your team always knows where to focus."
+            }
+            cta={
+              hasActiveFilters
+                ? { label: "Clear filters", onClick: handleClearFilters }
+                : { label: "Add your first company", onClick: () => {} }
+            }
           />
         ) : (
           <div className="space-y-2">

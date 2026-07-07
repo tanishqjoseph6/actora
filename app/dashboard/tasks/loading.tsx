@@ -1,5 +1,11 @@
 import { DashboardPageSkeleton } from "@/components/ui/DashboardPageSkeleton";
+import { TasksContentSkeleton } from "@/components/tasks/TasksContentSkeleton";
 
 export default function TasksLoading() {
-  return <DashboardPageSkeleton statCards={4} rows={6} />;
+  return (
+    <div className="space-y-6">
+      <DashboardPageSkeleton statCards={4} showHero={false} showTable={false} />
+      <TasksContentSkeleton />
+    </div>
+  );
 }

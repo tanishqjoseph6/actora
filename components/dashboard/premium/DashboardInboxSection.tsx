@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { InboxEmail } from "@/lib/gmail";
 import { EmailCard } from "@/components/email/EmailCard";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 import { LockedFeaturePanel } from "@/components/subscription/FeatureGate";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { dashboard } from "./dashboard-tokens";
@@ -124,6 +125,11 @@ export function DashboardInboxSection({
         <EmptyInboxState
           filter={activeFilter}
           hasSearch={searchQuery.trim().length > 0}
+          onClearFilters={() => {
+            onSearchChange("");
+            onFilterChange("all");
+          }}
+          onRetry={onRetry}
         />
       )}
 
@@ -207,30 +213,42 @@ function EmailSkeletonList() {
 function EmptyInboxState({
   filter,
   hasSearch,
+  onClearFilters,
+  onRetry,
 }: {
   filter: FilterChip;
   hasSearch: boolean;
+  onClearFilters: () => void;
+  onRetry: () => void;
 }) {
-  const message = hasSearch
-    ? "No emails match your search."
-    : filter === "unread"
-      ? "You're all caught up — no unread emails."
-      : filter === "starred"
-        ? "No starred emails yet."
-        : "Your inbox is empty.";
+  const hasActiveFilters = hasSearch || filter !== "all";
+
+  if (hasActiveFilters) {
+    return (
+      <PremiumEmptyState
+        illustration="inbox"
+        title={
+          hasSearch
+            ? "No emails match your search"
+            : filter === "unread"
+              ? "No unread emails"
+              : "No starred emails"
+        }
+        description="Try a different search term or reset your filters to see all messages."
+        cta={{ label: "Clear filters", onClick: onClearFilters }}
+        className="border-0 bg-transparent shadow-none py-10"
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="w-14 h-14 rounded-xl bg-[#2563EB]/10 border border-[#2563EB]/25 flex items-center justify-center mb-5">
-        <InboxIcon className="w-7 h-7 text-[#2563EB]" />
-      </div>
-      <p className="text-white font-medium mb-1">{message}</p>
-      <p className={`text-sm ${dashboard.subtle}`}>
-        {hasSearch
-          ? "Try a different search term or clear filters."
-          : "New messages will appear here automatically."}
-      </p>
-    </div>
+    <PremiumEmptyState
+      illustration="inbox"
+      title="Your inbox is clear"
+      description="New Gmail messages will sync here automatically with AI summaries ready when they arrive."
+      cta={{ label: "Refresh inbox", onClick: onRetry }}
+      className="border-0 bg-transparent shadow-none py-10"
+    />
   );
 }
 
@@ -242,10 +260,3 @@ function SearchIcon({ className }: { className?: string }) {
   );
 }
 
-function InboxIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3" />
-    </svg>
-  );
-}

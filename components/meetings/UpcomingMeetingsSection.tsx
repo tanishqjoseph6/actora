@@ -1,5 +1,6 @@
 "use client";
 
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { Meeting } from "@/lib/meetings/types";
 import {
@@ -55,17 +56,26 @@ export function UpcomingMeetingsSection({
       </div>
 
       {displayMeetings.length === 0 ? (
-        <div className={`${dashboard.cardLg} p-10 text-center`}>
-          <div className="w-14 h-14 rounded-xl bg-[#0B1220] border border-[#1E293B] flex items-center justify-center mx-auto mb-4 text-2xl">
-            📅
-          </div>
-          <p className="text-white font-medium mb-1">No meetings scheduled</p>
-          <p className={`text-sm ${dashboard.subtle}`}>
-            {dayFilterActive
-              ? `Nothing on the calendar for ${selectedLabel.toLowerCase()}.`
-              : "Your calendar is clear — time to focus on deep work."}
-          </p>
-        </div>
+        dayFilterActive && onClearDayFilter ? (
+          <PremiumEmptyState
+            illustration="meetings"
+            title={`Nothing scheduled for ${selectedLabel.toLowerCase()}`}
+            description="Pick another day on the calendar or view all upcoming meetings across your week."
+            cta={{ label: "Show all upcoming", onClick: onClearDayFilter }}
+            className="border-dashed bg-[#111827]/50"
+          />
+        ) : (
+          <PremiumEmptyState
+            illustration="meetings"
+            title="Your calendar is open for deep work"
+            description="Meetings sync here with attendees, video links, and prep context — so you're never scrambling before a call."
+            cta={{
+              label: "Connect calendar",
+              href: "/dashboard/settings#integrations",
+            }}
+            className="border-dashed bg-[#111827]/50"
+          />
+        )
       ) : (
         <div className="space-y-6">
           {groups.map((group) => (

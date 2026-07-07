@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { DashboardPageSkeleton } from "@/components/ui/DashboardPageSkeleton";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
   FEATURE_META,
@@ -80,9 +81,7 @@ export function FeatureGate({
 
   if (loading) {
     return fullPage ? (
-      <div className="py-20 flex justify-center" aria-busy="true">
-        <div className="w-8 h-8 rounded-full border-2 border-[#2563EB]/30 border-t-[#2563EB] animate-spin" />
-      </div>
+      <DashboardPageSkeleton statCards={4} rows={4} />
     ) : null;
   }
 

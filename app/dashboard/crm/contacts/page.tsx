@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ContactsTable, ContactsTableSkeleton } from "@/components/crm/contacts/ContactsTable";
 import { ContactListItem } from "@/components/crm/ContactListItem";
-import { CrmEmptyState, ContactEmptyIcon } from "@/components/crm/CrmEmptyState";
+import { CrmEmptyState } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmPagination } from "@/components/crm/CrmPagination";
@@ -72,6 +72,19 @@ export default function ContactsPage() {
   ];
 
   const hasSearch = searchQuery.trim().length > 0;
+  const hasActiveFilters =
+    hasSearch ||
+    activeFilter !== "all" ||
+    companyFilter !== "all" ||
+    ownerFilter !== "all";
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setActiveFilter("all");
+    setCompanyFilter("all");
+    setOwnerFilter("all");
+    setPage(1);
+  };
   const avgAiScore = Math.round(
     MOCK_CONTACTS.reduce((s, c) => s + c.aiLeadScore, 0) / MOCK_CONTACTS.length
   );
@@ -197,13 +210,23 @@ export default function ContactsPage() {
 
         {filteredContacts.length === 0 ? (
           <CrmEmptyState
-            icon={<ContactEmptyIcon className="w-8 h-8 text-[#64748B]" />}
             title={
-              hasSearch
-                ? "No contacts match your search"
-                : "No contacts match your filters"
+              hasActiveFilters
+                ? hasSearch
+                  ? "No contacts match your search"
+                  : "No contacts match your filters"
+                : "Build your contact network"
             }
-            description="Try a different search term or adjust your filters."
+            description={
+              hasActiveFilters
+                ? "Try a different search term or reset your filters to see everyone in your pipeline."
+                : "CRM keeps every relationship, role, and touchpoint in one place — with AI lead scores to prioritize who matters most."
+            }
+            cta={
+              hasActiveFilters
+                ? { label: "Clear filters", onClick: handleClearFilters }
+                : { label: "Add your first contact", onClick: () => {} }
+            }
           />
         ) : (
           <>

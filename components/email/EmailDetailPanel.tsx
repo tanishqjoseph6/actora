@@ -25,7 +25,7 @@ import {
   type ReplyTone,
 } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
-import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton";
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
@@ -531,7 +531,7 @@ export function EmailDetailPanel({
                     disabled={isArchiving || isGenerating || isSending}
                   >
                     {isArchiving ? (
-                      <LoadingSpinner />
+                      <SkeletonInline className="w-4 h-4 rounded" />
                     ) : (
                       <ArchiveIcon className="w-4 h-4" />
                     )}
@@ -692,7 +692,7 @@ export function EmailDetailPanel({
                       >
                         {isSending ? (
                           <>
-                            <LoadingSpinner dark />
+                            <SkeletonInline className="w-4 h-4 rounded" />
                             Sending…
                           </>
                         ) : (
@@ -770,18 +770,6 @@ function ActionButton({
     >
       {children}
     </button>
-  );
-}
-
-function LoadingSpinner({ dark = false }: { dark?: boolean }) {
-  const colorClass = dark
-    ? "border-white/30 border-t-[#05070B]"
-    : "border-[#2563EB]/30 border-t-[#2563EB]";
-
-  return (
-    <span
-      className={`inline-block w-4 h-4 border-2 ${colorClass} rounded-full animate-spin`}
-    />
   );
 }
 

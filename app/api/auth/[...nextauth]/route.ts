@@ -1,5 +1,7 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+import { createClient } from "@supabase/supabase-js";
 import type { JWT } from "next-auth/jwt";
 import { refreshGoogleAccessToken } from "@/lib/auth/refresh-google-token";
 
@@ -23,6 +25,61 @@ export const authOptions: NextAuthOptions = {
   useSecureCookies: process.env.NODE_ENV === "production",
 
   providers: [
+    CredentialsProvider({
+      id: "credentials",
+      name: "Email and Password",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const email = credentials?.email?.trim();
+        const password = credentials?.password;
+
+        if (!email || !password) {
+          return null;
+        }
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          console.error("[next-auth] Supabase env vars missing for credentials sign-in");
+          return null;
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          if (error.message === "Email not confirmed") {
+            throw new Error("Email not confirmed");
+          }
+          return null;
+        }
+
+        if (!data.user) {
+          return null;
+        }
+
+        if (!data.user.email_confirmed_at) {
+          await supabase.auth.signOut();
+          throw new Error("Email not confirmed");
+        }
+
+        return {
+          id: data.user.id,
+          email: data.user.email ?? email,
+          name:
+            (data.user.user_metadata?.full_name as string | undefined) ??
+            data.user.email?.split("@")[0] ??
+            "User",
+        };
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

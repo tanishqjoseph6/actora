@@ -7,6 +7,7 @@ import {
   formatRenewalDate,
   PlanUsageDisplay,
 } from "@/components/subscription/CurrentPlanBadge";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type CurrentPlanSectionProps = {
   subscription: SubscriptionSnapshot | null;
@@ -36,6 +37,16 @@ export function CurrentPlanSection({
           Current plan
         </p>
         <CurrentPlanBadge subscription={subscription} loading={loading} />
+        {loading ? (
+          <>
+            <Skeleton className="h-4 w-44 mt-3" />
+            <div className="flex flex-wrap gap-3 mt-6">
+              <Skeleton className="h-10 w-32 rounded-2xl" />
+              <Skeleton className="h-10 w-44 rounded-2xl" />
+            </div>
+          </>
+        ) : (
+          <>
         <p className="text-sm text-gray-400 mt-3">
           Renews on <span className="text-gray-200">{renewalDate}</span>
         </p>
@@ -55,6 +66,8 @@ export function CurrentPlanSection({
             Manage Subscription
           </button>
         </div>
+          </>
+        )}
       </div>
 
       <div className="rounded-[24px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-black/20">

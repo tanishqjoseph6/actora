@@ -1,10 +1,21 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
+import {
+  AuthBackLink,
+  AuthCard,
+  AuthDivider,
+  AuthField,
+} from "@/components/auth/AuthCard";
+import { AuthMessage } from "@/components/auth/AuthMessage";
+import { ResendVerificationEmail } from "@/components/auth/ResendVerificationEmail";
+import { VerificationStatusBadge } from "@/components/auth/VerificationStatusBadge";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Check OAuth client configuration.",
@@ -13,49 +24,167 @@ const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "Access was denied. Approve the requested permissions to continue.",
   Configuration: "Auth is misconfigured. Contact support.",
   RefreshAccessTokenError: "Your Google session expired. Please sign in again.",
+  CredentialsSignin: "Incorrect email or password.",
   Default: "Sign-in failed. Please try again.",
 };
 
+const EMAIL_NOT_CONFIRMED = "Email not confirmed";
+
 function LoginContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("error");
-  const errorMessage = errorCode
+  const resetSuccess = searchParams.get("reset") === "success";
+  const verifiedSuccess = searchParams.get("verified") === "success";
+
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(
+    searchParams.get("unverified") === "1"
+  );
+
+  const oauthErrorMessage = errorCode
     ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
     : null;
 
-  return (
-    <main className={`min-h-screen ${dashboard.bg} text-white flex flex-col items-center justify-center gap-6 px-4 sm:px-6`}>
-      <div className={`w-full max-w-md ${dashboard.panelLg} text-center`}>
-        <p className={`text-sm ${dashboard.accent} font-semibold uppercase tracking-wider mb-3`}>
-          Actora
-        </p>
-        <h1 className={`${dashboard.pageTitle} mb-2`}>Welcome back</h1>
-        <p className={`${dashboard.muted} text-sm mb-8`}>
-          Sign in with Google to access your AI workspace.
-        </p>
+  const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    setNeedsVerification(false);
 
-        {errorMessage && (
-          <p className="mb-6 text-sm text-rose-400 bg-rose-500/10 border border-rose-400/20 rounded-xl px-4 py-3">
-            {errorMessage}
-          </p>
+    const result = await signIn("credentials", {
+      email: email.trim(),
+      password,
+      redirect: false,
+      callbackUrl: "/dashboard",
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      if (result.error === EMAIL_NOT_CONFIRMED) {
+        setNeedsVerification(true);
+        setError("Please verify your email before signing in.");
+        return;
+      }
+
+      setError(
+        mapSupabaseAuthError(
+          result.error === "CredentialsSignin"
+            ? "Incorrect email or password."
+            : result.error
+        )
+      );
+      return;
+    }
+
+    router.push(result?.url ?? "/dashboard");
+  };
+
+  return (
+    <AuthCard
+      title="Welcome back"
+      description="Sign in with email or Google to access your AI workspace."
+      footer={
+        <>
+          New to Actora?{" "}
+          <AuthBackLink href="/signup">Create an account</AuthBackLink>
+        </>
+      }
+    >
+      {verifiedSuccess && (
+        <AuthMessage variant="success">
+          Email verified successfully. You can now sign in.
+        </AuthMessage>
+      )}
+
+      {resetSuccess && (
+        <AuthMessage variant="success">
+          Your password has been updated. Sign in with your new password.
+        </AuthMessage>
+      )}
+
+      {oauthErrorMessage && (
+        <AuthMessage variant="error">{oauthErrorMessage}</AuthMessage>
+      )}
+
+      {needsVerification && (
+        <>
+          <VerificationStatusBadge status="pending" email={email || undefined} />
+          <AuthMessage variant="error">
+            {error ?? "Please verify your email before signing in."}
+          </AuthMessage>
+          <ResendVerificationEmail email={email} className="mb-6" />
+          <Link
+            href={`/verify-email?pending=1&email=${encodeURIComponent(email.trim())}`}
+            className={`block text-center text-sm ${dashboard.textLink} mb-4`}
+          >
+            Open verification page
+          </Link>
+        </>
+      )}
+
+      <form onSubmit={handleEmailSignIn} className="space-y-4">
+        {error && !needsVerification && (
+          <AuthMessage variant="error">{error}</AuthMessage>
         )}
 
-        <button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          className={`w-full ${dashboard.btnPrimary} py-3 text-sm`}
-        >
-          Sign in with Google
-        </button>
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="you@company.com"
+          autoComplete="email"
+        />
 
-        <p className={`text-sm ${dashboard.subtle} mt-6`}>
-          New to Actora?{" "}
-          <Link href="/signup" className={dashboard.textLink}>
-            Create an account
-          </Link>
-        </p>
-      </div>
-    </main>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label
+              htmlFor="password"
+              className={`text-sm font-medium ${dashboard.muted}`}
+            >
+              Password
+            </label>
+            <Link href="/forgot-password" className={`text-xs ${dashboard.textLink}`}>
+              Forgot password?
+            </Link>
+          </div>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Your password"
+            autoComplete="current-password"
+            required
+            className={`${dashboard.input} px-4 py-3`}
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !email.trim() || !password}
+          className={`w-full ${dashboard.btnPrimary} py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+
+      <AuthDivider />
+
+      <button
+        type="button"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        className={`w-full ${dashboard.btnSecondary} py-3 text-sm`}
+      >
+        Sign in with Google
+      </button>
+    </AuthCard>
   );
 }
 

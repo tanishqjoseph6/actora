@@ -5,6 +5,7 @@ import type {
   DashboardAutomationPreview,
   DashboardMeetingPreview,
 } from "@/lib/dashboard/types";
+import { SkeletonListRows } from "@/components/ui/Skeleton";
 import { dashboard } from "./dashboard-tokens";
 
 type DashboardWidgetsProps = {
@@ -34,7 +35,7 @@ export function DashboardWidgets({
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 lg:mb-10">
       <WidgetCard title="Today's Schedule" delay={0}>
         {loading ? (
-          <EmptyState message="Loading schedule…" />
+          <SkeletonListRows rows={3} />
         ) : todaysMeetings.length === 0 ? (
           <EmptyState message="No meetings scheduled today." />
         ) : (
@@ -64,7 +65,7 @@ export function DashboardWidgets({
 
       <WidgetCard title="Automation Status" delay={0.1}>
         {loading ? (
-          <EmptyState message="Loading automations…" />
+          <SkeletonListRows rows={3} />
         ) : automations.length === 0 ? (
           <EmptyState message="No automations yet." />
         ) : (

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { DashboardContactPreview } from "@/lib/dashboard/types";
+import { CrmPreviewSkeleton } from "./CrmPreviewSkeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { dashboard } from "./dashboard-tokens";
 
 type CrmPreviewSectionProps = {
@@ -39,7 +41,11 @@ export function CrmPreviewSection({
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-white">CRM Overview</h2>
           <p className={`text-sm mt-0.5 ${dashboard.subtle}`}>
-            {loading ? "Loading contacts…" : `${contactCount} contact${contactCount === 1 ? "" : "s"} in your workspace`}
+            {loading ? (
+              <Skeleton className="h-4 w-48 inline-block" />
+            ) : (
+              `${contactCount} contact${contactCount === 1 ? "" : "s"} in your workspace`
+            )}
           </p>
         </div>
         <Link
@@ -66,7 +72,7 @@ export function CrmPreviewSection({
       <div>
         <p className={`text-xs uppercase tracking-wider mb-3 ${dashboard.subtle}`}>Top Contacts by AI Score</p>
         {loading ? (
-          <p className={`text-sm ${dashboard.subtle}`}>Loading contacts…</p>
+          <CrmPreviewSkeleton />
         ) : contacts.length === 0 ? (
           <p className={`text-sm ${dashboard.subtle}`}>No contacts yet. Add contacts in CRM.</p>
         ) : (

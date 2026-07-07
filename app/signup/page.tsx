@@ -1,36 +1,165 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  AuthBackLink,
+  AuthCard,
+  AuthDivider,
+  AuthField,
+} from "@/components/auth/AuthCard";
+import { AuthMessage } from "@/components/auth/AuthMessage";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import {
+  getEmailVerificationRedirectUrl,
+  mapVerificationError,
+} from "@/lib/auth/email-verification";
+import {
+  mapSupabaseAuthError,
+  validatePassword,
+  validatePasswordMatch,
+} from "@/lib/auth/password-reset";
+import { supabase } from "@/lib/supabase";
 
-export default function Signup() {
+export default function SignupPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleEmailSignup = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    const matchError = validatePasswordMatch(password, confirmPassword);
+    if (matchError) {
+      setError(matchError);
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: getEmailVerificationRedirectUrl(),
+        data: {
+          full_name: name.trim() || undefined,
+        },
+      },
+    });
+
+    await supabase.auth.signOut();
+
+    setLoading(false);
+
+    if (signUpError) {
+      setError(mapVerificationError(mapSupabaseAuthError(signUpError.message)));
+      return;
+    }
+
+    if (data.user && data.user.identities?.length === 0) {
+      setError("An account with this email already exists. Try signing in.");
+      return;
+    }
+
+    router.push(
+      `/verify-email?pending=1&email=${encodeURIComponent(email.trim())}`
+    );
+  };
+
   return (
-    <main className={`min-h-screen ${dashboard.bg} text-white flex flex-col items-center justify-center gap-6 px-4 sm:px-6`}>
-      <div className={`w-full max-w-md ${dashboard.panelLg} text-center`}>
-        <p className={`text-sm ${dashboard.accent} font-semibold uppercase tracking-wider mb-3`}>
-          Actora
-        </p>
-        <h1 className={`${dashboard.pageTitle} mb-2`}>Create your account</h1>
-        <p className={`${dashboard.muted} text-sm mb-8`}>
-          Actora uses Google sign-in for secure authentication and Gmail access.
-        </p>
+    <AuthCard
+      title="Create your account"
+      description="Sign up with email or Google. Email accounts require verification before first sign-in."
+      footer={
+        <>
+          Already have an account?{" "}
+          <AuthBackLink href="/login">Sign in</AuthBackLink>
+        </>
+      }
+    >
+      <form onSubmit={handleEmailSignup} className="space-y-4">
+        {error && <AuthMessage variant="error">{error}</AuthMessage>}
+
+        <AuthField
+          id="name"
+          label="Full name"
+          value={name}
+          onChange={setName}
+          placeholder="Alex Morgan"
+          autoComplete="name"
+          required={false}
+        />
+
+        <AuthField
+          id="email"
+          label="Work email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="you@company.com"
+          autoComplete="email"
+        />
+
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          placeholder="At least 8 characters"
+          autoComplete="new-password"
+          minLength={8}
+        />
+
+        <AuthField
+          id="confirm-password"
+          label="Confirm password"
+          type="password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          placeholder="Re-enter your password"
+          autoComplete="new-password"
+          minLength={8}
+        />
 
         <button
-          type="button"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          className={`w-full ${dashboard.btnPrimary} py-3 text-sm`}
+          type="submit"
+          disabled={
+            loading || !email.trim() || !password || !confirmPassword
+          }
+          className={`w-full ${dashboard.btnPrimary} py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          Continue with Google
+          {loading ? "Creating account…" : "Create account"}
         </button>
+      </form>
 
-        <p className={`text-sm ${dashboard.subtle} mt-6`}>
-          Already have an account?{" "}
-          <Link href="/login" className={dashboard.textLink}>
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </main>
+      <p className={`text-xs ${dashboard.subtle} text-center mt-4`}>
+        We&apos;ll email you a verification link after signup.
+      </p>
+
+      <AuthDivider />
+
+      <button
+        type="button"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        className={`w-full ${dashboard.btnSecondary} py-3 text-sm`}
+      >
+        Continue with Google
+      </button>
+    </AuthCard>
   );
 }

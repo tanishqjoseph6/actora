@@ -127,10 +127,10 @@ body {
 
 @keyframes shimmer {
   0% {
-    background-position: 200% 0;
+    background-position: 100% 0;
   }
   100% {
-    background-position: -200% 0;
+    background-position: -100% 0;
   }
 }
 
@@ -138,13 +138,15 @@ body {
   background: linear-gradient(
     90deg,
     #1e293b 0%,
-    #273449 40%,
-    #334155 50%,
-    #273449 60%,
+    #1e293b 35%,
+    #2d3a4f 45%,
+    #3b4d66 50%,
+    #2d3a4f 55%,
+    #1e293b 65%,
     #1e293b 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+  animation: shimmer 2s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

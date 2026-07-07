@@ -7,6 +7,7 @@ import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { TasksHeader } from "@/components/tasks/TasksHeader";
+import { TasksContentSkeleton } from "@/components/tasks/TasksContentSkeleton";
 import { TasksList } from "@/components/tasks/TasksList";
 import { MOCK_TASKS } from "@/lib/tasks/mock-data";
 import type { Task, TaskFilter, TaskSort } from "@/lib/tasks/types";
@@ -72,6 +73,17 @@ export default function TasksPage() {
     { id: "done", label: "Completed", count: filterCounts.done },
   ];
 
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter !== "all" ||
+    priorityFilter !== "all";
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setPriorityFilter("all");
+  };
+
   return (
     <>
       <TasksHeader />
@@ -108,6 +120,10 @@ export default function TasksPage() {
       </div>
 
       <div className={`${dashboard.cardLg} p-4 sm:p-6 lg:p-8`}>
+        {loading ? (
+          <TasksContentSkeleton />
+        ) : (
+          <>
         <div className="mb-4">
           <CrmSearchInput
             value={search}
@@ -152,7 +168,14 @@ export default function TasksPage() {
           {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}
         </p>
 
-        <TasksList tasks={filteredTasks} onToggleTask={handleToggleTask} />
+        <TasksList
+          tasks={filteredTasks}
+          onToggleTask={handleToggleTask}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+        />
+          </>
+        )}
       </div>
     </>
   );

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
+import { BillingPageSkeleton } from "@/components/billing/BillingPageSkeleton";
 import {
   PaymentToast,
   usePaymentToastFromUrl,
@@ -53,6 +54,10 @@ export default function Billing() {
       <PaymentToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
+        {loading ? (
+          <BillingPageSkeleton />
+        ) : (
+          <>
         <PricingSection
           badge="Billing"
           title="Billing"
@@ -89,6 +94,8 @@ export default function Billing() {
           <BillingHistoryTable />
           <RazorpayPlaceholder />
         </div>
+          </>
+        )}
       </div>
     </main>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 import type { Task } from "@/lib/tasks/types";
 import { groupTasks } from "@/lib/tasks/utils";
 import { TaskCard } from "./TaskCard";
@@ -8,22 +8,42 @@ import { TaskCard } from "./TaskCard";
 type TasksListProps = {
   tasks: Task[];
   onToggleTask?: (id: string) => void;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 };
 
-export function TasksList({ tasks, onToggleTask }: TasksListProps) {
+export function TasksList({
+  tasks,
+  onToggleTask,
+  hasActiveFilters = false,
+  onClearFilters,
+}: TasksListProps) {
   const groups = groupTasks(tasks);
 
   if (tasks.length === 0) {
+    if (hasActiveFilters && onClearFilters) {
+      return (
+        <PremiumEmptyState
+          illustration="tasks"
+          title="No tasks match your filters"
+          description="Adjust your search, status, or priority filters to find the work you're looking for."
+          cta={{ label: "Clear filters", onClick: onClearFilters }}
+          className="border-dashed bg-[#111827]/50"
+        />
+      );
+    }
+
     return (
-      <div className={`${dashboard.cardLg} p-10 text-center`}>
-        <div className="w-14 h-14 rounded-xl bg-[#0B1220] border border-[#1E293B] flex items-center justify-center mx-auto mb-4 text-2xl">
-          ✓
-        </div>
-        <p className="text-white font-medium mb-1">No tasks found</p>
-        <p className={`text-sm ${dashboard.subtle}`}>
-          Try adjusting your search or filters.
-        </p>
-      </div>
+      <PremiumEmptyState
+        illustration="tasks"
+        title="Stay on top of every deliverable"
+        description="Tasks bring due dates, priorities, and assignees into one view — so nothing slips through while your AI agents handle the inbox."
+        cta={{
+          label: "Go to inbox",
+          href: "/dashboard/inbox",
+        }}
+        className="border-dashed bg-[#111827]/50"
+      />
     );
   }
 

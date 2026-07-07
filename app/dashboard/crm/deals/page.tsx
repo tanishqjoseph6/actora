@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DealListItem } from "@/components/crm/DealListItem";
-import { CrmEmptyState, DealEmptyIcon } from "@/components/crm/CrmEmptyState";
+import { CrmEmptyState } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmSearchInput } from "@/components/crm/CrmSearchInput";
@@ -79,6 +79,12 @@ export default function DealsPage() {
   ];
 
   const hasSearch = searchQuery.trim().length > 0;
+  const hasActiveFilters = hasSearch || activeFilter !== "all";
+
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setActiveFilter("all");
+  };
 
   return (
     <FeatureGate feature="full_crm" fullPage>
@@ -135,16 +141,22 @@ export default function DealsPage() {
 
         {filteredDeals.length === 0 ? (
           <CrmEmptyState
-            icon={<DealEmptyIcon className={`w-8 h-8 ${dashboard.subtle}`} />}
             title={
-              hasSearch
-                ? "No deals match your search"
-                : "No deals in this stage"
+              hasActiveFilters
+                ? hasSearch
+                  ? "No deals match your search"
+                  : "No deals in this stage"
+                : "Track revenue from lead to close"
             }
             description={
-              hasSearch
-                ? "Try a different search term or clear your filters."
-                : "Adjust your stage filter to see deals in this category."
+              hasActiveFilters
+                ? "Try a different search term or reset your stage filter to see the full pipeline."
+                : "Deals tie contacts, companies, and forecast value together — so you always know what's moving and what's at risk."
+            }
+            cta={
+              hasActiveFilters
+                ? { label: "Clear filters", onClick: handleClearFilters }
+                : { label: "View pipeline board", href: "/dashboard/crm/pipeline" }
             }
           />
         ) : (
