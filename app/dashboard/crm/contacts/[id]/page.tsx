@@ -1,23 +1,31 @@
 import { notFound } from "next/navigation";
+import { getServerSession } from "next-auth";
 import { ContactProfileView } from "@/components/crm/ContactProfileView";
-import {
-  getCompanyForContact,
-  getContactById,
-} from "@/lib/crm/entities";
+import { authOptions } from "@/lib/auth/auth-options";
+import { normalizeCrmContact } from "@/lib/crm/live";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export default async function ContactProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.email;
+  if (!userId) notFound();
+
   const { id } = await params;
-  const contact = getContactById(id);
+  const db = getSupabaseAdmin();
+  if (!db) notFound();
 
-  if (!contact) {
-    notFound();
-  }
+  const { data } = await db
+    .from("crm_contacts")
+    .select("id, user_id, name, email, company_name, status, ai_lead_score, created_at")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
 
-  const company = getCompanyForContact(contact);
+  if (!data) notFound();
 
-  return <ContactProfileView contact={contact} company={company} />;
+  return <ContactProfileView contact={normalizeCrmContact(data)} />;
 }

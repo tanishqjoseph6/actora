@@ -14,47 +14,133 @@ import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
-  CRM_OWNERS,
-  filterContacts,
-  sortContacts,
-} from "@/lib/crm/entities";
-import { MOCK_COMPANIES, MOCK_CONTACTS } from "@/lib/crm/mock-data";
-import type { ContactSort, ContactStatus } from "@/lib/crm/types";
+  filterAndSortContacts,
+  type CrmContact,
+  type CrmContactInput,
+  type CrmContactSort,
+  type CrmContactStatus,
+} from "@/lib/crm/live";
 
-type ContactFilter = "all" | ContactStatus;
+type ContactFilter = "all" | CrmContactStatus;
 
 const PAGE_SIZE_DEFAULT = 10;
 
 export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
+  const [contacts, setContacts] = useState<CrmContact[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<CrmContact | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<ContactFilter>("all");
   const [companyFilter, setCompanyFilter] = useState("all");
-  const [ownerFilter, setOwnerFilter] = useState("all");
-  const [sort, setSort] = useState<ContactSort>("name-asc");
+  const [sort, setSort] = useState<CrmContactSort>("name-asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT);
+  const [form, setForm] = useState<CrmContactInput>({
+    name: "",
+    email: "",
+    companyName: "",
+    status: "lead",
+    aiLeadScore: 0,
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
+    void loadContacts();
   }, []);
+
+  async function loadContacts() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/crm/contacts");
+      const json = (await res.json()) as { contacts?: CrmContact[] };
+      setContacts(json.contacts ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setForm({
+      name: "",
+      email: "",
+      companyName: "",
+      status: "lead",
+      aiLeadScore: 0,
+    });
+    setShowForm(true);
+  }
+
+  function openEdit(contact: {
+    id: string;
+    name: string;
+    email: string;
+    companyName: string;
+    status: CrmContactStatus;
+    aiLeadScore: number;
+  }) {
+    const full = contacts.find((c) => c.id === contact.id);
+    if (!full) return;
+    setEditing(full);
+    setForm({
+      name: full.name,
+      email: full.email,
+      companyName: full.companyName,
+      status: full.status,
+      aiLeadScore: full.aiLeadScore,
+    });
+    setShowForm(true);
+  }
+
+  async function saveContact() {
+    if (!form.name?.trim()) return;
+    setSaving(true);
+    const url = editing ? `/api/crm/contacts/${editing.id}` : "/api/crm/contacts";
+    const method = editing ? "PATCH" : "POST";
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    if (!res.ok) return;
+    setShowForm(false);
+    await loadContacts();
+  }
+
+  async function deleteContact(contact: { id: string; name: string }) {
+    const confirmed = window.confirm(`Delete ${contact.name}?`);
+    if (!confirmed) return;
+    await fetch(`/api/crm/contacts/${contact.id}`, { method: "DELETE" });
+    await loadContacts();
+  }
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeFilter, companyFilter, sort]);
+
+  const companies = useMemo(
+    () => Array.from(new Set(contacts.map((c) => c.companyName).filter(Boolean))).sort(),
+    [contacts]
+  );
 
   const filterCounts = useMemo(() => {
-    const counts = { all: MOCK_CONTACTS.length, active: 0, lead: 0, inactive: 0 };
-    for (const c of MOCK_CONTACTS) counts[c.status]++;
+    const counts = { all: contacts.length, active: 0, lead: 0, inactive: 0 };
+    for (const c of contacts) counts[c.status]++;
     return counts;
-  }, []);
+  }, [contacts]);
 
-  const filteredContacts = useMemo(() => {
-    const filtered = filterContacts(MOCK_CONTACTS, {
-      search: searchQuery,
-      status: activeFilter,
-      companyId: companyFilter,
-      owner: ownerFilter,
-    });
-    return sortContacts(filtered, sort);
-  }, [searchQuery, activeFilter, companyFilter, ownerFilter, sort]);
+  const filteredContacts = useMemo(
+    () =>
+      filterAndSortContacts(contacts, {
+        search: searchQuery,
+        status: activeFilter,
+        company: companyFilter,
+        sort,
+      }),
+    [contacts, searchQuery, activeFilter, companyFilter, sort]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredContacts.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -73,40 +159,35 @@ export default function ContactsPage() {
 
   const hasSearch = searchQuery.trim().length > 0;
   const hasActiveFilters =
-    hasSearch ||
-    activeFilter !== "all" ||
-    companyFilter !== "all" ||
-    ownerFilter !== "all";
+    hasSearch || activeFilter !== "all" || companyFilter !== "all";
 
   const handleClearFilters = () => {
     setSearchQuery("");
     setActiveFilter("all");
     setCompanyFilter("all");
-    setOwnerFilter("all");
     setPage(1);
   };
-  const avgAiScore = Math.round(
-    MOCK_CONTACTS.reduce((s, c) => s + c.aiLeadScore, 0) / MOCK_CONTACTS.length
-  );
+
+  const avgAiScore =
+    contacts.length > 0
+      ? Math.round(contacts.reduce((s, c) => s + c.aiLeadScore, 0) / contacts.length)
+      : 0;
 
   if (loading) {
     return (
       <>
         <CrmPageHeader
-          badge="👤 CRM · Contacts"
+          badge="CRM · Contacts"
           title="Your"
           titleAccent="Contacts"
-          description="Track relationships, roles, and engagement across every account in your pipeline."
+          description="Track relationships across your workspace."
         />
         <div className="mb-6">
           <CrmSubNav />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-5 space-y-3"
-            >
+            <div key={i} className="rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-5 space-y-3">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-8 w-16" />
               <Skeleton className="h-3 w-24" />
@@ -123,18 +204,17 @@ export default function ContactsPage() {
   return (
     <>
       <CrmPageHeader
-        badge="👤 CRM · Contacts"
+        badge="CRM · Contacts"
         title="Your"
         titleAccent="Contacts"
-        description="Track relationships, roles, and engagement across every account in your pipeline."
+        description="Create, edit, filter, and manage customer contacts."
       />
-
       <div className="mb-6">
         <CrmSubNav />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
-        <CrmStatCard title="Total contacts" value={MOCK_CONTACTS.length} />
+        <CrmStatCard title="Total contacts" value={contacts.length} />
         <CrmStatCard title="Active" value={filterCounts.active} />
         <CrmStatCard title="Leads" value={filterCounts.lead} />
         <CrmStatCard title="Avg. AI score" value={avgAiScore} />
@@ -146,15 +226,14 @@ export default function ContactsPage() {
             <h2 className="text-lg sm:text-xl font-bold text-white">All contacts</h2>
             <p className="text-sm text-[#64748B] mt-0.5 tabular-nums">
               {filteredContacts.length} contact{filteredContacts.length !== 1 ? "s" : ""}
-              {filteredContacts.length !== MOCK_CONTACTS.length &&
-                ` · filtered from ${MOCK_CONTACTS.length}`}
+              {filteredContacts.length !== contacts.length &&
+                ` · filtered from ${contacts.length}`}
             </p>
           </div>
           <button
             type="button"
-            disabled
-            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] text-white opacity-60 cursor-not-allowed shrink-0"
-            title="Coming soon"
+            onClick={openCreate}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-[#2563EB] text-white hover:bg-[#1D4ED8] shrink-0"
           >
             + Add contact
           </button>
@@ -164,7 +243,7 @@ export default function ContactsPage() {
           <CrmSearchInput
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search by name, email, company, owner, or notes…"
+            placeholder="Search by name, email, or company..."
           />
         </div>
 
@@ -176,34 +255,25 @@ export default function ContactsPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <CrmSelectFilter
             label="Company"
             value={companyFilter}
             onChange={setCompanyFilter}
             options={[
               { value: "all", label: "All companies" },
-              ...MOCK_COMPANIES.map((c) => ({ value: c.id, label: c.name })),
+              ...companies.map((name) => ({ value: name, label: name })),
             ]}
-          />
-          <CrmSelectFilter
-            label="Owner"
-            value={ownerFilter}
-            onChange={setOwnerFilter}
-            options={CRM_OWNERS.map((o) => ({
-              value: o,
-              label: o === "all" ? "All owners" : o,
-            }))}
           />
           <CrmSelectFilter
             label="Sort"
             value={sort}
-            onChange={(v) => setSort(v as ContactSort)}
+            onChange={(v) => setSort(v as CrmContactSort)}
             options={[
-              { value: "name-asc", label: "Name A → Z" },
-              { value: "name-desc", label: "Name Z → A" },
-              { value: "last-contacted", label: "Last contacted" },
-              { value: "ai-score-desc", label: "AI score" },
+              { value: "name-asc", label: "Name A -> Z" },
+              { value: "name-desc", label: "Name Z -> A" },
+              { value: "score-desc", label: "AI score" },
+              { value: "newest", label: "Newest" },
             ]}
           />
         </div>
@@ -215,28 +285,37 @@ export default function ContactsPage() {
                 ? hasSearch
                   ? "No contacts match your search"
                   : "No contacts match your filters"
-                : "Build your contact network"
+                : "Add your first contact"
             }
             description={
               hasActiveFilters
-                ? "Try a different search term or reset your filters to see everyone in your pipeline."
-                : "CRM keeps every relationship, role, and touchpoint in one place — with AI lead scores to prioritize who matters most."
+                ? "Try a different search term or reset your filters."
+                : "Create your first contact to start your CRM pipeline."
             }
             cta={
               hasActiveFilters
                 ? { label: "Clear filters", onClick: handleClearFilters }
-                : { label: "Add your first contact", onClick: () => {} }
+                : { label: "Add contact", onClick: openCreate }
             }
           />
         ) : (
           <>
             <div className="lg:hidden space-y-2 mb-4">
               {paginatedContacts.map((contact) => (
-                <ContactListItem key={contact.id} contact={contact} />
+                <ContactListItem
+                  key={contact.id}
+                  contact={contact}
+                  onEdit={openEdit}
+                  onDelete={deleteContact}
+                />
               ))}
             </div>
             <div className="hidden lg:block">
-              <ContactsTable contacts={paginatedContacts} />
+              <ContactsTable
+                contacts={paginatedContacts}
+                onEdit={openEdit}
+                onDelete={deleteContact}
+              />
             </div>
             <CrmPagination
               page={safePage}
@@ -248,6 +327,80 @@ export default function ContactsPage() {
           </>
         )}
       </div>
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`${dashboard.panelLg} w-full max-w-xl`}>
+            <h3 className="text-xl font-bold text-white mb-4">
+              {editing ? "Edit contact" : "Create contact"}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                value={form.name ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Name"
+                className={`${dashboard.input} px-3 py-2 sm:col-span-2`}
+              />
+              <input
+                value={form.email ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="Email"
+                className={`${dashboard.input} px-3 py-2`}
+              />
+              <input
+                value={form.companyName ?? ""}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, companyName: e.target.value }))
+                }
+                placeholder="Company"
+                className={`${dashboard.input} px-3 py-2`}
+              />
+              <select
+                value={form.status ?? "lead"}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    status: e.target.value as CrmContactStatus,
+                  }))
+                }
+                className={`${dashboard.input} px-3 py-2`}
+              >
+                <option value="lead">Lead</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={form.aiLeadScore ?? 0}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, aiLeadScore: Number(e.target.value) }))
+                }
+                placeholder="AI score (0-100)"
+                className={`${dashboard.input} px-3 py-2`}
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className={`${dashboard.btnSecondary} px-4 py-2`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving || !form.name?.trim()}
+                onClick={() => void saveContact()}
+                className={`${dashboard.btnPrimary} px-4 py-2 disabled:opacity-60`}
+              >
+                {saving ? "Saving..." : editing ? "Update" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

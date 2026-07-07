@@ -1,32 +1,44 @@
 import Link from "next/link";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
-import { formatDate } from "@/lib/crm/mock-data";
 import { getAiScoreStyle } from "@/lib/crm/entities";
-import type { Contact, ContactStatus } from "@/lib/crm/types";
+import type { CrmContactStatus } from "@/lib/crm/live";
 
-const STATUS_STYLES: Record<ContactStatus, string> = {
+const STATUS_STYLES: Record<CrmContactStatus, string> = {
   active: "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]",
   lead: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
   inactive: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
 };
 
 type ContactListItemProps = {
-  contact: Contact;
+  contact: {
+    id: string;
+    name: string;
+    email: string;
+    companyName: string;
+    status: CrmContactStatus;
+    aiLeadScore: number;
+  };
   compact?: boolean;
+  onEdit?: (contact: ContactListItemProps["contact"]) => void;
+  onDelete?: (contact: ContactListItemProps["contact"]) => void;
 };
 
-export function ContactListItem({ contact, compact }: ContactListItemProps) {
+export function ContactListItem({
+  contact,
+  compact,
+  onEdit,
+  onDelete,
+}: ContactListItemProps) {
   const aiGradient = getAiScoreStyle(contact.aiLeadScore);
 
   return (
-    <Link
-      href={`/dashboard/crm/contacts/${contact.id}`}
-      className="block group"
+    <article
+      className={`flex flex-col gap-4 rounded-xl ${dashboard.cardInteractive} ${
+        compact ? "p-3" : "p-4 sm:p-5"
+      }`}
     >
-      <article
-        className={`flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl ${dashboard.cardInteractive} ${compact ? "p-3" : "p-4 sm:p-5"}`}
-      >
+      <Link href={`/dashboard/crm/contacts/${contact.id}`} className="block group">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
             className={`${compact ? "w-9 h-9 text-xs" : "w-11 h-11 text-sm"} rounded-full bg-gradient-to-br ${getAvatarGradient(contact.name)} flex items-center justify-center font-bold text-white shrink-0 shadow-lg shadow-black/20`}
@@ -44,54 +56,46 @@ export function ContactListItem({ contact, compact }: ContactListItemProps) {
                 {contact.status}
               </span>
             </div>
-            <p className="text-sm text-[#64748B] truncate">{contact.title}</p>
-            {!compact && (
-              <p className="text-sm text-[#3B82F6] truncate mt-0.5">
-                {contact.companyName}
-              </p>
-            )}
+            <p className="text-sm text-[#64748B] truncate">
+              {contact.companyName || "No company"}
+            </p>
+            <p className="text-xs text-[#3B82F6] truncate mt-0.5">
+              {contact.email || "No email"}
+            </p>
           </div>
         </div>
+      </Link>
 
-        {!compact && (
-          <>
-            <div className="flex flex-col sm:items-end gap-1.5 sm:min-w-[160px] shrink-0">
-              <span className="text-sm text-gray-300 truncate max-w-full">
-                {contact.email}
-              </span>
-              <p className="text-xs text-gray-500">{contact.phone}</p>
-              <p className="text-xs text-gray-500">Owner · {contact.owner}</p>
-              <p className="text-xs text-gray-500">
-                Last contact · {formatDate(contact.lastContacted)}
-              </p>
-            </div>
-
-            <div
-              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r ${aiGradient} shrink-0 self-start sm:self-center`}
-              title="AI lead score"
+      <div className="flex items-center justify-between gap-2">
+        <div
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r ${aiGradient} shrink-0`}
+          title="AI lead score"
+        >
+          <SparkIcon className="w-3 h-3 text-white" />
+          <span className="text-xs font-bold text-white">{contact.aiLeadScore}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(contact)}
+              className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE]"
             >
-              <SparkIcon className="w-3 h-3 text-white" />
-              <span className="text-xs font-bold text-white">
-                {contact.aiLeadScore}
-              </span>
-            </div>
-          </>
-        )}
-
-        {compact && (
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-gray-500">{contact.title}</span>
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r ${aiGradient}`}
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(contact)}
+              className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#FCA5A5]"
             >
-              <span className="text-[10px] font-bold text-white">
-                {contact.aiLeadScore}
-              </span>
-            </span>
-          </div>
-        )}
-      </article>
-    </Link>
+              Delete
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
   );
 }
 
