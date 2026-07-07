@@ -6,18 +6,6 @@ export type PlanId = "free" | "starter" | "pro" | "enterprise";
 
 export type PaidPlanId = "starter" | "pro";
 
-/** Razorpay dashboard plan IDs — keyed by app plan + billing period only. */
-export const RAZORPAY_PLAN_IDS: Record<PaidPlanId, Record<BillingPeriod, string>> = {
-  pro: {
-    monthly: "plan_T9Vz1oIg5vt4Ux",
-    yearly: "plan_T9WNoB4e66qhpd",
-  },
-  starter: {
-    monthly: "plan_T9W0MDNq5d0tGJ",
-    yearly: "plan_T9WPxsmgqBlvi6",
-  },
-};
-
 export type PlanDisplayConfig = {
   priceLabel: string;
   priceSuffix: string;
@@ -26,7 +14,7 @@ export type PlanDisplayConfig = {
   chargeAmount: number;
 };
 
-/** Display prices per currency. Razorpay plan IDs come from RAZORPAY_PLAN_IDS. */
+/** Display prices per currency. Razorpay plan IDs are configured via server env vars. */
 export const BILLING_PRICING: Record<
   BillingCurrency,
   Record<BillingPeriod, Record<PaidPlanId, PlanDisplayConfig>>
@@ -95,9 +83,7 @@ export const BILLING_PRICING: Record<
 
 export const YEARLY_DISCOUNT = 0.15;
 
-export type PlanPriceConfig = PlanDisplayConfig & {
-  razorpayPlanId: string;
-};
+export type PlanPriceConfig = PlanDisplayConfig;
 
 export type PricingPlan = {
   id: PlanId;
@@ -108,7 +94,6 @@ export type PricingPlan = {
   billingNote?: string;
   saveNote?: string;
   chargeAmount?: number | null;
-  razorpayPlanId?: string;
   monthlyPrice: number | null;
   badge?: string;
   recommended?: boolean;
@@ -119,7 +104,7 @@ export type PricingPlan = {
 
 const PRICING_PLAN_TEMPLATES: Omit<
   PricingPlan,
-  "priceLabel" | "priceSuffix" | "billingNote" | "saveNote" | "chargeAmount" | "razorpayPlanId"
+  "priceLabel" | "priceSuffix" | "billingNote" | "saveNote" | "chargeAmount"
 >[] = [
   {
     id: "free",
@@ -201,18 +186,7 @@ export function getPlanPriceConfig(
   period: BillingPeriod,
   planId: PaidPlanId
 ): PlanPriceConfig {
-  const display = BILLING_PRICING[currency][period][planId];
-  return {
-    ...display,
-    razorpayPlanId: RAZORPAY_PLAN_IDS[planId][period],
-  };
-}
-
-export function getRazorpayPlanId(
-  planId: PaidPlanId,
-  period: BillingPeriod
-): string {
-  return RAZORPAY_PLAN_IDS[planId][period];
+  return BILLING_PRICING[currency][period][planId];
 }
 
 export function getDisplayPlans(
@@ -246,7 +220,6 @@ export function getDisplayPlans(
       billingNote: priceConfig.billingNote,
       saveNote: priceConfig.saveNote,
       chargeAmount: priceConfig.chargeAmount,
-      razorpayPlanId: priceConfig.razorpayPlanId,
     };
   });
 }

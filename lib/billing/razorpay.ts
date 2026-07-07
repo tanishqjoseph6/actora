@@ -9,9 +9,14 @@ import type { BillingCurrency } from "./currency";
 import {
   getChargeAmount,
   getChargeDescription,
-  getRazorpayPlanId,
   isPaidPlan,
 } from "./pricing";
+import {
+  getRazorpayKeyIdPrefix,
+  getRazorpayKeyMode,
+  getRazorpayPlanEnvKey,
+  getRazorpayPlanId,
+} from "./razorpay-plans";
 
 export function getRazorpayClient(): Razorpay {
   if (!RAZORPAY_CONNECTED) {
@@ -42,15 +47,13 @@ export async function createRazorpayOrder({
   const razorpayPlanId = getRazorpayPlanId(planId, period);
   const amount = getChargeAmount(currency, planId, period);
 
-  if (!razorpayPlanId || !amount) {
+  if (!amount) {
     throw new Error("This plan cannot be purchased via checkout.");
   }
 
-  const razorpay = getRazorpayClient();
-
-  const subscription = await razorpay.subscriptions.create({
+  const subscriptionPayload = {
     plan_id: razorpayPlanId,
-    customer_notify: 1,
+    customer_notify: 1 as const,
     quantity: 1,
     total_count: period === "yearly" ? 10 : 120,
     notes: {
@@ -60,7 +63,20 @@ export async function createRazorpayOrder({
       currency,
       razorpayPlanId,
     },
+  };
+
+  console.log("[razorpay] Creating subscription", {
+    keyIdPrefix: getRazorpayKeyIdPrefix(),
+    keyMode: getRazorpayKeyMode(),
+    appPlanId: planId,
+    billingPeriod: period,
+    planEnvKey: getRazorpayPlanEnvKey(planId, period),
+    razorpayPlanId,
+    payload: subscriptionPayload,
   });
+
+  const razorpay = getRazorpayClient();
+  const subscription = await razorpay.subscriptions.create(subscriptionPayload);
 
   return {
     subscriptionId: subscription.id,

@@ -81,8 +81,7 @@ export function UpgradeModal({
         await onCheckout(
           plan.id,
           period,
-          selectionCurrency,
-          plan.razorpayPlanId
+          selectionCurrency
         );
       } else {
         setActionError("Checkout is unavailable right now.");

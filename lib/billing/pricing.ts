@@ -6,11 +6,11 @@ import type {
 import {
   BILLING_PRICING,
   getPlanPriceConfig,
-  getRazorpayPlanId as resolveRazorpayPlanId,
   YEARLY_DISCOUNT,
 } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
 import { CURRENCY_SYMBOLS } from "./currency";
+import { getRazorpayPlanId as resolveRazorpayPlanId } from "./razorpay-plans";
 
 export { YEARLY_DISCOUNT };
 
@@ -30,8 +30,10 @@ export function getChargeAmount(
 export function getRazorpayPlanId(
   planId: PlanId,
   period: BillingPeriod
-): string | null {
-  if (!isPaidPlan(planId)) return null;
+): string {
+  if (!isPaidPlan(planId)) {
+    throw new Error(`Plan "${planId}" cannot be purchased via Razorpay checkout.`);
+  }
   return resolveRazorpayPlanId(planId, period);
 }
 
@@ -44,7 +46,6 @@ export function getDisplayPrice(
   suffix: string;
   billingNote?: string;
   saveNote?: string;
-  razorpayPlanId?: string;
 } {
   if (planId === "enterprise") {
     return { amount: "Custom", suffix: "" };
@@ -65,7 +66,6 @@ export function getDisplayPrice(
     suffix: config.priceSuffix,
     billingNote: config.billingNote,
     saveNote: config.saveNote,
-    razorpayPlanId: config.razorpayPlanId,
   };
 }
 
