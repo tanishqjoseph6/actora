@@ -134,8 +134,13 @@ export function verifyRazorpayWebhookSignature(
   rawBody: string,
   signature: string
 ): boolean {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  if (!secret) return false;
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
+  if (!secret) {
+    console.error(
+      "[razorpay] RAZORPAY_WEBHOOK_SECRET is not set — cannot verify webhook"
+    );
+    return false;
+  }
 
   const expected = crypto
     .createHmac("sha256", secret)

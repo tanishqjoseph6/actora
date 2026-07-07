@@ -43,7 +43,6 @@ export type { FeatureGateResult, LimitType } from "./gates";
 export {
   createDefaultSubscription,
   subscriptionProvider,
-  syncSubscriptionFromWebhook,
   toSubscriptionSnapshot,
 } from "./provider";
 

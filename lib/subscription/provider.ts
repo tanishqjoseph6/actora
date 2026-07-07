@@ -109,37 +109,3 @@ class SupabaseSubscriptionProvider implements SubscriptionProvider {
 
 export const subscriptionProvider: SubscriptionProvider =
   new SupabaseSubscriptionProvider();
-
-/**
- * Called by Razorpay webhook handler to sync subscription state.
- */
-export async function syncSubscriptionFromWebhook(
-  payload: {
-    event?: string;
-    payload?: {
-      payment?: {
-        entity?: {
-          notes?: {
-            userId?: string;
-            planId?: PlanId;
-            period?: BillingInterval;
-          };
-        };
-      };
-    };
-  }
-): Promise<void> {
-  const event = payload.event;
-
-  if (event === "payment.captured" || event === "order.paid") {
-    const notes = payload.payload?.payment?.entity?.notes;
-
-    if (notes?.userId && notes?.planId) {
-      await subscriptionProvider.setPlan(
-        notes.userId,
-        notes.planId,
-        notes.period ?? "monthly"
-      );
-    }
-  }
-}

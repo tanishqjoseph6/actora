@@ -89,3 +89,22 @@ export function getConfiguredRazorpayPlanIds(): Record<string, string | undefine
   }
   return out;
 }
+
+/** Map a Razorpay dashboard plan_id back to the app plan + billing period. */
+export function resolveAppPlanFromRazorpayPlanId(
+  razorpayPlanId: string
+): { planId: PaidPlanId; period: BillingPeriod } | null {
+  const trimmed = razorpayPlanId.trim();
+  if (!trimmed) return null;
+
+  for (const planId of ["pro", "starter"] as PaidPlanId[]) {
+    for (const period of ["monthly", "yearly"] as BillingPeriod[]) {
+      const configured = readPlanEnv(PLAN_ENV_KEYS[planId][period]);
+      if (configured && configured === trimmed) {
+        return { planId, period };
+      }
+    }
+  }
+
+  return null;
+}
