@@ -5,6 +5,22 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
 }
 
+function normalizeOrigin(url: string): string {
+  try {
+    const parsed = new URL(stripTrailingSlash(url));
+    // Enforce canonical production host to avoid redirect_uri_mismatch.
+    if (
+      parsed.hostname === "www.useactora.com" ||
+      parsed.hostname === "useactora.com"
+    ) {
+      return PRODUCTION_URL;
+    }
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return stripTrailingSlash(url);
+  }
+}
+
 function isDevelopment(): boolean {
   return process.env.NODE_ENV !== "production";
 }
@@ -15,7 +31,7 @@ export function resolveAuthUrl(): string {
     const explicit = process.env.NEXTAUTH_URL?.trim();
 
     if (explicit) {
-      const url = stripTrailingSlash(explicit);
+      const url = normalizeOrigin(explicit);
       if (url.includes("useactora.com")) {
         console.warn(
           "[auth] Ignoring production NEXTAUTH_URL in development; using http://localhost:3000"
@@ -31,15 +47,21 @@ export function resolveAuthUrl(): string {
   const explicit = process.env.NEXTAUTH_URL?.trim();
   const netlifyUrl = process.env.URL?.trim();
   const vercelUrl = process.env.VERCEL_URL?.trim();
+  const vercelEnv = process.env.VERCEL_ENV?.trim();
 
   const platformUrl = netlifyUrl
-    ? stripTrailingSlash(netlifyUrl)
+    ? normalizeOrigin(netlifyUrl)
     : vercelUrl
-      ? stripTrailingSlash(`https://${vercelUrl}`)
+      ? normalizeOrigin(`https://${vercelUrl}`)
       : undefined;
 
+  // Canonical production deployment must always use the primary domain.
+  if (vercelEnv === "production") {
+    return PRODUCTION_URL;
+  }
+
   if (explicit && !explicit.includes("localhost")) {
-    return stripTrailingSlash(explicit);
+    return normalizeOrigin(explicit);
   }
   if (platformUrl) return platformUrl;
   return PRODUCTION_URL;
@@ -62,6 +84,7 @@ export function configureNextAuthEnv(): string {
   }
 
   process.env.NEXTAUTH_URL = url;
+  process.env.NEXTAUTH_URL_INTERNAL = url;
 
   return url;
 }
