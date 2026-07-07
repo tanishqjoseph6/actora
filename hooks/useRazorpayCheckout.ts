@@ -124,6 +124,10 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
               const verifyData = await verifyRes.json();
 
               if (!verifyRes.ok) {
+                console.error("[razorpay/checkout] verify failed", {
+                  status: verifyRes.status,
+                  error: verifyData.error,
+                });
                 callbacksRef.current?.onFailure?.(
                   verifyData.error ?? "Payment verification failed."
                 );
@@ -131,9 +135,15 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
                 return;
               }
 
+              const verifiedPlanId =
+                (verifyData.subscription?.planId as PlanId | undefined) ?? planId;
               const planName =
                 verifyData.subscription?.planName ?? planId;
-              callbacksRef.current?.onSuccess?.(planId, planName);
+              console.log("[razorpay/checkout] verify success", {
+                planId: verifiedPlanId,
+                planName,
+              });
+              callbacksRef.current?.onSuccess?.(verifiedPlanId, planName);
               resolve(true);
             } catch {
               callbacksRef.current?.onFailure?.("Payment verification failed.");

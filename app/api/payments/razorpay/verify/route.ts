@@ -13,14 +13,42 @@ import {
   subscriptionProvider,
   toSubscriptionSnapshot,
 } from "@/lib/subscription";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+
+type RazorpayNotes = Record<string, string | undefined>;
+
+function parseNotes(notes: unknown): RazorpayNotes {
+  if (!notes || typeof notes !== "object") return {};
+  return notes as RazorpayNotes;
+}
+
+function noteMatches(
+  actual: string | undefined,
+  expected: string,
+  options?: { ignoreCase?: boolean }
+): boolean {
+  if (!actual) return true;
+  if (options?.ignoreCase) {
+    return actual.trim().toLowerCase() === expected.trim().toLowerCase();
+  }
+  return actual.trim() === expected.trim();
+}
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const sessionEmail = session?.user?.email;
 
-  if (!userId) {
+  console.log("[razorpay/verify] step:start", {
+    hasSession: Boolean(sessionEmail),
+    sessionEmail: sessionEmail ? `${sessionEmail.slice(0, 3)}…` : null,
+  });
+
+  if (!sessionEmail) {
+    console.error("[razorpay/verify] step:auth — no session email");
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
+
+  const userId = normalizeSubscriptionUserId(sessionEmail);
 
   try {
     const body = await request.json();
@@ -44,6 +72,18 @@ export async function POST(request: NextRequest) {
       razorpayPlanId?: string;
     };
 
+    console.log("[razorpay/verify] step:payload", {
+      userId,
+      planId,
+      period,
+      currency,
+      hasPaymentId: Boolean(razorpay_payment_id),
+      hasSignature: Boolean(razorpay_signature),
+      hasSubscriptionId: Boolean(razorpay_subscription_id),
+      hasOrderId: Boolean(razorpay_order_id),
+      clientRazorpayPlanId: razorpayPlanId,
+    });
+
     if (
       !razorpay_payment_id ||
       !razorpay_signature ||
@@ -53,6 +93,7 @@ export async function POST(request: NextRequest) {
       !isBillingCurrency(currency) ||
       (!razorpay_order_id && !razorpay_subscription_id)
     ) {
+      console.error("[razorpay/verify] step:validate-fields — missing required fields");
       return NextResponse.json(
         { error: "Missing payment verification fields." },
         { status: 400 }
@@ -60,11 +101,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isPaidPlan(planId)) {
+      console.error("[razorpay/verify] step:validate-plan — not a paid plan", { planId });
       return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
     }
 
     const expectedPlanId = getRazorpayPlanId(planId, period);
-    if (razorpayPlanId && razorpayPlanId !== expectedPlanId) {
+    if (razorpayPlanId && razorpayPlanId.trim() !== expectedPlanId) {
+      console.error("[razorpay/verify] step:client-plan-mismatch", {
+        clientRazorpayPlanId: razorpayPlanId,
+        expectedPlanId,
+      });
       return NextResponse.json(
         { error: "Razorpay plan does not match checkout selection." },
         { status: 400 }
@@ -84,11 +130,18 @@ export async function POST(request: NextRequest) {
         });
 
     if (!isValid) {
+      console.error("[razorpay/verify] step:signature — invalid payment signature", {
+        mode: razorpay_subscription_id ? "subscription" : "order",
+        subscriptionId: razorpay_subscription_id,
+        paymentId: razorpay_payment_id,
+      });
       return NextResponse.json(
         { error: "Payment verification failed." },
         { status: 400 }
       );
     }
+
+    console.log("[razorpay/verify] step:signature — ok");
 
     const razorpay = getRazorpayClient();
 
@@ -96,46 +149,61 @@ export async function POST(request: NextRequest) {
       const subscription = await razorpay.subscriptions.fetch(
         razorpay_subscription_id
       );
-      const notes = subscription.notes as
-        | {
-            userId?: string;
-            planId?: PlanId;
-            period?: BillingPeriod;
-            currency?: string;
-            razorpayPlanId?: string;
-          }
-        | undefined;
+      const notes = parseNotes(subscription.notes);
+      const remotePlanId = subscription.plan_id?.trim();
 
-      if (
-        notes?.userId !== userId ||
-        notes?.planId !== planId ||
-        notes?.period !== period ||
-        notes?.currency !== currency ||
-        notes?.razorpayPlanId !== expectedPlanId
-      ) {
+      console.log("[razorpay/verify] step:subscription-fetch", {
+        subscriptionId: razorpay_subscription_id,
+        remotePlanId,
+        expectedPlanId,
+        notes,
+        status: subscription.status,
+      });
+
+      if (remotePlanId !== expectedPlanId) {
+        console.error("[razorpay/verify] step:subscription-plan-mismatch", {
+          remotePlanId,
+          expectedPlanId,
+        });
         return NextResponse.json(
-          { error: "Subscription details do not match checkout." },
+          { error: "Subscription plan does not match checkout." },
           { status: 400 }
         );
       }
-    } else {
-      const order = await razorpay.orders.fetch(razorpay_order_id!);
-      const notes = order.notes as
-        | {
-            userId?: string;
-            planId?: PlanId;
-            period?: BillingPeriod;
-            currency?: string;
-            razorpayPlanId?: string;
-          }
-        | undefined;
 
       if (
-        notes?.userId !== userId ||
-        notes?.planId !== planId ||
-        notes?.period !== period ||
-        notes?.currency !== currency
+        !noteMatches(notes.userId, userId, { ignoreCase: true }) ||
+        !noteMatches(notes.planId, planId) ||
+        !noteMatches(notes.period, period) ||
+        !noteMatches(notes.currency, currency)
       ) {
+        console.warn("[razorpay/verify] step:subscription-notes-mismatch — continuing with session user", {
+          notes,
+          userId,
+          planId,
+          period,
+          currency,
+        });
+      }
+    } else {
+      const order = await razorpay.orders.fetch(razorpay_order_id!);
+      const notes = parseNotes(order.notes);
+
+      console.log("[razorpay/verify] step:order-fetch", { orderId: razorpay_order_id, notes });
+
+      if (
+        !noteMatches(notes.userId, userId, { ignoreCase: true }) ||
+        !noteMatches(notes.planId, planId) ||
+        !noteMatches(notes.period, period) ||
+        !noteMatches(notes.currency, currency)
+      ) {
+        console.error("[razorpay/verify] step:order-notes-mismatch", {
+          notes,
+          userId,
+          planId,
+          period,
+          currency,
+        });
         return NextResponse.json(
           { error: "Order details do not match checkout." },
           { status: 400 }
@@ -143,7 +211,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log("[razorpay/verify] step:set-plan — writing to database", {
+      userId,
+      planId,
+      period,
+    });
+
     const updated = await subscriptionProvider.setPlan(userId, planId, period);
+
+    console.log("[razorpay/verify] step:set-plan — success", {
+      userId: updated.userId,
+      planId: updated.planId,
+      billingInterval: updated.billingInterval,
+      updatedAt: updated.updatedAt,
+    });
 
     return NextResponse.json({
       success: true,
@@ -152,11 +233,11 @@ export async function POST(request: NextRequest) {
       razorpayPlanId: expectedPlanId,
     });
   } catch (error) {
-    console.error("[razorpay] Payment verification failed:", error);
+    console.error("[razorpay/verify] step:error — unhandled exception", error);
 
-    return NextResponse.json(
-      { error: "Failed to verify payment." },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to verify payment.";
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

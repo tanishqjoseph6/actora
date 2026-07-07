@@ -17,6 +17,7 @@ import {
   getRazorpayPlanEnvKey,
   getRazorpayPlanId,
 } from "./razorpay-plans";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export function getRazorpayClient(): Razorpay {
   if (!RAZORPAY_CONNECTED) {
@@ -44,6 +45,7 @@ export async function createRazorpayOrder({
     throw new Error("This plan cannot be purchased via checkout.");
   }
 
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
   const razorpayPlanId = getRazorpayPlanId(planId, period);
   const amount = getChargeAmount(currency, planId, period);
 
@@ -57,7 +59,7 @@ export async function createRazorpayOrder({
     quantity: 1,
     total_count: period === "yearly" ? 10 : 120,
     notes: {
-      userId,
+      userId: normalizedUserId,
       planId,
       period,
       currency,

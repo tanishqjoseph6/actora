@@ -2,6 +2,7 @@ import type { BillingPeriod, PaidPlanId } from "@/components/billing/pricing-dat
 import { resolveAppPlanFromRazorpayPlanId } from "@/lib/billing/razorpay-plans";
 import { subscriptionProvider } from "@/lib/subscription/provider";
 import type { BillingInterval, PlanId } from "@/lib/subscription/types";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 /** Configure these events in the Razorpay Live dashboard webhook settings. */
 export const RAZORPAY_WEBHOOK_EVENTS = [
@@ -76,6 +77,9 @@ function extractActivationContext(payload: RazorpayWebhookPayload): {
   const paymentNotes = parseNotes(payment?.notes);
 
   let userId = subscriptionNotes?.userId ?? paymentNotes?.userId;
+  if (userId) {
+    userId = normalizeSubscriptionUserId(userId);
+  }
   let planId = subscriptionNotes?.planId ?? paymentNotes?.planId;
   let period = parseBillingPeriod(
     subscriptionNotes?.period ?? paymentNotes?.period

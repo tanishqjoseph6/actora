@@ -11,6 +11,7 @@ import {
   shouldUseSecureCookies,
 } from "@/lib/auth/nextauth-url";
 import { getStoredSubscription } from "@/lib/subscription/repository";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 configureNextAuthEnv();
 
@@ -178,7 +179,9 @@ export const authOptions: NextAuthOptions = {
         const email = user?.email ?? token.email;
         if (email) {
           try {
-            const stored = await getStoredSubscription(email);
+            const stored = await getStoredSubscription(
+              normalizeSubscriptionUserId(email)
+            );
             planId = stored.planId;
           } catch (error) {
             console.error("[next-auth] Failed to load subscription plan:", error);

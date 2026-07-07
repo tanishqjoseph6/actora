@@ -7,10 +7,12 @@ import {
   subscriptionProvider,
   toSubscriptionSnapshot,
 } from "@/lib/subscription";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
+  const email = session?.user?.email;
+  return email ? normalizeSubscriptionUserId(email) : null;
 }
 
 export async function GET() {

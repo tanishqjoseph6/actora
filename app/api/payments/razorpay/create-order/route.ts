@@ -8,14 +8,17 @@ import {
 } from "@/lib/billing/providers";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isPaidPlan } from "@/lib/billing/pricing";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const sessionEmail = session?.user?.email;
 
-  if (!userId) {
+  if (!sessionEmail) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
+
+  const userId = normalizeSubscriptionUserId(sessionEmail);
 
   try {
     const body = await request.json();

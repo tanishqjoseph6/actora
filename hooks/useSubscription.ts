@@ -21,7 +21,9 @@ export function useSubscription(): UseSubscriptionResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = session?.user?.email;
+  const userId = session?.user?.email
+    ? session.user.email.trim().toLowerCase()
+    : undefined;
   const sessionPlanId = (session as { planId?: PlanId } | null)?.planId;
 
   const refresh = useCallback(async () => {
@@ -42,9 +44,14 @@ export function useSubscription(): UseSubscriptionResult {
       const data = await res.json();
 
       if (!res.ok) {
+        console.error("[useSubscription] refresh failed", data.error);
         setError(data.error ?? "Failed to load subscription");
         return;
       }
+
+      console.log("[useSubscription] refresh ok", {
+        planId: data.subscription?.planId,
+      });
 
       setSubscription(data.subscription);
 

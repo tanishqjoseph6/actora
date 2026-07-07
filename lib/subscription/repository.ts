@@ -5,6 +5,7 @@ import {
 import type { UserSubscriptionRow } from "@/lib/supabase/database.types";
 import type { BillingInterval, PlanId, SubscriptionStatus } from "./types";
 import { DEFAULT_PLAN_ID } from "./plans";
+import { normalizeSubscriptionUserId } from "./user-id";
 
 export type StoredSubscription = {
   userId: string;
@@ -63,74 +64,101 @@ function toRow(subscription: StoredSubscription): UserSubscriptionRow {
 export async function getStoredSubscription(
   userId: string
 ): Promise<StoredSubscription> {
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
   const db = getSupabaseAdmin();
 
   if (!db) {
-    return memoryStore.get(userId) ?? createDefaultStored(userId);
+    console.warn("[subscription/repository] Supabase admin client unavailable — using memory store");
+    return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
   }
 
   const { data, error } = await db
     .from("user_subscriptions")
     .select("*")
-    .eq("user_id", userId)
+    .eq("user_id", normalizedUserId)
     .maybeSingle();
 
   if (error) {
     if (isMissingUserSubscriptionsSchemaError(error.message)) {
-      return memoryStore.get(userId) ?? createDefaultStored(userId);
+      console.error(
+        "[subscription/repository] user_subscriptions table missing — apply migration 006_user_subscriptions.sql"
+      );
+      return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
     }
     throw new Error(error.message);
   }
 
   if (!data) {
-    const created = createDefaultStored(userId);
+    const created = createDefaultStored(normalizedUserId);
     const { error: insertError } = await db
       .from("user_subscriptions")
       .insert(toRow(created));
 
     if (insertError && !isMissingUserSubscriptionsSchemaError(insertError.message)) {
+      console.error("[subscription/repository] insert default subscription failed", insertError.message);
       throw new Error(insertError.message);
     }
 
     if (!insertError) {
-      memoryStore.set(userId, created);
+      memoryStore.set(normalizedUserId, created);
     }
 
     return created;
   }
 
   const subscription = mapRow(data as UserSubscriptionRow);
-  memoryStore.set(userId, subscription);
+  memoryStore.set(normalizedUserId, subscription);
   return subscription;
 }
 
 export async function persistSubscription(
   subscription: StoredSubscription
 ): Promise<StoredSubscription> {
+  const normalizedUserId = normalizeSubscriptionUserId(subscription.userId);
+  const next = {
+    ...subscription,
+    userId: normalizedUserId,
+    updatedAt: new Date().toISOString(),
+  };
   const db = getSupabaseAdmin();
-  const next = { ...subscription, updatedAt: new Date().toISOString() };
 
   if (!db) {
-    memoryStore.set(subscription.userId, next);
+    console.warn("[subscription/repository] Supabase admin client unavailable — persisting to memory only");
+    memoryStore.set(normalizedUserId, next);
     return next;
   }
 
   const { data, error } = await db
     .from("user_subscriptions")
-    .upsert(toRow(next))
+    .upsert(toRow(next), { onConflict: "user_id" })
     .select("*")
     .single();
 
   if (error) {
     if (isMissingUserSubscriptionsSchemaError(error.message)) {
-      memoryStore.set(subscription.userId, next);
+      console.error(
+        "[subscription/repository] user_subscriptions table missing on upsert — plan not persisted to database"
+      );
+      memoryStore.set(normalizedUserId, next);
       return next;
     }
+    console.error("[subscription/repository] upsert failed", {
+      userId: normalizedUserId,
+      planId: next.planId,
+      error: error.message,
+    });
     throw new Error(error.message);
   }
 
   const stored = mapRow(data as UserSubscriptionRow);
-  memoryStore.set(subscription.userId, stored);
+  memoryStore.set(normalizedUserId, stored);
+
+  console.log("[subscription/repository] upsert success", {
+    userId: stored.userId,
+    planId: stored.planId,
+    billingInterval: stored.billingInterval,
+  });
+
   return stored;
 }
 
@@ -139,9 +167,11 @@ export async function setStoredPlan(
   planId: PlanId,
   billingInterval: BillingInterval = "monthly"
 ): Promise<StoredSubscription> {
-  const current = await getStoredSubscription(userId);
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const current = await getStoredSubscription(normalizedUserId);
   return persistSubscription({
     ...current,
+    userId: normalizedUserId,
     planId,
     billingInterval,
     status: "active",
