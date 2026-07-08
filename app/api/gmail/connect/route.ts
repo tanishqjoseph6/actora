@@ -3,6 +3,7 @@ import {
   getConnectableTokens,
   syncGmailInboxForUser,
 } from "@/lib/gmail-auth";
+import { logApiError } from "@/lib/api/log-error";
 import { gmailErrorResponse } from "@/lib/gmail/errors";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import {
@@ -11,6 +12,7 @@ import {
   getGmailProfileEmail,
 } from "@/lib/gmail/oauth";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
+import { logGmailAuthEnv } from "@/lib/env/gmail-auth";
 import {
   canConnectInbox,
   subscriptionProvider,
@@ -18,9 +20,29 @@ import {
 } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
+  const envStatus = logGmailAuthEnv("gmail/connect");
+
+  if (!envStatus.ok) {
+    return NextResponse.json(
+      {
+        error:
+          "Gmail connection is not configured on the server. Missing required environment variables.",
+        code: "CONFIG_ERROR",
+        missing: envStatus.missing,
+      },
+      { status: 503 }
+    );
+  }
+
   const auth = await getConnectableTokens(request);
 
   if (!auth.ok) {
+    console.error("[gmail/connect] Auth failed:", {
+      status: auth.status,
+      code: auth.code,
+      error: auth.error,
+    });
+
     return NextResponse.json(
       { error: auth.error, code: auth.code },
       { status: auth.status }
@@ -72,11 +94,25 @@ export async function POST(request: NextRequest) {
       await subscriptionProvider.recordInboxConnection(userId);
     }
 
-    const emails = await syncGmailInboxForUser(
-      userId,
-      gmailEmail,
-      oauth2Client
-    );
+    let syncedCount = 0;
+    let syncWarning: string | undefined;
+
+    try {
+      const emails = await syncGmailInboxForUser(
+        userId,
+        gmailEmail,
+        oauth2Client
+      );
+      syncedCount = emails.length;
+    } catch (syncError) {
+      logApiError("gmail/connect", syncError, {
+        userId,
+        gmailEmail,
+        phase: "initial_sync",
+      });
+      syncWarning =
+        "Gmail account connected, but the initial inbox sync failed. Use Sync now to retry.";
+    }
 
     const updatedAccount =
       (await gmailAccountRepository.getAccount(userId, gmailEmail)) ?? account;
@@ -88,13 +124,13 @@ export async function POST(request: NextRequest) {
       account: toPublicGmailAccount(updatedAccount),
       isNew,
       reconnected: !isNew,
-      syncedCount: emails.length,
-      unreadCount: emails.filter((email) => email.unread).length,
+      syncedCount,
+      syncWarning,
       accounts: accounts.map(toPublicGmailAccount),
       subscription: toSubscriptionSnapshot(subscription),
     });
   } catch (error) {
-    console.error("[gmail] Failed to connect account:", error);
+    logApiError("gmail/connect", error, { userId });
     const mapped = gmailErrorResponse(error);
 
     return NextResponse.json(

@@ -17,6 +17,20 @@ const ERROR_PATTERNS: Array<{
   result: Omit<MappedGmailError, "status"> & { status?: number };
 }> = [
   {
+    match: (m) =>
+      m.includes("fetch failed") ||
+      m.includes("ECONNREFUSED") ||
+      m.includes("ENOTFOUND") ||
+      m.includes("ETIMEDOUT") ||
+      m.includes("network"),
+    result: {
+      message:
+        "Could not reach Google Gmail API. Try again in a moment or check server network access.",
+      code: "GMAIL_API_ERROR",
+      status: 502,
+    },
+  },
+  {
     match: (m) => m.includes("invalid_grant") || m.includes("Token has been expired or revoked"),
     result: {
       message:
@@ -54,8 +68,7 @@ const ERROR_PATTERNS: Array<{
 ];
 
 export function mapGmailOAuthError(error: unknown): MappedGmailError {
-  const message =
-    error instanceof Error ? error.message : "An unexpected Gmail error occurred.";
+  const message = formatGmailErrorMessage(error);
 
   for (const pattern of ERROR_PATTERNS) {
     if (pattern.match(message)) {
@@ -72,6 +85,16 @@ export function mapGmailOAuthError(error: unknown): MappedGmailError {
     code: "GMAIL_API_ERROR",
     status: 500,
   };
+}
+
+function formatGmailErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return "An unexpected Gmail error occurred.";
 }
 
 export function gmailErrorResponse(error: unknown) {

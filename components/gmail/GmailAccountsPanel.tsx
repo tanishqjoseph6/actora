@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatGmailSyncTime } from "@/hooks/useGmailAccounts";
+import { GMAIL_OAUTH_CALLBACK_URL } from "@/hooks/useGmailOAuthCallback";
 import type { GmailAccountPublic } from "@/lib/gmail/types";
 
 type GmailAccountsPanelProps = {
@@ -145,7 +146,7 @@ export function GmailAccountsPanel({
             onClick={() =>
               void signIn(
                 "google",
-                { callbackUrl: "/dashboard/connect-gmail?connected=1" },
+                { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
                 { prompt: "select_account consent" }
               )
             }

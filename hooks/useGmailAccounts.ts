@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchJson } from "@/lib/api/fetch-json";
 import type { GmailAccountPublic } from "@/lib/gmail/types";
 
 const SELECTED_ACCOUNT_KEY = "actora_selected_gmail_account";
@@ -28,32 +29,27 @@ export function useGmailAccounts() {
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch("/api/gmail/accounts");
-      const data = (await res.json()) as GmailAccountsResponse;
+    const result = await fetchJson<GmailAccountsResponse>("/api/gmail/accounts");
 
-      if (!res.ok) {
-        setAccounts([]);
-        setError(data.error ?? "Could not load Gmail accounts.");
-        return;
-      }
-
-      const nextAccounts = data.accounts ?? [];
-      setAccounts(nextAccounts);
-
-      const stored =
-        typeof window !== "undefined"
-          ? window.localStorage.getItem(SELECTED_ACCOUNT_KEY)
-          : null;
-
-      const validStored = nextAccounts.find((account) => account.email === stored);
-      setSelectedEmailState(validStored?.email ?? nextAccounts[0]?.email ?? null);
-    } catch {
+    if (!result.ok) {
       setAccounts([]);
-      setError("Could not load Gmail accounts.");
-    } finally {
+      setError(result.error.message);
       setLoading(false);
+      return;
     }
+
+    const data = result.data;
+    const nextAccounts = data.accounts ?? [];
+    setAccounts(nextAccounts);
+
+    const stored =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(SELECTED_ACCOUNT_KEY)
+        : null;
+
+    const validStored = nextAccounts.find((account) => account.email === stored);
+    setSelectedEmailState(validStored?.email ?? nextAccounts[0]?.email ?? null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -83,34 +79,30 @@ export function useGmailAccounts() {
       setActionEmail(email);
       setError(null);
 
-      try {
-        const res = await fetch("/api/gmail/accounts", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
-        const data = (await res.json()) as GmailActionResponse;
+      const result = await fetchJson<GmailActionResponse>("/api/gmail/accounts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-        if (!res.ok) {
-          setError(data.error ?? "Could not disconnect Gmail account.");
-          return { ok: false as const, error: data.error, code: data.code };
-        }
-
-        const nextAccounts = data.accounts ?? [];
-        setAccounts(nextAccounts);
-
-        if (selectedEmail === email) {
-          setSelectedEmail(nextAccounts[0]?.email ?? null);
-        }
-
-        return { ok: true as const };
-      } catch {
-        const message = "Could not disconnect Gmail account.";
-        setError(message);
-        return { ok: false as const, error: message };
-      } finally {
-        setActionEmail(null);
+      if (!result.ok) {
+        setError(result.error.message);
+        return {
+          ok: false as const,
+          error: result.error.message,
+          code: result.error.code,
+        };
       }
+
+      const nextAccounts = result.data.accounts ?? [];
+      setAccounts(nextAccounts);
+
+      if (selectedEmail === email) {
+        setSelectedEmail(nextAccounts[0]?.email ?? null);
+      }
+
+      setActionEmail(null);
+      return { ok: true as const };
     },
     [selectedEmail, setSelectedEmail]
   );
@@ -119,33 +111,37 @@ export function useGmailAccounts() {
     setActionEmail(email ?? "all");
     setError(null);
 
-    try {
-      const res = await fetch("/api/gmail/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email ? { email } : {}),
-      });
-      const data = await res.json();
+    const result = await fetchJson<{
+      accounts?: GmailAccountPublic[];
+      error?: string;
+      code?: string;
+      results?: Array<{ email: string; syncedCount: number; error?: string }>;
+    }>("/api/gmail/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(email ? { email } : {}),
+    });
 
-      if (!res.ok && res.status !== 207) {
-        setError(data.error ?? "Could not sync Gmail inbox.");
-        return { ok: false as const, error: data.error, code: data.code, data };
-      }
-
-      if (data.accounts) {
-        setAccounts(data.accounts);
-      } else {
-        await refresh();
-      }
-
-      return { ok: true as const, data };
-    } catch {
-      const message = "Could not sync Gmail inbox.";
-      setError(message);
-      return { ok: false as const, error: message };
-    } finally {
+    if (!result.ok && result.error.status !== 207) {
+      setError(result.error.message);
       setActionEmail(null);
+      return {
+        ok: false as const,
+        error: result.error.message,
+        code: result.error.code,
+      };
     }
+
+    const data = result.ok ? result.data : undefined;
+
+    if (data?.accounts) {
+      setAccounts(data.accounts);
+    } else if (result.ok) {
+      await refresh();
+    }
+
+    setActionEmail(null);
+    return { ok: true as const, data };
   }, [refresh]);
 
   return {

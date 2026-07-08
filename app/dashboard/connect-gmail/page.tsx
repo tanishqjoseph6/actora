@@ -1,18 +1,21 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
 import { GmailAccountsPanel } from "@/components/gmail/GmailAccountsPanel";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
+import { fetchJson } from "@/lib/api/fetch-json";
+import {
+  GMAIL_OAUTH_CALLBACK_URL,
+  useGmailOAuthCallback,
+} from "@/hooks/useGmailOAuthCallback";
 import { formatLimit } from "@/lib/subscription";
 
 function ConnectGmailContent() {
-  const searchParams = useSearchParams();
   const { subscription, loading, checkInbox, refreshSubscription } =
     usePlanGate();
   const {
@@ -32,6 +35,21 @@ function ConnectGmailContent() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<"success" | "error">("success");
 
+  const oauthCallback = useGmailOAuthCallback({
+    onSuccess: async (data) => {
+      await refreshAccounts();
+      await refreshSubscription();
+      setSelectedEmail(data.account.email);
+      setStatusTone(data.syncWarning ? "error" : "success");
+      setStatusMessage(
+        data.syncWarning ??
+          (data.reconnected
+            ? `Reconnected ${data.account.email}. Synced ${data.syncedCount} recent emails.`
+            : `Gmail connected as ${data.account.email}. Synced ${data.syncedCount} recent emails.`)
+      );
+    },
+  });
+
   const inboxLimit = useMemo(() => {
     if (!subscription) return 1;
     return subscription.limits.inboxes === Infinity
@@ -45,163 +63,103 @@ function ConnectGmailContent() {
     return accounts.length < inboxLimit;
   }, [accounts.length, inboxLimit, subscription]);
 
-  const completeConnection = useCallback(async () => {
-    setIsConnecting(true);
-    setStatusMessage(null);
-
-    try {
-      const res = await fetch("/api/gmail/connect", { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatusTone("error");
-        if (data.code === "PLAN_LIMIT") {
-          setStatusMessage(data.error ?? "Inbox limit reached on your current plan.");
-        } else if (data.code === "OAUTH_EXPIRED" || data.code === "OAUTH_DENIED") {
-          setStatusMessage(
-            data.error ??
-              "Google authorization failed. Approve Gmail permissions and try again."
-          );
-        } else {
-          setStatusMessage(data.error ?? "Could not connect Gmail.");
-        }
-        return false;
-      }
-
-      await refreshAccounts();
-      await refreshSubscription();
-      setSelectedEmail(data.account.email);
-      setStatusTone("success");
-      setStatusMessage(
-        data.reconnected
-          ? `Reconnected ${data.account.email}. Synced ${data.syncedCount} recent emails.`
-          : `Gmail connected as ${data.account.email}. Synced ${data.syncedCount} recent emails.`
-      );
-      return true;
-    } catch {
-      setStatusTone("error");
-      setStatusMessage("Could not connect Gmail. Please try again.");
-      return false;
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [refreshAccounts, refreshSubscription, setSelectedEmail]);
-
-  useEffect(() => {
-    const connectedParam = searchParams.get("connected");
-    if (connectedParam !== "1") return;
-
-    queueMicrotask(() => {
-      void completeConnection().then((ok) => {
-        if (ok) {
-          window.history.replaceState({}, "", "/dashboard/connect-gmail");
-        }
-      });
-    });
-  }, [searchParams, completeConnection]);
-
-  useEffect(() => {
-    if (!connected || accountsLoading) return;
-
-    const syncActiveAccount = async () => {
-      if (!selectedEmail) return;
-      await syncAccount(selectedEmail);
-    };
-
-    void syncActiveAccount();
-    const interval = window.setInterval(() => {
-      void syncActiveAccount();
-    }, 60_000);
-
-    return () => window.clearInterval(interval);
-  }, [connected, accountsLoading, selectedEmail, syncAccount]);
-
   const startGoogleOAuth = useCallback(async (reconnectEmail?: string) => {
     await signIn(
       "google",
-      { callbackUrl: "/dashboard/connect-gmail?connected=1" },
+      { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
       { prompt: reconnectEmail ? "consent" : "select_account consent" }
     );
   }, []);
+
+  const connectWithSession = useCallback(async () => {
+    setIsConnecting(true);
+    setStatusMessage(null);
+
+    const result = await fetchJson<{
+      account: { email: string };
+      reconnected?: boolean;
+      syncedCount: number;
+      syncWarning?: string;
+      code?: string;
+      error?: string;
+    }>("/api/gmail/connect", { method: "POST" });
+
+    setIsConnecting(false);
+
+    if (!result.ok) {
+      setStatusTone("error");
+      setStatusMessage(result.error.message);
+      return { ok: false as const, code: result.error.code, status: result.error.status };
+    }
+
+    await refreshAccounts();
+    await refreshSubscription();
+    setSelectedEmail(result.data.account.email);
+    setStatusTone(result.data.syncWarning ? "error" : "success");
+    setStatusMessage(
+      result.data.syncWarning ??
+        (result.data.reconnected
+          ? `Reconnected ${result.data.account.email}. Synced ${result.data.syncedCount} recent emails.`
+          : `Gmail connected as ${result.data.account.email}. Synced ${result.data.syncedCount} recent emails.`)
+    );
+    return { ok: true as const, data: result.data };
+  }, [refreshAccounts, refreshSubscription, setSelectedEmail]);
 
   const handleConnect = async () => {
     if (!checkInbox()) return;
 
     setStatusMessage(null);
-    setIsConnecting(true);
+    const result = await connectWithSession();
 
-    try {
-      const res = await fetch("/api/gmail/connect", { method: "POST" });
-      const data = await res.json();
+    if (result.ok) return;
 
-      if (res.ok) {
-        await refreshAccounts();
-        await refreshSubscription();
-        setSelectedEmail(data.account.email);
-        setStatusTone("success");
-        setStatusMessage(
-          `Gmail connected as ${data.account.email}. Synced ${data.syncedCount} recent emails.`
-        );
-        return;
-      }
+    if (result.code === "PLAN_LIMIT") return;
 
-      setStatusTone("error");
-      setStatusMessage(data.error ?? "Could not connect Gmail.");
-
-      if (res.status === 403 && data.code === "PLAN_LIMIT") {
-        return;
-      }
-
-      if (data.code === "OAUTH_DENIED" || data.code === "OAUTH_EXPIRED") {
-        await startGoogleOAuth();
-        return;
-      }
-    } catch {
-      setStatusTone("error");
-      setStatusMessage("Could not connect Gmail. Please try again.");
-    } finally {
-      setIsConnecting(false);
+    if (result.code === "OAUTH_DENIED" || result.code === "OAUTH_EXPIRED") {
+      await startGoogleOAuth();
+      return;
     }
 
-    await startGoogleOAuth();
+    if (result.status === 403 || result.status === 401) {
+      await startGoogleOAuth();
+    }
   };
 
   const handleReconnect = async (email: string) => {
     setStatusMessage(null);
     setIsConnecting(true);
 
-    try {
-      const res = await fetch("/api/gmail/connect", { method: "POST" });
-      const data = await res.json();
+    const result = await fetchJson<{
+      account: { email: string };
+      syncedCount: number;
+      code?: string;
+      error?: string;
+    }>("/api/gmail/connect", { method: "POST" });
 
-      if (res.ok && data.account.email === email) {
+    setIsConnecting(false);
+
+    if (result.ok) {
+      if (result.data.account.email === email) {
         await refreshAccounts();
         setStatusTone("success");
-        setStatusMessage(`Reconnected ${email}. Synced ${data.syncedCount} emails.`);
-        return;
-      }
-
-      if (res.ok && data.account.email !== email) {
-        setStatusTone("error");
-        setStatusMessage(
-          `Authorized as ${data.account.email}. Sign in with ${email} to reconnect that inbox.`
-        );
-        return;
-      }
-
-      if (data.code === "OAUTH_DENIED" || res.status === 403) {
-        await startGoogleOAuth(email);
+        setStatusMessage(`Reconnected ${email}. Synced ${result.data.syncedCount} emails.`);
         return;
       }
 
       setStatusTone("error");
-      setStatusMessage(data.error ?? "Could not reconnect Gmail.");
-    } catch {
-      setStatusTone("error");
-      setStatusMessage("Could not reconnect Gmail. Please try again.");
-    } finally {
-      setIsConnecting(false);
+      setStatusMessage(
+        `Authorized as ${result.data.account.email}. Sign in with ${email} to reconnect that inbox.`
+      );
+      return;
     }
+
+    if (result.error.code === "OAUTH_DENIED" || result.error.status === 403) {
+      await startGoogleOAuth(email);
+      return;
+    }
+
+    setStatusTone("error");
+    setStatusMessage(result.error.message);
   };
 
   const handleDisconnect = async (email: string) => {
@@ -227,19 +185,25 @@ function ConnectGmailContent() {
       const synced = result.data?.results?.find(
         (entry: { email: string }) => entry.email === email
       );
-      setStatusTone("success");
+      setStatusTone(synced?.error ? "error" : "success");
       setStatusMessage(
         synced?.error
           ? synced.error
           : `Synced ${synced?.syncedCount ?? 0} emails from ${email}.`
       );
-      if (synced?.error) setStatusTone("error");
       return;
     }
 
     setStatusTone("error");
     setStatusMessage(result.error ?? "Could not sync Gmail inbox.");
   };
+
+  const displayMessage =
+    statusMessage ?? oauthCallback.message ?? accountsError;
+  const displayTone =
+    statusTone === "error" || accountsError || oauthCallback.tone === "error"
+      ? "error"
+      : "success";
 
   return (
     <div className="max-w-2xl mx-auto w-full">
@@ -270,7 +234,7 @@ function ConnectGmailContent() {
           </p>
         )}
 
-        {accountsLoading ? (
+        {accountsLoading || oauthCallback.connecting ? (
           <div className="space-y-3" aria-busy="true">
             <Skeleton className="h-24 w-full rounded-xl" />
             <Skeleton className="h-24 w-full rounded-xl" />
@@ -290,20 +254,18 @@ function ConnectGmailContent() {
           />
         )}
 
-        {(statusMessage || accountsError) && (
+        {displayMessage && (
           <p
             className={`text-sm ${
-              statusTone === "error" || accountsError
-                ? "text-[#FCA5A5]"
-                : "text-[#93C5FD]"
+              displayTone === "error" ? "text-[#FCA5A5]" : "text-[#93C5FD]"
             }`}
             role="status"
           >
-            {statusMessage ?? accountsError}
+            {displayMessage}
           </p>
         )}
 
-        {!connected && !accountsLoading && (
+        {!connected && !accountsLoading && !oauthCallback.connecting && (
           <button
             type="button"
             onClick={() => void handleConnect()}

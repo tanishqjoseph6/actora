@@ -4,6 +4,7 @@ import {
   syncGmailInboxForUser,
 } from "@/lib/gmail-auth";
 import { gmailErrorResponse } from "@/lib/gmail/errors";
+import { logApiError } from "@/lib/api/log-error";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
@@ -67,17 +68,32 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const emails = await syncGmailInboxForUser(
-        userId,
-        account.email,
-        auth.oauth2Client
-      );
+      try {
+        const emails = await syncGmailInboxForUser(
+          userId,
+          account.email,
+          auth.oauth2Client
+        );
 
-      results.push({
-        email: account.email,
-        syncedCount: emails.length,
-        unreadCount: emails.filter((email) => email.unread).length,
-      });
+        results.push({
+          email: account.email,
+          syncedCount: emails.length,
+          unreadCount: emails.filter((email) => email.unread).length,
+        });
+      } catch (syncError) {
+        logApiError("gmail/sync", syncError, {
+          userId,
+          email: account.email,
+        });
+        const mapped = gmailErrorResponse(syncError);
+        results.push({
+          email: account.email,
+          syncedCount: 0,
+          unreadCount: 0,
+          error: mapped.error,
+          code: mapped.code,
+        });
+      }
     }
 
     const updatedAccounts = await gmailAccountRepository.listAccounts(userId);
@@ -91,7 +107,7 @@ export async function POST(request: NextRequest) {
       { status: hasErrors ? 207 : 200 }
     );
   } catch (error) {
-    console.error("[gmail] Failed to sync inbox:", error);
+    logApiError("gmail/sync", error, { userId });
     const mapped = gmailErrorResponse(error);
     return NextResponse.json(
       { error: mapped.error, code: mapped.code },

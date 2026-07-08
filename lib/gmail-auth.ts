@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
+import { logApiError } from "@/lib/api/log-error";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import {
   applyOAuthCredentials,
   createOAuth2Client,
@@ -29,7 +31,8 @@ export type GmailAuthResult =
 
 async function resolveUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
+  const email = session?.user?.email;
+  return email ? normalizeSubscriptionUserId(email) : null;
 }
 
 async function resolveSessionTokens(request: NextRequest) {
@@ -38,15 +41,24 @@ async function resolveSessionTokens(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  if (!token?.accessToken) {
-    return null;
+  if (token?.accessToken) {
+    return {
+      accessToken: token.accessToken as string,
+      refreshToken: token.refreshToken as string | undefined,
+      accessTokenExpires: token.accessTokenExpires as number | undefined,
+    };
   }
 
-  return {
-    accessToken: token.accessToken as string,
-    refreshToken: token.refreshToken as string | undefined,
-    accessTokenExpires: token.accessTokenExpires as number | undefined,
-  };
+  const session = await getServerSession(authOptions);
+  if (session?.accessToken) {
+    return {
+      accessToken: session.accessToken,
+      refreshToken: undefined,
+      accessTokenExpires: undefined,
+    };
+  }
+
+  return null;
 }
 
 function resolveAccountEmail(
@@ -105,7 +117,9 @@ export async function getGmailAuthClient(
   options?: { accountEmail?: string }
 ): Promise<GmailAuthResult> {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const userId = session?.user?.email
+    ? normalizeSubscriptionUserId(session.user.email)
+    : undefined;
 
   if (!session || !userId) {
     return {
@@ -199,6 +213,13 @@ export async function getConnectableTokens(request: NextRequest): Promise<
 
   const sessionTokens = await resolveSessionTokens(request);
   if (!sessionTokens?.accessToken) {
+    logApiError("gmail-auth", new Error("No OAuth access token in session"), {
+      userId,
+      hasJwt: Boolean(
+        await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+      ),
+    });
+
     return {
       ok: false,
       status: 403,
