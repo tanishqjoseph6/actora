@@ -46,4 +46,7 @@ export {
   toSubscriptionSnapshot,
 } from "./provider";
 
+export type { SubscriptionUpsertMetadata } from "./repository";
+export { upsertUserSubscription } from "./repository";
+
 export type { SubscriptionProvider } from "./provider";

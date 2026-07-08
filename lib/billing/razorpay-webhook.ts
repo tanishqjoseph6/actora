@@ -25,6 +25,7 @@ type RazorpaySubscriptionEntity = {
   id?: string;
   plan_id?: string;
   status?: string;
+  current_end?: number;
   notes?: RazorpayWebhookNotes;
 };
 
@@ -62,6 +63,11 @@ function parseBillingPeriod(period: string | undefined): BillingInterval {
   return period === "yearly" ? "yearly" : "monthly";
 }
 
+function periodEndFromUnix(seconds?: number | null): string | undefined {
+  if (seconds == null || !Number.isFinite(seconds)) return undefined;
+  return new Date(seconds * 1000).toISOString();
+}
+
 function extractActivationContext(payload: RazorpayWebhookPayload): {
   userId: string;
   planId: PaidPlanId;
@@ -69,6 +75,7 @@ function extractActivationContext(payload: RazorpayWebhookPayload): {
   razorpayPlanId?: string;
   subscriptionId?: string;
   paymentId?: string;
+  currentPeriodEnd?: string;
 } | null {
   const subscription = payload.payload?.subscription?.entity;
   const payment = payload.payload?.payment?.entity;
@@ -110,6 +117,7 @@ function extractActivationContext(payload: RazorpayWebhookPayload): {
     razorpayPlanId,
     subscriptionId: subscription?.id,
     paymentId: payment?.id,
+    currentPeriodEnd: periodEndFromUnix(subscription?.current_end),
   };
 }
 
@@ -136,7 +144,12 @@ export async function handleRazorpayWebhook(
   await subscriptionProvider.setPlan(
     context.userId,
     context.planId as PlanId,
-    context.period
+    context.period,
+    {
+      razorpaySubscriptionId: context.subscriptionId,
+      razorpayPlanId: context.razorpayPlanId,
+      currentPeriodEnd: context.currentPeriodEnd,
+    }
   );
 
   console.log("[razorpay-webhook] Plan updated in database", {
@@ -145,7 +158,8 @@ export async function handleRazorpayWebhook(
     planId: context.planId,
     period: context.period,
     razorpayPlanId: context.razorpayPlanId,
-    subscriptionId: context.subscriptionId,
+    razorpaySubscriptionId: context.subscriptionId,
+    currentPeriodEnd: context.currentPeriodEnd,
     paymentId: context.paymentId,
   });
 

@@ -1,6 +1,7 @@
 import {
   getSupabaseAdmin,
   isMissingUserSubscriptionsSchemaError,
+  requireSupabaseAdmin,
 } from "@/lib/supabase-admin";
 import type { UserSubscriptionRow } from "@/lib/supabase/database.types";
 import type { BillingInterval, PlanId, SubscriptionStatus } from "./types";
@@ -13,7 +14,16 @@ export type StoredSubscription = {
   status: SubscriptionStatus;
   billingInterval: BillingInterval;
   currentPeriodEnd: string;
+  razorpaySubscriptionId?: string | null;
+  razorpayPlanId?: string | null;
   updatedAt: string;
+};
+
+export type SubscriptionUpsertMetadata = {
+  razorpaySubscriptionId?: string;
+  razorpayPlanId?: string;
+  currentPeriodEnd?: string;
+  status?: SubscriptionStatus;
 };
 
 const memoryStore = new Map<string, StoredSubscription>();
@@ -35,6 +45,8 @@ function createDefaultStored(userId: string): StoredSubscription {
     status: "active",
     billingInterval: "monthly",
     currentPeriodEnd: getNextRenewalDate(),
+    razorpaySubscriptionId: null,
+    razorpayPlanId: null,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -46,6 +58,8 @@ function mapRow(row: UserSubscriptionRow): StoredSubscription {
     status: row.status as SubscriptionStatus,
     billingInterval: row.billing_interval as BillingInterval,
     currentPeriodEnd: row.current_period_end,
+    razorpaySubscriptionId: row.razorpay_subscription_id,
+    razorpayPlanId: row.razorpay_plan_id,
     updatedAt: row.updated_at,
   };
 }
@@ -57,8 +71,91 @@ function toRow(subscription: StoredSubscription): UserSubscriptionRow {
     status: subscription.status,
     billing_interval: subscription.billingInterval,
     current_period_end: subscription.currentPeriodEnd,
+    razorpay_subscription_id: subscription.razorpaySubscriptionId ?? null,
+    razorpay_plan_id: subscription.razorpayPlanId ?? null,
     updated_at: subscription.updatedAt,
   };
+}
+
+function logUpsertFailure(
+  operation: string,
+  row: UserSubscriptionRow,
+  error: { message: string; code?: string; details?: string; hint?: string }
+): void {
+  console.error(`[subscription/repository] ${operation} failed`, {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    row,
+  });
+}
+
+/**
+ * Persists a subscription row via the Supabase service role client.
+ * Used after successful Razorpay payment / webhook — never falls back to memory.
+ */
+export async function upsertUserSubscription(
+  userId: string,
+  planId: PlanId,
+  billingInterval: BillingInterval = "monthly",
+  metadata: SubscriptionUpsertMetadata = {}
+): Promise<StoredSubscription> {
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const db = requireSupabaseAdmin();
+
+  const row: UserSubscriptionRow = {
+    user_id: normalizedUserId,
+    plan_id: planId,
+    status: metadata.status ?? "active",
+    billing_interval: billingInterval,
+    current_period_end:
+      metadata.currentPeriodEnd ?? getNextRenewalDate(billingInterval),
+    razorpay_subscription_id: metadata.razorpaySubscriptionId ?? null,
+    razorpay_plan_id: metadata.razorpayPlanId ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log("[subscription/repository] upsertUserSubscription start", row);
+
+  const { data, error } = await db
+    .from("user_subscriptions")
+    .upsert(row, { onConflict: "user_id" })
+    .select("*")
+    .single();
+
+  if (error) {
+    logUpsertFailure("upsertUserSubscription", row, error);
+
+    if (isMissingUserSubscriptionsSchemaError(error.message)) {
+      throw new Error(
+        "user_subscriptions table is missing. Apply migrations 006_user_subscriptions.sql and 007_user_subscriptions_razorpay.sql in Supabase."
+      );
+    }
+
+    throw new Error(`Failed to upsert user_subscriptions: ${error.message}`);
+  }
+
+  if (!data) {
+    const message = "upsertUserSubscription returned no row after successful upsert";
+    console.error(`[subscription/repository] ${message}`, { row });
+    throw new Error(message);
+  }
+
+  const stored = mapRow(data as UserSubscriptionRow);
+  memoryStore.set(normalizedUserId, stored);
+
+  console.log("[subscription/repository] upsertUserSubscription success", {
+    user_id: stored.userId,
+    plan_id: stored.planId,
+    status: stored.status,
+    razorpay_subscription_id: stored.razorpaySubscriptionId,
+    razorpay_plan_id: stored.razorpayPlanId,
+    current_period_end: stored.currentPeriodEnd,
+    updated_at: stored.updatedAt,
+  });
+
+  return stored;
 }
 
 export async function getStoredSubscription(
@@ -68,7 +165,9 @@ export async function getStoredSubscription(
   const db = getSupabaseAdmin();
 
   if (!db) {
-    console.warn("[subscription/repository] Supabase admin client unavailable — using memory store");
+    console.warn(
+      "[subscription/repository] Supabase admin client unavailable on read — using memory/default"
+    );
     return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
   }
 
@@ -81,7 +180,7 @@ export async function getStoredSubscription(
   if (error) {
     if (isMissingUserSubscriptionsSchemaError(error.message)) {
       console.error(
-        "[subscription/repository] user_subscriptions table missing — apply migration 006_user_subscriptions.sql"
+        "[subscription/repository] user_subscriptions table missing on read — apply migrations 006 and 007"
       );
       return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
     }
@@ -89,21 +188,7 @@ export async function getStoredSubscription(
   }
 
   if (!data) {
-    const created = createDefaultStored(normalizedUserId);
-    const { error: insertError } = await db
-      .from("user_subscriptions")
-      .insert(toRow(created));
-
-    if (insertError && !isMissingUserSubscriptionsSchemaError(insertError.message)) {
-      console.error("[subscription/repository] insert default subscription failed", insertError.message);
-      throw new Error(insertError.message);
-    }
-
-    if (!insertError) {
-      memoryStore.set(normalizedUserId, created);
-    }
-
-    return created;
+    return createDefaultStored(normalizedUserId);
   }
 
   const subscription = mapRow(data as UserSubscriptionRow);
@@ -114,67 +199,24 @@ export async function getStoredSubscription(
 export async function persistSubscription(
   subscription: StoredSubscription
 ): Promise<StoredSubscription> {
-  const normalizedUserId = normalizeSubscriptionUserId(subscription.userId);
-  const next = {
-    ...subscription,
-    userId: normalizedUserId,
-    updatedAt: new Date().toISOString(),
-  };
-  const db = getSupabaseAdmin();
-
-  if (!db) {
-    console.warn("[subscription/repository] Supabase admin client unavailable — persisting to memory only");
-    memoryStore.set(normalizedUserId, next);
-    return next;
-  }
-
-  const { data, error } = await db
-    .from("user_subscriptions")
-    .upsert(toRow(next), { onConflict: "user_id" })
-    .select("*")
-    .single();
-
-  if (error) {
-    if (isMissingUserSubscriptionsSchemaError(error.message)) {
-      console.error(
-        "[subscription/repository] user_subscriptions table missing on upsert — plan not persisted to database"
-      );
-      memoryStore.set(normalizedUserId, next);
-      return next;
+  return upsertUserSubscription(
+    subscription.userId,
+    subscription.planId,
+    subscription.billingInterval,
+    {
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      razorpaySubscriptionId: subscription.razorpaySubscriptionId ?? undefined,
+      razorpayPlanId: subscription.razorpayPlanId ?? undefined,
     }
-    console.error("[subscription/repository] upsert failed", {
-      userId: normalizedUserId,
-      planId: next.planId,
-      error: error.message,
-    });
-    throw new Error(error.message);
-  }
-
-  const stored = mapRow(data as UserSubscriptionRow);
-  memoryStore.set(normalizedUserId, stored);
-
-  console.log("[subscription/repository] upsert success", {
-    userId: stored.userId,
-    planId: stored.planId,
-    billingInterval: stored.billingInterval,
-  });
-
-  return stored;
+  );
 }
 
 export async function setStoredPlan(
   userId: string,
   planId: PlanId,
-  billingInterval: BillingInterval = "monthly"
+  billingInterval: BillingInterval = "monthly",
+  metadata: SubscriptionUpsertMetadata = {}
 ): Promise<StoredSubscription> {
-  const normalizedUserId = normalizeSubscriptionUserId(userId);
-  const current = await getStoredSubscription(normalizedUserId);
-  return persistSubscription({
-    ...current,
-    userId: normalizedUserId,
-    planId,
-    billingInterval,
-    status: "active",
-    currentPeriodEnd: getNextRenewalDate(billingInterval),
-  });
+  return upsertUserSubscription(userId, planId, billingInterval, metadata);
 }

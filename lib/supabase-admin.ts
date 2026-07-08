@@ -1,5 +1,6 @@
 export {
   getSupabaseAdmin,
+  requireSupabaseAdmin,
   isSupabaseConfigured,
   isMissingAutomationSchemaError,
   isMissingGmailSchemaError,

@@ -12,6 +12,7 @@ import { getRazorpayPlanId, isPaidPlan } from "@/lib/billing/pricing";
 import {
   subscriptionProvider,
   toSubscriptionSnapshot,
+  type SubscriptionUpsertMetadata,
 } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
@@ -32,6 +33,11 @@ function noteMatches(
     return actual.trim().toLowerCase() === expected.trim().toLowerCase();
   }
   return actual.trim() === expected.trim();
+}
+
+function periodEndFromUnix(seconds?: number | null): string | undefined {
+  if (seconds == null || !Number.isFinite(seconds)) return undefined;
+  return new Date(seconds * 1000).toISOString();
 }
 
 export async function POST(request: NextRequest) {
@@ -144,6 +150,10 @@ export async function POST(request: NextRequest) {
     console.log("[razorpay/verify] step:signature — ok");
 
     const razorpay = getRazorpayClient();
+    let upsertMetadata: SubscriptionUpsertMetadata = {
+      razorpayPlanId: expectedPlanId,
+      razorpaySubscriptionId: razorpay_subscription_id,
+    };
 
     if (razorpay_subscription_id) {
       const subscription = await razorpay.subscriptions.fetch(
@@ -151,6 +161,15 @@ export async function POST(request: NextRequest) {
       );
       const notes = parseNotes(subscription.notes);
       const remotePlanId = subscription.plan_id?.trim();
+      const currentEnd = periodEndFromUnix(
+        (subscription as { current_end?: number }).current_end
+      );
+
+      upsertMetadata = {
+        razorpaySubscriptionId: razorpay_subscription_id,
+        razorpayPlanId: expectedPlanId,
+        currentPeriodEnd: currentEnd,
+      };
 
       console.log("[razorpay/verify] step:subscription-fetch", {
         subscriptionId: razorpay_subscription_id,
@@ -158,6 +177,7 @@ export async function POST(request: NextRequest) {
         expectedPlanId,
         notes,
         status: subscription.status,
+        currentPeriodEnd: currentEnd,
       });
 
       if (remotePlanId !== expectedPlanId) {
@@ -215,9 +235,15 @@ export async function POST(request: NextRequest) {
       userId,
       planId,
       period,
+      upsertMetadata,
     });
 
-    const updated = await subscriptionProvider.setPlan(userId, planId, period);
+    const updated = await subscriptionProvider.setPlan(
+      userId,
+      planId,
+      period,
+      upsertMetadata
+    );
 
     console.log("[razorpay/verify] step:set-plan — success", {
       userId: updated.userId,

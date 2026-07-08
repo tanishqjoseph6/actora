@@ -11,14 +11,18 @@ import {
   getStoredSubscription,
   setStoredPlan,
   type StoredSubscription,
+  type SubscriptionUpsertMetadata,
 } from "./repository";
+
+export type { SubscriptionUpsertMetadata } from "./repository";
 
 export interface SubscriptionProvider {
   getSubscription(userId: string): Promise<UserSubscription>;
   setPlan(
     userId: string,
     planId: PlanId,
-    billingInterval?: BillingInterval
+    billingInterval?: BillingInterval,
+    metadata?: SubscriptionUpsertMetadata
   ): Promise<UserSubscription>;
   recordAiAction(userId: string): Promise<UserSubscription>;
   recordInboxConnection(userId: string): Promise<UserSubscription>;
@@ -83,9 +87,10 @@ class SupabaseSubscriptionProvider implements SubscriptionProvider {
   async setPlan(
     userId: string,
     planId: PlanId,
-    billingInterval: BillingInterval = "monthly"
+    billingInterval: BillingInterval = "monthly",
+    metadata?: SubscriptionUpsertMetadata
   ): Promise<UserSubscription> {
-    const stored = await setStoredPlan(userId, planId, billingInterval);
+    const stored = await setStoredPlan(userId, planId, billingInterval, metadata);
     const [usage, accounts] = await Promise.all([
       getUserUsage(userId),
       gmailAccountRepository.listAccounts(userId),

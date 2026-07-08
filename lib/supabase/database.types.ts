@@ -14,5 +14,7 @@ export type UserSubscriptionRow = {
   status: string;
   billing_interval: string;
   current_period_end: string;
+  razorpay_subscription_id: string | null;
+  razorpay_plan_id: string | null;
   updated_at: string;
 };
