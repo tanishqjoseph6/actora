@@ -7,6 +7,7 @@ import type {
 import { DEFAULT_PLAN_ID, getPlanDisplayName, getPlanLimits } from "./plans";
 import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard/user-usage";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
+import { logApiError } from "@/lib/api/log-error";
 import {
   getStoredSubscription,
   setStoredPlan,
@@ -70,17 +71,51 @@ export function toSubscriptionSnapshot(
   };
 }
 
+async function loadUsageSafely(userId: string): Promise<UserSubscription["usage"]> {
+  try {
+    const usage = await getUserUsage(userId);
+    return {
+      aiActionsUsed: usage.aiActionsUsed,
+      inboxesConnected: 0,
+    };
+  } catch (error) {
+    logApiError("subscription/provider", error, {
+      operation: "getUserUsage",
+      userId,
+    });
+    return { aiActionsUsed: 0, inboxesConnected: 0 };
+  }
+}
+
+async function loadInboxCountSafely(userId: string): Promise<number> {
+  try {
+    const accounts = await gmailAccountRepository.listAccounts(userId);
+    return accounts.length;
+  } catch (error) {
+    logApiError("subscription/provider", error, {
+      operation: "listGmailAccounts",
+      userId,
+    });
+    return 0;
+  }
+}
+
 class SupabaseSubscriptionProvider implements SubscriptionProvider {
+  /**
+   * Reads plan state directly from Supabase (service role).
+   * Usage/inbox counts are best-effort and never fail the subscription read.
+   */
   async getSubscription(userId: string): Promise<UserSubscription> {
-    const [stored, usage, accounts] = await Promise.all([
-      getStoredSubscription(userId),
-      getUserUsage(userId),
-      gmailAccountRepository.listAccounts(userId),
+    const stored = await getStoredSubscription(userId);
+
+    const [usageBase, inboxesConnected] = await Promise.all([
+      loadUsageSafely(userId),
+      loadInboxCountSafely(userId),
     ]);
 
     return toUserSubscription(stored, {
-      aiActionsUsed: usage.aiActionsUsed,
-      inboxesConnected: accounts.length,
+      aiActionsUsed: usageBase.aiActionsUsed,
+      inboxesConnected,
     });
   }
 
@@ -91,14 +126,14 @@ class SupabaseSubscriptionProvider implements SubscriptionProvider {
     metadata?: SubscriptionUpsertMetadata
   ): Promise<UserSubscription> {
     const stored = await setStoredPlan(userId, planId, billingInterval, metadata);
-    const [usage, accounts] = await Promise.all([
-      getUserUsage(userId),
-      gmailAccountRepository.listAccounts(userId),
+    const [usageBase, inboxesConnected] = await Promise.all([
+      loadUsageSafely(userId),
+      loadInboxCountSafely(userId),
     ]);
 
     return toUserSubscription(stored, {
-      aiActionsUsed: usage.aiActionsUsed,
-      inboxesConnected: accounts.length,
+      aiActionsUsed: usageBase.aiActionsUsed,
+      inboxesConnected,
     });
   }
 

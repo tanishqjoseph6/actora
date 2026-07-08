@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
+import { logApiError } from "@/lib/api/log-error";
 import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
 import type { PlanId } from "@/lib/subscription";
 import {
@@ -25,11 +26,22 @@ export async function GET() {
     );
   }
 
-  const subscription = await subscriptionProvider.getSubscription(userId);
+  try {
+    const subscription = await subscriptionProvider.getSubscription(userId);
 
-  return NextResponse.json({
-    subscription: toSubscriptionSnapshot(subscription),
-  });
+    return NextResponse.json({
+      subscription: toSubscriptionSnapshot(subscription),
+    });
+  } catch (error) {
+    logApiError("api/subscription", error, { userId, method: "GET" });
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to load subscription.";
+
+    return NextResponse.json({ error: message }, { status: 503 });
+  }
 }
 
 export async function PATCH(request: NextRequest) {
@@ -75,9 +87,14 @@ export async function PATCH(request: NextRequest) {
       subscription: toSubscriptionSnapshot(updated),
     });
   } catch (error) {
-    console.error("[subscription] Failed to update plan:", error);
+    logApiError("api/subscription", error, { userId, method: "PATCH" });
     return NextResponse.json(
-      { error: "Failed to update subscription." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to update subscription.",
+      },
       { status: 500 }
     );
   }

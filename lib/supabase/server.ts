@@ -3,13 +3,58 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 let adminClient: SupabaseClient | null = null;
 let adminClientUrl: string | null = null;
 
+function trimEnv(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
+}
+
+/** Warn if the configured key does not look like a Supabase service_role JWT. */
+function assertServiceRoleKey(key: string): void {
+  try {
+    const parts = key.split(".");
+    if (parts.length < 2) return;
+    const payload = JSON.parse(
+      Buffer.from(parts[1], "base64url").toString("utf8")
+    ) as { role?: string };
+
+    if (payload.role && payload.role !== "service_role") {
+      console.error(
+        "[supabase] SUPABASE_SERVICE_ROLE_KEY has role",
+        payload.role,
+        "— expected service_role. Webhook/subscription writes will fail under RLS."
+      );
+    }
+  } catch {
+    // Non-JWT keys are unusual but do not block client creation.
+  }
+}
+
+export function isSupabaseNetworkError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("fetch failed") ||
+    lower.includes("econnrefused") ||
+    lower.includes("enotfound") ||
+    lower.includes("etimedout") ||
+    lower.includes("network")
+  );
+}
+
+export function isMissingRazorpayColumnError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("razorpay_subscription_id") ||
+    lower.includes("razorpay_plan_id")
+  );
+}
+
 /**
  * Server-only Supabase client with service role for automation persistence.
  * Uses the same @supabase/supabase-js package as lib/supabase.ts.
  */
 export function getSupabaseAdmin(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const serviceKey = trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!url || !serviceKey) {
     if (process.env.NODE_ENV === "production") {
@@ -22,11 +67,21 @@ export function getSupabaseAdmin(): SupabaseClient | null {
     return null;
   }
 
+  assertServiceRoleKey(serviceKey);
+
   if (!adminClient || adminClientUrl !== url) {
     adminClient = createClient(url, serviceKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
+      },
+      db: {
+        schema: "public",
+      },
+      global: {
+        headers: {
+          "X-Client-Info": "actora-service-role",
+        },
       },
     });
     adminClientUrl = url;

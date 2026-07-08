@@ -4,6 +4,8 @@ import {
   type RazorpayWebhookPayload,
 } from "@/lib/billing/razorpay-webhook";
 import { verifyRazorpayWebhookSignature } from "@/lib/billing/razorpay";
+import { logApiError } from "@/lib/api/log-error";
+import { isSupabaseConfigured } from "@/lib/supabase-admin";
 
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim();
@@ -14,6 +16,16 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json(
       { error: "Webhook secret is not configured." },
+      { status: 503 }
+    );
+  }
+
+  if (!isSupabaseConfigured()) {
+    console.error(
+      "[razorpay-webhook] Supabase service role is not configured — cannot persist subscription"
+    );
+    return NextResponse.json(
+      { error: "Database is not configured for subscription writes." },
       { status: 503 }
     );
   }
@@ -42,9 +54,16 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true, ...result });
   } catch (error) {
-    console.error("[razorpay-webhook] Error:", error);
+    logApiError("razorpay-webhook", error, {
+      usesServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+    });
     return NextResponse.json(
-      { error: "Webhook processing failed." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Webhook processing failed.",
+      },
       { status: 500 }
     );
   }
