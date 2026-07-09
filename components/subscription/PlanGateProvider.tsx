@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useSession } from "next-auth/react";
 import { PlanLimitModal } from "@/components/subscription/PlanLimitModal";
 import { useSubscription } from "@/hooks/useSubscription";
 import {
@@ -45,9 +46,28 @@ type PlanGateContextValue = {
 
 const PlanGateContext = createContext<PlanGateContextValue | null>(null);
 
+function resolveEffectivePlanId(
+  subscriptionPlan: PlanId | undefined,
+  sessionPlan: PlanId
+): PlanId {
+  if (!subscriptionPlan) return sessionPlan;
+  if (subscriptionPlan === "free" && sessionPlan !== "free") {
+    return sessionPlan;
+  }
+  return subscriptionPlan;
+}
+
 export function PlanGateProvider({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
   const { subscription, loading, refresh } = useSubscription();
   const [limitModal, setLimitModal] = useState<LimitModalState>(null);
+
+  const sessionPlanId =
+    (session as { planId?: PlanId } | null)?.planId ?? "free";
+  const effectivePlanId = resolveEffectivePlanId(
+    subscription?.planId,
+    sessionPlanId
+  );
 
   const showLimitModal = useCallback(
     (reason: string, limitType: LimitType, recommendedPlan?: PlanId) => {
@@ -64,40 +84,48 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
 
   const canAccessFeatureFn = useCallback(
     (feature: PlanFeature, planId?: PlanId) => {
-      return hasPlanFeature(planId ?? subscription?.planId ?? "free", feature);
+      return hasPlanFeature(planId ?? effectivePlanId, feature);
     },
-    [subscription?.planId]
+    [effectivePlanId]
   );
 
   const checkAiAction = useCallback(() => {
-    if (!subscription) return true;
+    if (loading && effectivePlanId === "free") return false;
 
-    const gate = canUseAiAction(subscription.planId, subscription.usage);
+    const usage = subscription?.usage ?? {
+      aiActionsUsed: 0,
+      inboxesConnected: 0,
+    };
+    const gate = canUseAiAction(effectivePlanId, usage);
     if (!gate.allowed) {
       showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
     return true;
-  }, [subscription, showLimitModal]);
+  }, [loading, effectivePlanId, subscription?.usage, showLimitModal]);
 
   const checkInbox = useCallback(() => {
-    if (!subscription) return true;
+    if (loading && effectivePlanId === "free") return false;
 
-    const gate = canConnectInbox(subscription.planId, subscription.usage);
+    const usage = subscription?.usage ?? {
+      aiActionsUsed: 0,
+      inboxesConnected: 0,
+    };
+    const gate = canConnectInbox(effectivePlanId, usage);
     if (!gate.allowed) {
       showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
     return true;
-  }, [subscription, showLimitModal]);
+  }, [loading, effectivePlanId, subscription?.usage, showLimitModal]);
 
   const checkFeature = useCallback(
     (feature: PlanFeature) => {
-      if (!subscription) return true;
+      if (loading && effectivePlanId === "free") return false;
 
-      const gate = checkFeatureAccess(subscription.planId, feature);
+      const gate = checkFeatureAccess(effectivePlanId, feature);
       if (!gate.allowed) {
         showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
         return false;
@@ -105,7 +133,7 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
 
       return true;
     },
-    [subscription, showLimitModal]
+    [loading, effectivePlanId, showLimitModal]
   );
 
   const value = useMemo(

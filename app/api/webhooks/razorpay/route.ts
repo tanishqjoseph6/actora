@@ -50,6 +50,18 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = JSON.parse(rawBody) as RazorpayWebhookPayload;
+
+    console.log("[razorpay-webhook] request payload", {
+      event: payload.event,
+      subscriptionId: payload.payload?.subscription?.entity?.id,
+      subscriptionStatus: payload.payload?.subscription?.entity?.status,
+      subscriptionPlanId: payload.payload?.subscription?.entity?.plan_id,
+      subscriptionNotes: payload.payload?.subscription?.entity?.notes,
+      paymentId: payload.payload?.payment?.entity?.id,
+      paymentSubscriptionId: payload.payload?.payment?.entity?.subscription_id,
+      paymentNotes: payload.payload?.payment?.entity?.notes,
+    });
+
     const result = await handleRazorpayWebhook(payload);
 
     return NextResponse.json({ received: true, ...result });

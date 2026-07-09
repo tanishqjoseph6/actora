@@ -16,6 +16,7 @@ import { ResendVerificationEmail } from "@/components/auth/ResendVerificationEma
 import { VerificationStatusBadge } from "@/components/auth/VerificationStatusBadge";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
+import { resolveSafeCallbackUrl } from "@/lib/auth/safe-redirect";
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Check OAuth client configuration.",
@@ -63,6 +64,7 @@ function LoginContent() {
   );
 
   const oauthErrorMessage = resolveAuthErrorMessage(errorCode);
+  const callbackUrl = resolveSafeCallbackUrl(searchParams.get("callbackUrl"));
 
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -74,7 +76,7 @@ function LoginContent() {
       email: email.trim(),
       password,
       redirect: false,
-      callbackUrl: "/dashboard",
+      callbackUrl,
     });
 
     setLoading(false);
@@ -96,7 +98,7 @@ function LoginContent() {
       return;
     }
 
-    router.push(result?.url ?? "/dashboard");
+    router.push(result?.url ?? callbackUrl);
   };
 
   return (
@@ -211,7 +213,7 @@ function LoginContent() {
 
       <button
         type="button"
-        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        onClick={() => signIn("google", { callbackUrl })}
         className={`w-full ${dashboard.btnSecondary} py-3 text-sm`}
       >
         Sign in with Google

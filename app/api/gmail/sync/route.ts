@@ -8,11 +8,13 @@ import { logApiError } from "@/lib/api/log-error";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const email = session?.user?.email;
+  const userId = email ? normalizeSubscriptionUserId(email) : null;
 
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });

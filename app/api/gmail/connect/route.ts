@@ -19,6 +19,8 @@ import {
   toSubscriptionSnapshot,
 } from "@/lib/subscription";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const envStatus = logGmailAuthEnv("gmail/connect");
 

@@ -67,7 +67,10 @@ function ConnectGmailContent() {
     await signIn(
       "google",
       { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
-      { prompt: reconnectEmail ? "consent" : "select_account consent" }
+      {
+        prompt: reconnectEmail ? "consent" : "select_account consent",
+        ...(reconnectEmail ? { login_hint: reconnectEmail } : {}),
+      }
     );
   }, []);
 

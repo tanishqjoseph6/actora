@@ -1,4 +1,8 @@
-import { getSupabaseAdmin, isMissingUserUsageSchemaError } from "@/lib/supabase-admin";
+import {
+  getSupabaseAdmin,
+  isMissingUserUsageSchemaError,
+  isSupabaseNetworkError,
+} from "@/lib/supabase-admin";
 import type { UserUsageRow } from "@/lib/supabase/database.types";
 
 export type UserUsage = {
@@ -74,6 +78,10 @@ export async function getUserUsage(userId: string): Promise<UserUsage> {
 
   if (error) {
     if (isMissingUserUsageSchemaError(error.message)) {
+      return memoryUsage.get(userId) ?? defaultUsage(userId);
+    }
+    if (isSupabaseNetworkError(error.message)) {
+      console.error("[user-usage] Supabase network error on read:", error.message);
       return memoryUsage.get(userId) ?? defaultUsage(userId);
     }
     throw new Error(error.message);

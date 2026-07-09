@@ -5,10 +5,16 @@ import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { revokeOAuthToken } from "@/lib/gmail/oauth";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
 import { subscriptionProvider, toSubscriptionSnapshot } from "@/lib/subscription";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+
+async function getUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  const email = session?.user?.email;
+  return email ? normalizeSubscriptionUserId(email) : null;
+}
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const userId = await getUserId();
 
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -23,8 +29,7 @@ export async function GET() {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.email;
+  const userId = await getUserId();
 
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });

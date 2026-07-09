@@ -7,7 +7,6 @@ import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricC
 import { DashboardWidgets } from "@/components/dashboard/premium/DashboardWidgets";
 import { InboxView } from "@/components/email/InboxView";
 import { CrmPreviewSection } from "@/components/dashboard/premium/CrmPreviewSection";
-import { GmailOAuthCallbackBanner } from "@/components/gmail/GmailOAuthCallbackBanner";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
@@ -26,7 +25,6 @@ export default function Dashboard() {
 
   return (
     <PremiumDashboardShell showTopNav={false}>
-      <GmailOAuthCallbackBanner />
       <DashboardHero />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-3 lg:gap-4 mb-8 lg:mb-10">

@@ -70,7 +70,13 @@ function mapRow(row: UserSubscriptionRow): StoredSubscription {
 function logUpsertFailure(
   operation: string,
   row: UserSubscriptionRow,
-  error: { message: string; code?: string; details?: string; hint?: string }
+  error: {
+    message: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+  },
+  extra?: Record<string, unknown>
 ): void {
   console.error(`[subscription/repository] ${operation} failed`, {
     code: error.code,
@@ -78,8 +84,7 @@ function logUpsertFailure(
     details: error.details,
     hint: error.hint,
     row,
-    usesServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
-    supabaseUrlConfigured: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
+    ...extra,
   });
 }
 
@@ -93,7 +98,6 @@ function buildUpsertPayload(
     status: row.status,
     billing_interval: row.billing_interval,
     current_period_end: row.current_period_end,
-    updated_at: row.updated_at,
   };
 
   if (!includeRazorpayColumns) {
@@ -107,18 +111,69 @@ function buildUpsertPayload(
   };
 }
 
+type UpsertResult = {
+  data: UserSubscriptionRow | null;
+  error: {
+    message: string;
+    code?: string;
+    details?: string;
+    hint?: string;
+  } | null;
+};
+
 async function executeUpsert(
   db: ReturnType<typeof requireSupabaseAdmin>,
   row: UserSubscriptionRow,
   includeRazorpayColumns: boolean
-) {
-  return db
+): Promise<UpsertResult> {
+  const payload = buildUpsertPayload(row, includeRazorpayColumns);
+
+  console.log("[subscription/repository] executeUpsert request", {
+    table: "user_subscriptions",
+    onConflict: "user_id",
+    includeRazorpayColumns,
+    payload,
+  });
+
+  const { data, error, status, statusText } = await db
     .from("user_subscriptions")
-    .upsert(buildUpsertPayload(row, includeRazorpayColumns), {
-      onConflict: "user_id",
-    })
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*");
+
+  console.log("[subscription/repository] executeUpsert response", {
+    httpStatus: status,
+    statusText,
+    error,
+    rows: Array.isArray(data) ? data.length : data ? 1 : 0,
+    data,
+  });
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  const saved = Array.isArray(data) ? (data[0] as UserSubscriptionRow) : (data as UserSubscriptionRow | null);
+  if (saved) {
+    return { data: saved, error: null };
+  }
+
+  const { data: readBack, error: readError } = await db
+    .from("user_subscriptions")
     .select("*")
-    .single();
+    .eq("user_id", row.user_id)
+    .maybeSingle();
+
+  console.log("[subscription/repository] executeUpsert read-back", {
+    user_id: row.user_id,
+    readBack,
+    readError,
+  });
+
+  if (readError) {
+    return { data: null, error: readError };
+  }
+
+  return { data: readBack as UserSubscriptionRow | null, error: null };
 }
 
 /**
@@ -134,15 +189,34 @@ export async function upsertUserSubscription(
   const normalizedUserId = normalizeSubscriptionUserId(userId);
   const db = requireSupabaseAdmin();
 
+  const { data: existingRow, error: existingError } = await db
+    .from("user_subscriptions")
+    .select("razorpay_subscription_id, razorpay_plan_id, current_period_end")
+    .eq("user_id", normalizedUserId)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("[subscription/repository] existing row lookup failed", {
+      user_id: normalizedUserId,
+      error: existingError,
+    });
+  }
+
   const row: UserSubscriptionRow = {
     user_id: normalizedUserId,
     plan_id: planId,
     status: metadata.status ?? "active",
     billing_interval: billingInterval,
     current_period_end:
-      metadata.currentPeriodEnd ?? getNextRenewalDate(billingInterval),
-    razorpay_subscription_id: metadata.razorpaySubscriptionId ?? null,
-    razorpay_plan_id: metadata.razorpayPlanId ?? null,
+      metadata.currentPeriodEnd ??
+      existingRow?.current_period_end ??
+      getNextRenewalDate(billingInterval),
+    razorpay_subscription_id:
+      metadata.razorpaySubscriptionId ??
+      existingRow?.razorpay_subscription_id ??
+      null,
+    razorpay_plan_id:
+      metadata.razorpayPlanId ?? existingRow?.razorpay_plan_id ?? null,
     updated_at: new Date().toISOString(),
   };
 
@@ -153,46 +227,54 @@ export async function upsertUserSubscription(
     billing_interval: row.billing_interval,
     razorpay_subscription_id: row.razorpay_subscription_id,
     razorpay_plan_id: row.razorpay_plan_id,
+    current_period_end: row.current_period_end,
   });
 
-  let { data, error } = await executeUpsert(db, row, true);
+  let result = await executeUpsert(db, row, true);
 
   if (
-    error &&
-    isMissingRazorpayColumnError(error.message) &&
+    result.error &&
+    isMissingRazorpayColumnError(result.error.message) &&
     (row.razorpay_subscription_id || row.razorpay_plan_id)
   ) {
     console.warn(
-      "[subscription/repository] Razorpay columns missing — retrying upsert without them. Apply migrations 007 and 008 in Supabase."
+      "[subscription/repository] retrying upsert without Razorpay columns",
+      { user_id: row.user_id }
     );
-    ({ data, error } = await executeUpsert(db, row, false));
+    result = await executeUpsert(db, row, false);
   }
 
-  if (error) {
-    logUpsertFailure("upsertUserSubscription", row, error);
+  if (result.error) {
+    logUpsertFailure("upsertUserSubscription", row, result.error, {
+      line: "lib/subscription/repository.ts:executeUpsert",
+    });
 
-    if (isMissingUserSubscriptionsSchemaError(error.message)) {
+    if (isMissingUserSubscriptionsSchemaError(result.error.message)) {
       throw new Error(
-        "user_subscriptions table is missing. Apply migrations 006_user_subscriptions.sql, 007_user_subscriptions_razorpay.sql, and 008_user_subscriptions_rls.sql in Supabase."
+        `user_subscriptions table schema error: ${result.error.message}`
       );
     }
 
-    if (isSupabaseNetworkError(error.message)) {
+    if (isSupabaseNetworkError(result.error.message)) {
       throw new Error(
-        "Could not reach Supabase to save subscription. Check NEXT_PUBLIC_SUPABASE_URL and network access from Vercel."
+        `Supabase network error during upsert: ${result.error.message}`
       );
     }
 
-    throw new Error(`Failed to upsert user_subscriptions: ${error.message}`);
+    throw new Error(
+      `Failed to upsert user_subscriptions: ${result.error.message}` +
+        (result.error.code ? ` (${result.error.code})` : "") +
+        (result.error.details ? ` — ${result.error.details}` : "")
+    );
   }
 
-  if (!data) {
-    const message = "upsertUserSubscription returned no row after successful upsert";
+  if (!result.data) {
+    const message = "upsertUserSubscription returned no row after upsert and read-back";
     console.error(`[subscription/repository] ${message}`, { row });
     throw new Error(message);
   }
 
-  const stored = mapRow(data as UserSubscriptionRow);
+  const stored = mapRow(result.data);
   memoryStore.set(normalizedUserId, stored);
 
   console.log("[subscription/repository] upsertUserSubscription success", {
@@ -215,9 +297,12 @@ export async function getStoredSubscription(
   const db = getSupabaseAdmin();
 
   if (!db) {
-    console.error(
-      "[subscription/repository] Supabase service role client unavailable — cannot read subscription from database"
-    );
+    const message =
+      "[subscription/repository] Supabase service role client unavailable — cannot read subscription";
+    console.error(message);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(message);
+    }
     return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
   }
 
@@ -234,35 +319,34 @@ export async function getStoredSubscription(
     });
 
     if (isMissingUserSubscriptionsSchemaError(error.message)) {
-      console.error(
-        "[subscription/repository] user_subscriptions table missing on read — apply migrations 006–008"
-      );
       return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
     }
 
     if (isSupabaseNetworkError(error.message)) {
       const cached = memoryStore.get(normalizedUserId);
-      if (cached) {
-        console.warn(
-          "[subscription/repository] Supabase unreachable — serving cached subscription for",
-          normalizedUserId
-        );
-        return cached;
-      }
-      throw new Error(
-        "Could not reach Supabase to load subscription. Check NEXT_PUBLIC_SUPABASE_URL."
-      );
+      if (cached) return cached;
+      throw new Error(`Supabase network error on read: ${error.message}`);
     }
 
     throw new Error(error.message);
   }
 
   if (!data) {
+    console.log("[subscription/repository] no row for user — defaulting to free", {
+      user_id: normalizedUserId,
+    });
     return createDefaultStored(normalizedUserId);
   }
 
   const subscription = mapRow(data as UserSubscriptionRow);
   memoryStore.set(normalizedUserId, subscription);
+
+  console.log("[subscription/repository] getStoredSubscription hit", {
+    user_id: subscription.userId,
+    plan_id: subscription.planId,
+    razorpay_subscription_id: subscription.razorpaySubscriptionId,
+  });
+
   return subscription;
 }
 

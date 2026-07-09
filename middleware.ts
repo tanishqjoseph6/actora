@@ -1,18 +1,22 @@
 import { configureNextAuthEnv } from "@/lib/auth/nextauth-url";
+import { resolveSafeCallbackUrl } from "@/lib/auth/safe-redirect";
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
 configureNextAuthEnv();
 
 /** Public routes that logged-in users should leave immediately. */
-const AUTH_ENTRY_PATHS = new Set(["/", "/login"]);
+const AUTH_ENTRY_PATHS = new Set(["/", "/login", "/signup"]);
 
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
 
     if (req.nextauth.token && AUTH_ENTRY_PATHS.has(pathname)) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      const callbackUrl = resolveSafeCallbackUrl(
+        req.nextUrl.searchParams.get("callbackUrl")
+      );
+      return NextResponse.redirect(new URL(callbackUrl, req.url));
     }
 
     return NextResponse.next();
@@ -36,5 +40,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/", "/login", "/dashboard", "/dashboard/:path*", "/billing"],
+  matcher: ["/", "/login", "/signup", "/dashboard", "/dashboard/:path*", "/billing"],
 };

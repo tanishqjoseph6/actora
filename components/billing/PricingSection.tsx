@@ -61,7 +61,11 @@ export function PricingSection({
 }: PricingSectionProps) {
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
-  const { upgradePlan, refresh: refreshSubscription } = useSubscription();
+  const {
+    upgradePlan,
+    refresh: refreshSubscription,
+    applySubscription,
+  } = useSubscription();
   const { currency, setCurrency } = useBillingCurrency();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
@@ -73,9 +77,12 @@ export function PricingSection({
   );
 
   const { openCheckout } = useRazorpayCheckout({
-    onSuccess: async (planId, planName) => {
-      await refreshSubscription();
+    onSuccess: async (planId, planName, subscription) => {
+      if (subscription) {
+        applySubscription(subscription);
+      }
       await updateSession({ planId });
+      await refreshSubscription();
       closeUpgrade();
       await onPaymentSuccess?.();
       queuePlanActivationToast(

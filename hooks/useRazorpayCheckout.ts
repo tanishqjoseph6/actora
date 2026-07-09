@@ -2,12 +2,19 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { fetchJson } from "@/lib/api/fetch-json";
 import type { BillingPeriod } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "@/lib/billing/currency";
-import type { PlanId } from "@/lib/subscription";
+import type { PlanId, SubscriptionSnapshot } from "@/lib/subscription";
 import type { RazorpayPaymentResponse } from "@/types/razorpay";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+const VERIFY_MAX_RETRIES = 3;
+const VERIFY_RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function loadRazorpayScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -37,7 +44,11 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 type CheckoutCallbacks = {
-  onSuccess?: (planId: PlanId, planName: string) => void;
+  onSuccess?: (
+    planId: PlanId,
+    planName: string,
+    subscription?: SubscriptionSnapshot
+  ) => void;
   onFailure?: (message: string) => void;
   onCancel?: () => void;
 };
@@ -105,50 +116,67 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
 
         return await new Promise<boolean>((resolve) => {
           const handler = async (response: RazorpayPaymentResponse) => {
-            try {
-              const verifyRes = await fetch(
-                "/api/payments/razorpay/verify",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ...response,
-                    planId,
-                    period,
-                    currency,
-                    razorpayPlanId: orderData.razorpayPlanId,
-                  }),
-                }
-              );
+            const verifyPayload = {
+              ...response,
+              planId,
+              period,
+              currency,
+              razorpayPlanId: orderData.razorpayPlanId,
+            };
 
-              const verifyData = await verifyRes.json();
+            let lastError = "Payment verification failed.";
 
-              if (!verifyRes.ok) {
-                console.error("[razorpay/checkout] verify failed", {
-                  status: verifyRes.status,
-                  error: verifyData.error,
+            for (let attempt = 0; attempt < VERIFY_MAX_RETRIES; attempt += 1) {
+              const verifyResult = await fetchJson<{
+                success?: boolean;
+                subscription?: SubscriptionSnapshot;
+                error?: string;
+              }>("/api/payments/razorpay/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(verifyPayload),
+              });
+
+              if (verifyResult.ok) {
+                const verifiedPlanId =
+                  verifyResult.data.subscription?.planId ?? planId;
+                const planName =
+                  verifyResult.data.subscription?.planName ?? planId;
+                console.log("[razorpay/checkout] verify success", {
+                  planId: verifiedPlanId,
+                  planName,
+                  attempt,
                 });
-                callbacksRef.current?.onFailure?.(
-                  verifyData.error ?? "Payment verification failed."
+                callbacksRef.current?.onSuccess?.(
+                  verifiedPlanId,
+                  planName,
+                  verifyResult.data.subscription
                 );
-                resolve(false);
+                resolve(true);
                 return;
               }
 
-              const verifiedPlanId =
-                (verifyData.subscription?.planId as PlanId | undefined) ?? planId;
-              const planName =
-                verifyData.subscription?.planName ?? planId;
-              console.log("[razorpay/checkout] verify success", {
-                planId: verifiedPlanId,
-                planName,
+              lastError = verifyResult.error.message;
+              console.error("[razorpay/checkout] verify failed", {
+                attempt,
+                status: verifyResult.error.status,
+                error: verifyResult.error.message,
               });
-              callbacksRef.current?.onSuccess?.(verifiedPlanId, planName);
-              resolve(true);
-            } catch {
-              callbacksRef.current?.onFailure?.("Payment verification failed.");
-              resolve(false);
+
+              if (
+                verifyResult.error.status &&
+                verifyResult.error.status < 500
+              ) {
+                break;
+              }
+
+              if (attempt < VERIFY_MAX_RETRIES - 1) {
+                await sleep(VERIFY_RETRY_DELAY_MS);
+              }
             }
+
+            callbacksRef.current?.onFailure?.(lastError);
+            resolve(false);
           };
 
           const rzp = orderData.subscriptionId

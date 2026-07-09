@@ -96,10 +96,10 @@ export function requireSupabaseAdmin(): SupabaseClient {
   if (db) return db;
 
   const missing: string[] = [];
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  if (!trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
     missing.push("NEXT_PUBLIC_SUPABASE_URL");
   }
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
     missing.push("SUPABASE_SERVICE_ROLE_KEY");
   }
 
@@ -110,7 +110,8 @@ export function requireSupabaseAdmin(): SupabaseClient {
 
 export function isSupabaseConfigured(): boolean {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+      trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)
   );
 }
 

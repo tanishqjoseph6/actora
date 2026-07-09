@@ -117,7 +117,9 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -179,7 +181,7 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, account, trigger, session, user }) {
-      if (account) {
+      if (account || user) {
         let planId = token.planId ?? "free";
         const email = user?.email ?? token.email;
         if (email) {
@@ -193,15 +195,19 @@ export const authOptions: NextAuthOptions = {
           }
         }
 
-        return {
-          ...token,
-          accessToken: account.access_token,
-          refreshToken: account.refresh_token ?? token.refreshToken,
-          accessTokenExpires: account.expires_at
-            ? account.expires_at * 1000
-            : Date.now() + 3600 * 1000,
-          planId,
-        };
+        if (account) {
+          return {
+            ...token,
+            accessToken: account.access_token,
+            refreshToken: account.refresh_token ?? token.refreshToken,
+            accessTokenExpires: account.expires_at
+              ? account.expires_at * 1000
+              : Date.now() + 3600 * 1000,
+            planId,
+          };
+        }
+
+        return { ...token, planId };
       }
 
       if (trigger === "update" && session?.planId) {

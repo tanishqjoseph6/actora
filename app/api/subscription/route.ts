@@ -9,6 +9,9 @@ import {
   toSubscriptionSnapshot,
 } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+import { isSupabaseConfigured } from "@/lib/supabase-admin";
+
+export const maxDuration = 60;
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -23,6 +26,17 @@ export async function GET() {
     return NextResponse.json(
       { error: "Not authenticated." },
       { status: 401 }
+    );
+  }
+
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "Subscription database is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
+        code: "CONFIG_ERROR",
+      },
+      { status: 503 }
     );
   }
 

@@ -10,6 +10,7 @@ type UseSubscriptionResult = {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  applySubscription: (snapshot: SubscriptionSnapshot) => void;
   upgradePlan: (planId: PlanId, billingInterval?: BillingInterval) => Promise<boolean>;
 };
 
@@ -25,6 +26,15 @@ export function useSubscription(): UseSubscriptionResult {
     ? session.user.email.trim().toLowerCase()
     : undefined;
   const sessionPlanId = (session as { planId?: PlanId } | null)?.planId;
+
+  const applySubscription = useCallback((snapshot: SubscriptionSnapshot) => {
+    console.log("[useSubscription] applySubscription", {
+      planId: snapshot.planId,
+    });
+    setSubscription(snapshot);
+    setLoading(false);
+    setError(null);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (status === "loading") {
@@ -98,5 +108,5 @@ export function useSubscription(): UseSubscriptionResult {
     [updateSession]
   );
 
-  return { subscription, loading, error, refresh, upgradePlan };
+  return { subscription, loading, error, refresh, applySubscription, upgradePlan };
 }
