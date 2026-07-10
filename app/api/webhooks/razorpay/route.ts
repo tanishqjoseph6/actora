@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, ...result });
   } catch (error) {
     logApiError("razorpay-webhook", error, {
-      usesServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+      usesServiceRole: isSupabaseConfigured(),
     });
     return NextResponse.json(
       {

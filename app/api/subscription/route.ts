@@ -33,7 +33,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error:
-          "Subscription database is not configured. Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.",
+          "Subscription database is not configured. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY for the same Supabase project.",
         code: "CONFIG_ERROR",
       },
       { status: 503 }

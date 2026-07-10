@@ -1,13 +1,15 @@
-import { NextResponse } from "next/server";
 import { getGoogleOAuthCallbackUrl, resolveAuthUrl } from "@/lib/auth/nextauth-url";
 import { checkGmailAuthEnv } from "@/lib/env/gmail-auth";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
+import { validateSupabaseProject } from "@/lib/supabase/config";
 import { getConfiguredRazorpayPlanIds } from "@/lib/billing/razorpay-plans";
 import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const gmailEnv = checkGmailAuthEnv();
   const razorpayPlans = getConfiguredRazorpayPlanIds();
+  const supabaseProject = validateSupabaseProject();
 
   const checks = {
     auth: {
@@ -20,8 +22,15 @@ export async function GET() {
     },
     supabase: {
       configured: isSupabaseConfigured(),
-      url: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      serviceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      projectRef: supabaseProject.projectRef,
+      sameProject: supabaseProject.sameProject,
+      url: supabaseProject.url,
+      hasAnonKey: supabaseProject.hasAnonKey,
+      hasServiceRoleKey: supabaseProject.hasServiceRoleKey,
+      serviceRole: supabaseProject.serviceRole,
+      deprecatedKeysPresent: supabaseProject.deprecatedKeysPresent,
+      missing: supabaseProject.missing,
+      warnings: supabaseProject.warnings,
     },
     gmail: gmailEnv,
     razorpay: {
@@ -38,6 +47,7 @@ export async function GET() {
     checks.auth.googleClientSecret &&
     checks.auth.nextAuthSecret &&
     checks.supabase.configured &&
+    supabaseProject.ok &&
     checks.gmail.ok &&
     (!checks.razorpay.connected ||
       (checks.razorpay.keyId &&

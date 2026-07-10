@@ -1,7 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { createClient } from "@supabase/supabase-js";
 import type { JWT } from "next-auth/jwt";
 import { refreshGoogleAccessToken } from "@/lib/auth/refresh-google-token";
 import {
@@ -10,6 +9,11 @@ import {
   resolveAuthUrl,
   shouldUseSecureCookies,
 } from "@/lib/auth/nextauth-url";
+import { createSupabaseAnonClient } from "@/lib/supabase/create-anon-client";
+import {
+  logSupabaseProjectValidation,
+  SUPABASE_ENV,
+} from "@/lib/supabase/config";
 import { getStoredSubscription } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
@@ -81,6 +85,7 @@ function extractOAuthRootCause(payload: unknown): string | null {
 }
 
 assertRequiredAuthEnv();
+logSupabaseProjectValidation("next-auth");
 
 if (process.env.NODE_ENV === "development") {
   console.log("[next-auth] Auth URL:", resolveAuthUrl());
@@ -109,46 +114,47 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        try {
+          const supabase = createSupabaseAnonClient({ persistSession: false });
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
-        if (!supabaseUrl || !supabaseAnonKey) {
-          console.error("[next-auth] Supabase env vars missing for credentials sign-in");
-          return null;
-        }
+          if (error) {
+            if (error.message === "Email not confirmed") {
+              throw new Error("Email not confirmed");
+            }
+            return null;
+          }
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+          if (!data.user) {
+            return null;
+          }
 
-        if (error) {
-          if (error.message === "Email not confirmed") {
+          if (!data.user.email_confirmed_at) {
+            await supabase.auth.signOut();
             throw new Error("Email not confirmed");
           }
+
+          return {
+            id: data.user.id,
+            email: data.user.email ?? email,
+            name:
+              (data.user.user_metadata?.full_name as string | undefined) ??
+              data.user.email?.split("@")[0] ??
+              "User",
+          };
+        } catch (error) {
+          if (error instanceof Error && error.message === "Email not confirmed") {
+            throw error;
+          }
+          console.error(
+            `[next-auth] Supabase credentials sign-in failed. Ensure ${SUPABASE_ENV.URL} and ${SUPABASE_ENV.ANON_KEY} are set for the same project.`,
+            error
+          );
           return null;
         }
-
-        if (!data.user) {
-          return null;
-        }
-
-        if (!data.user.email_confirmed_at) {
-          await supabase.auth.signOut();
-          throw new Error("Email not confirmed");
-        }
-
-        return {
-          id: data.user.id,
-          email: data.user.email ?? email,
-          name:
-            (data.user.user_metadata?.full_name as string | undefined) ??
-            data.user.email?.split("@")[0] ??
-            "User",
-        };
       },
     }),
     GoogleProvider({

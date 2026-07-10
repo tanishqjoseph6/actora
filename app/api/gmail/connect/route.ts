@@ -14,6 +14,7 @@ import {
 } from "@/lib/gmail/oauth";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
 import { logGmailAuthEnv } from "@/lib/env/gmail-auth";
+import { logSupabaseProjectValidation } from "@/lib/supabase/config";
 import {
   canConnectInbox,
   subscriptionProvider,
@@ -30,6 +31,7 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   const envStatus = logGmailAuthEnv("gmail/connect");
+  logSupabaseProjectValidation("gmail/connect");
 
   console.log("[gmail/connect] step:start", {
     envOk: envStatus.ok,

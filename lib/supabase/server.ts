@@ -1,31 +1,26 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  extractJwtRole,
+  getSupabaseServiceRoleKey,
+  getSupabaseUrl,
+  isSupabaseAdminConfigured,
+  SUPABASE_ENV,
+  trimEnv,
+} from "./config";
 
 let adminClient: SupabaseClient | null = null;
 let adminClientUrl: string | null = null;
-
-function trimEnv(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed || undefined;
-}
+let adminClientKey: string | null = null;
 
 /** Warn if the configured key does not look like a Supabase service_role JWT. */
 function assertServiceRoleKey(key: string): void {
-  try {
-    const parts = key.split(".");
-    if (parts.length < 2) return;
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf8")
-    ) as { role?: string };
-
-    if (payload.role && payload.role !== "service_role") {
-      console.error(
-        "[supabase] SUPABASE_SERVICE_ROLE_KEY has role",
-        payload.role,
-        "— expected service_role. Webhook/subscription writes will fail under RLS."
-      );
-    }
-  } catch {
-    // Non-JWT keys are unusual but do not block client creation.
+  const role = extractJwtRole(key);
+  if (role && role !== "service_role") {
+    console.error(
+      `[supabase] ${SUPABASE_ENV.SERVICE_ROLE_KEY} has role`,
+      role,
+      "— expected service_role. Database writes will fail under RLS."
+    );
   }
 }
 
@@ -49,19 +44,19 @@ export function isMissingRazorpayColumnError(message: string): boolean {
 }
 
 /**
- * Server-only Supabase client with service role for automation persistence.
- * Uses the same @supabase/supabase-js package as lib/supabase.ts.
+ * Server-only Supabase client with service role for database persistence.
+ * Reads only NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  */
 export function getSupabaseAdmin(): SupabaseClient | null {
-  const url = trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
-  const serviceKey = trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const url = getSupabaseUrl();
+  const serviceKey = getSupabaseServiceRoleKey();
 
   if (!url || !serviceKey) {
     if (process.env.NODE_ENV === "production") {
       console.error(
         "[supabase] Admin client unavailable in production. Missing:",
-        !url ? "NEXT_PUBLIC_SUPABASE_URL" : null,
-        !serviceKey ? "SUPABASE_SERVICE_ROLE_KEY" : null
+        !url ? SUPABASE_ENV.URL : null,
+        !serviceKey ? SUPABASE_ENV.SERVICE_ROLE_KEY : null
       );
     }
     return null;
@@ -69,7 +64,11 @@ export function getSupabaseAdmin(): SupabaseClient | null {
 
   assertServiceRoleKey(serviceKey);
 
-  if (!adminClient || adminClientUrl !== url) {
+  if (
+    !adminClient ||
+    adminClientUrl !== url ||
+    adminClientKey !== serviceKey
+  ) {
     adminClient = createClient(url, serviceKey, {
       auth: {
         persistSession: false,
@@ -85,22 +84,23 @@ export function getSupabaseAdmin(): SupabaseClient | null {
       },
     });
     adminClientUrl = url;
+    adminClientKey = serviceKey;
   }
 
   return adminClient;
 }
 
-/** Service-role client for writes that must persist (billing, etc.). Throws if misconfigured. */
+/** Service-role client for writes that must persist. Throws if misconfigured. */
 export function requireSupabaseAdmin(): SupabaseClient {
   const db = getSupabaseAdmin();
   if (db) return db;
 
   const missing: string[] = [];
-  if (!trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)) {
-    missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!trimEnv(process.env[SUPABASE_ENV.URL])) {
+    missing.push(SUPABASE_ENV.URL);
   }
-  if (!trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
-    missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!trimEnv(process.env[SUPABASE_ENV.SERVICE_ROLE_KEY])) {
+    missing.push(SUPABASE_ENV.SERVICE_ROLE_KEY);
   }
 
   const message = `[supabase] Service role client required but unavailable. Missing: ${missing.join(", ")}`;
@@ -109,10 +109,7 @@ export function requireSupabaseAdmin(): SupabaseClient {
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-      trimEnv(process.env.SUPABASE_SERVICE_ROLE_KEY)
-  );
+  return isSupabaseAdminConfigured();
 }
 
 /** True when PostgREST reports the automations schema is missing. */

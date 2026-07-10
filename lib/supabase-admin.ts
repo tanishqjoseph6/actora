@@ -9,3 +9,15 @@ export {
   isMissingUserUsageSchemaError,
   isMissingUserSubscriptionsSchemaError,
 } from "./supabase/server";
+
+export {
+  SUPABASE_ENV,
+  validateSupabaseProject,
+  logSupabaseProjectValidation,
+  getSupabaseUrl,
+  getSupabaseAnonKey,
+  getSupabaseServiceRoleKey,
+} from "./supabase/config";
+
+export { createSupabaseAnonClient } from "./supabase/create-anon-client";
+export { getSupabaseBrowserClient, supabase } from "./supabase/client";
