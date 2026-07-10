@@ -9,7 +9,6 @@ import {
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isPaidPlan } from "@/lib/billing/pricing";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
-import { isSupabaseConfigured } from "@/lib/supabase-admin";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -17,17 +16,6 @@ export async function POST(request: NextRequest) {
 
   if (!sessionEmail) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
-
-  if (!isSupabaseConfigured()) {
-    console.error("[checkout] Supabase service role not configured");
-    return NextResponse.json(
-      {
-        error: "Subscription storage is not configured. Contact support.",
-        code: "CONFIG_ERROR",
-      },
-      { status: 503 }
-    );
   }
 
   const userId = normalizeSubscriptionUserId(sessionEmail);

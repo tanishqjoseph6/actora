@@ -13,8 +13,7 @@ import {
   getGmailProfileEmail,
 } from "@/lib/gmail/oauth";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
-import { logGmailAuthEnv } from "@/lib/env/gmail-auth";
-import { logSupabaseProjectValidation } from "@/lib/supabase/config";
+import { getStoredSubscription } from "@/lib/subscription/repository";
 import {
   canConnectInbox,
   subscriptionProvider,
@@ -24,32 +23,11 @@ import {
 export const maxDuration = 60;
 
 /**
- * Persist Gmail OAuth tokens to gmail_accounts, then return immediately.
- * Initial inbox sync runs in the background via after() so the client
- * never hits a serverless timeout → TypeError: fetch failed.
+ * Persist Gmail OAuth tokens to gmail_accounts, verify the row exists, then respond.
+ * Inbox sync runs in after() so the client never hits a serverless timeout.
  */
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
-  const envStatus = logGmailAuthEnv("gmail/connect");
-  logSupabaseProjectValidation("gmail/connect");
-
-  console.log("[gmail/connect] step:start", {
-    envOk: envStatus.ok,
-    missing: envStatus.missing,
-    googleCallbackUrl: envStatus.googleCallbackUrl,
-  });
-
-  if (!envStatus.ok) {
-    return NextResponse.json(
-      {
-        error:
-          "Gmail connection is not configured on the server. Missing required environment variables.",
-        code: "CONFIG_ERROR",
-        missing: envStatus.missing,
-      },
-      { status: 503 }
-    );
-  }
 
   const auth = await getConnectableTokens(request);
 
@@ -98,14 +76,28 @@ export async function POST(request: NextRequest) {
     });
 
     if (!existing) {
-      const subscription = await subscriptionProvider.getSubscription(userId);
-      const gate = canConnectInbox(subscription.planId, subscription.usage);
+      const [inboxCount, storedPlan] = await Promise.all([
+        gmailAccountRepository.countAccounts(userId),
+        getStoredSubscription(userId).catch((planError) => {
+          logApiError("gmail/connect", planError, {
+            userId,
+            phase: "plan_lookup",
+          });
+          return null;
+        }),
+      ]);
+
+      const planId = storedPlan?.planId ?? "free";
+      const gate = canConnectInbox(planId, {
+        aiActionsUsed: 0,
+        inboxesConnected: inboxCount,
+      });
 
       if (!gate.allowed) {
         console.warn("[gmail/connect] step:plan-limit", {
           userId,
-          planId: subscription.planId,
-          inboxesConnected: subscription.usage.inboxesConnected,
+          planId,
+          inboxCount,
           reason: gate.reason,
         });
         return NextResponse.json(
@@ -135,10 +127,16 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log("[gmail/connect] step:upsert-ok", {
+    const verified = await gmailAccountRepository.verifyPersisted(
       userId,
-      accountId: account.id,
-      email: account.email,
+      gmailEmail,
+      account.id
+    );
+
+    console.log("[gmail/connect] step:upsert-verified", {
+      userId,
+      accountId: verified.id,
+      email: verified.email,
       isNew,
       elapsedMs: Date.now() - startedAt,
     });
@@ -147,7 +145,6 @@ export async function POST(request: NextRequest) {
       try {
         await subscriptionProvider.recordInboxConnection(userId);
       } catch (usageError) {
-        // Account is already saved — do not fail the connect response.
         logApiError("gmail/connect", usageError, {
           userId,
           gmailEmail,
@@ -156,8 +153,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Defer heavy Gmail inbox sync so the HTTP response is not killed by
-    // serverless timeout (root cause of client TypeError: fetch failed).
     after(async () => {
       try {
         console.log("[gmail/connect] step:background-sync-start", {
@@ -198,14 +193,14 @@ export async function POST(request: NextRequest) {
 
     console.log("[gmail/connect] step:response", {
       userId,
-      email: account.email,
+      email: verified.email,
       isNew,
       accountCount: accounts.length,
       elapsedMs: Date.now() - startedAt,
     });
 
     return NextResponse.json({
-      account: toPublicGmailAccount(account),
+      account: toPublicGmailAccount(verified),
       isNew,
       reconnected: !isNew,
       syncedCount: 0,
@@ -220,9 +215,14 @@ export async function POST(request: NextRequest) {
       elapsedMs: Date.now() - startedAt,
     });
     const mapped = gmailErrorResponse(error);
+    const dbMessage = error instanceof Error ? error.message : String(error);
 
     return NextResponse.json(
-      { error: mapped.error, code: mapped.code },
+      {
+        error: mapped.error,
+        code: mapped.code,
+        details: dbMessage,
+      },
       { status: mapped.status }
     );
   }

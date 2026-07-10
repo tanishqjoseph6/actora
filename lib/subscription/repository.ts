@@ -5,6 +5,11 @@ import {
   isSupabaseNetworkError,
   requireSupabaseAdmin,
 } from "@/lib/supabase-admin";
+import {
+  formatPostgrestError,
+  logDbWriteResult,
+  logDbWriteStart,
+} from "@/lib/supabase/db-log";
 import { logApiError } from "@/lib/api/log-error";
 import type { UserSubscriptionRow } from "@/lib/supabase/database.types";
 import type { BillingInterval, PlanId, SubscriptionStatus } from "./types";
@@ -28,6 +33,9 @@ export type SubscriptionUpsertMetadata = {
   currentPeriodEnd?: string;
   status?: SubscriptionStatus;
 };
+
+const TABLE = "user_subscriptions";
+const SCOPE = "subscription/repository";
 
 const memoryStore = new Map<string, StoredSubscription>();
 
@@ -128,19 +136,18 @@ async function executeUpsert(
 ): Promise<UpsertResult> {
   const payload = buildUpsertPayload(row, includeRazorpayColumns);
 
-  console.log("[subscription/repository] executeUpsert request", {
-    table: "user_subscriptions",
+  logDbWriteStart(SCOPE, "upsert", TABLE, {
     onConflict: "user_id",
     includeRazorpayColumns,
     payload,
   });
 
   const { data, error, status, statusText } = await db
-    .from("user_subscriptions")
+    .from(TABLE)
     .upsert(payload, { onConflict: "user_id" })
     .select("*");
 
-  console.log("[subscription/repository] executeUpsert response", {
+  logDbWriteResult(SCOPE, "upsert", TABLE, {
     httpStatus: status,
     statusText,
     error,
@@ -152,21 +159,26 @@ async function executeUpsert(
     return { data: null, error };
   }
 
-  const saved = Array.isArray(data) ? (data[0] as UserSubscriptionRow) : (data as UserSubscriptionRow | null);
+  const saved = Array.isArray(data)
+    ? (data[0] as UserSubscriptionRow)
+    : (data as UserSubscriptionRow | null);
   if (saved) {
     return { data: saved, error: null };
   }
 
-  const { data: readBack, error: readError } = await db
-    .from("user_subscriptions")
-    .select("*")
-    .eq("user_id", row.user_id)
-    .maybeSingle();
+  const { data: readBack, error: readError, status: readStatus, statusText: readStatusText } =
+    await db
+      .from(TABLE)
+      .select("*")
+      .eq("user_id", row.user_id)
+      .maybeSingle();
 
-  console.log("[subscription/repository] executeUpsert read-back", {
-    user_id: row.user_id,
-    readBack,
-    readError,
+  logDbWriteResult(SCOPE, "upsert-read-back", TABLE, {
+    httpStatus: readStatus,
+    statusText: readStatusText,
+    error: readError,
+    rows: readBack ? 1 : 0,
+    data: readBack,
   });
 
   if (readError) {
@@ -262,9 +274,7 @@ export async function upsertUserSubscription(
     }
 
     throw new Error(
-      `Failed to upsert user_subscriptions: ${result.error.message}` +
-        (result.error.code ? ` (${result.error.code})` : "") +
-        (result.error.details ? ` — ${result.error.details}` : "")
+      `Failed to upsert user_subscriptions: ${formatPostgrestError(result.error)}`
     );
   }
 
@@ -275,6 +285,31 @@ export async function upsertUserSubscription(
   }
 
   const stored = mapRow(result.data);
+
+  const { data: verifyRow, error: verifyError } = await db
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", normalizedUserId)
+    .maybeSingle();
+
+  logDbWriteResult(SCOPE, "upsert-verify", TABLE, {
+    error: verifyError,
+    rows: verifyRow ? 1 : 0,
+    data: verifyRow,
+  });
+
+  if (verifyError || !verifyRow) {
+    throw new Error(
+      `user_subscriptions upsert verify failed for ${normalizedUserId}: ${formatPostgrestError(verifyError ?? { message: "row not found after upsert" })}`
+    );
+  }
+
+  if ((verifyRow as UserSubscriptionRow).plan_id !== planId) {
+    throw new Error(
+      `user_subscriptions verify plan mismatch: expected ${planId}, got ${(verifyRow as UserSubscriptionRow).plan_id}`
+    );
+  }
+
   memoryStore.set(normalizedUserId, stored);
 
   console.log("[subscription/repository] upsertUserSubscription success", {

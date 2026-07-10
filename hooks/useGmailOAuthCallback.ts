@@ -176,10 +176,8 @@ export function useGmailOAuthCallback(options?: {
     if (inFlightRef.current) return;
 
     if (typeof window !== "undefined") {
-      if (sessionStorage.getItem(CONNECT_IDEMPOTENCY_KEY) === "done") {
-        clearCallbackParam();
-        return;
-      }
+      // Always allow retry — prior "done" may have been set before a failed DB write.
+      sessionStorage.removeItem(CONNECT_IDEMPOTENCY_KEY);
     }
 
     if (sessionStatus === "loading") return;

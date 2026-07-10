@@ -17,7 +17,6 @@ import {
 } from "@/lib/subscription";
 import { setStoredPlan } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
-import { isSupabaseConfigured } from "@/lib/supabase-admin";
 
 function noteMatches(
   actual: string | undefined,
@@ -51,18 +50,6 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = normalizeSubscriptionUserId(sessionEmail);
-
-  if (!isSupabaseConfigured()) {
-    console.error("[razorpay/verify] step:config — Supabase service role not configured");
-    return NextResponse.json(
-      {
-        error:
-          "Subscription storage is not configured. Contact support.",
-        code: "CONFIG_ERROR",
-      },
-      { status: 503 }
-    );
-  }
 
   try {
     const body = await request.json();
@@ -292,6 +279,9 @@ export async function POST(request: NextRequest) {
     const message =
       error instanceof Error ? error.message : "Failed to verify payment.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message, details: message },
+      { status: 500 }
+    );
   }
 }

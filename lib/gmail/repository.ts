@@ -4,7 +4,12 @@ import {
   isSupabaseNetworkError,
   requireSupabaseAdmin,
 } from "@/lib/supabase-admin";
-import { logApiError } from "@/lib/api/log-error";
+import {
+  formatPostgrestError,
+  logDbWriteResult,
+  logDbWriteStart,
+  throwDbWriteError,
+} from "@/lib/supabase/db-log";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { memoryGmailAccountStore } from "./memory-store";
 import type {
@@ -23,6 +28,9 @@ type GmailAccountRow = {
   last_synced_at: string | null;
   last_sync_count: number;
 };
+
+const TABLE = "gmail_accounts";
+const SCOPE = "gmail/repository";
 
 function mapRow(row: GmailAccountRow): GmailAccountRecord {
   return {
@@ -52,12 +60,26 @@ function isUniqueViolation(error: { message?: string; code?: string }): boolean 
   );
 }
 
+function useMemoryFallback(): boolean {
+  return process.env.NODE_ENV !== "production";
+}
+
 export class GmailAccountRepository {
-  private client() {
+  private clientForRead() {
     if (process.env.NODE_ENV === "production") {
       return requireSupabaseAdmin();
     }
     return getSupabaseAdmin();
+  }
+
+  private clientForWrite() {
+    if (process.env.NODE_ENV === "production") {
+      return requireSupabaseAdmin();
+    }
+    const db = getSupabaseAdmin();
+    if (db) return db;
+    if (useMemoryFallback()) return null;
+    return requireSupabaseAdmin();
   }
 
   private handleDbError(
@@ -65,23 +87,17 @@ export class GmailAccountRepository {
     error: { message: string; code?: string; details?: string; hint?: string },
     context?: Record<string, unknown>
   ): never {
-    logApiError("gmail/repository", error, { operation, ...context });
-
     if (isMissingGmailSchemaError(error.message)) {
       throw new Error(
-        "Gmail account tables not found. Run supabase/migrations/002_gmail_accounts.sql in the Supabase SQL Editor."
+        `gmail_accounts schema missing — run supabase/migrations/002_gmail_accounts.sql: ${formatPostgrestError(error)}`
       );
     }
     if (isSupabaseNetworkError(error.message)) {
       throw new Error(
-        `Could not reach Supabase during ${operation}: ${error.message}`
+        `Supabase network error during ${operation}: ${error.message}`
       );
     }
-    throw new Error(
-      `${operation} failed: ${error.message}` +
-        (error.code ? ` (${error.code})` : "") +
-        (error.details ? ` — ${error.details}` : "")
-    );
+    throwDbWriteError(SCOPE, operation, TABLE, error, context);
   }
 
   private normalizeUserId(userId: string): string {
@@ -90,25 +106,30 @@ export class GmailAccountRepository {
 
   async listAccounts(userId: string): Promise<GmailAccountRecord[]> {
     const normalizedUserId = this.normalizeUserId(userId);
-    const db = this.client();
+    const db = this.clientForRead();
+
     if (!db) {
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for listAccounts");
+      }
       return memoryGmailAccountStore.listAccounts(normalizedUserId);
     }
 
-    console.log("[gmail/repository] listAccounts", { user_id: normalizedUserId });
-
-    const { data, error } = await db
-      .from("gmail_accounts")
+    const { data, error, status, statusText } = await db
+      .from(TABLE)
       .select("*")
       .eq("user_id", normalizedUserId)
       .order("connected_at", { ascending: false });
 
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.listAccounts(normalizedUserId);
-      }
       this.handleDbError("listAccounts", error, { user_id: normalizedUserId });
     }
+
+    logDbWriteResult(SCOPE, "listAccounts", TABLE, {
+      httpStatus: status,
+      statusText,
+      rows: data?.length ?? 0,
+    });
 
     return (data as GmailAccountRow[]).map(mapRow);
   }
@@ -119,25 +140,26 @@ export class GmailAccountRepository {
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
     const normalizedEmail = normalizeEmail(email);
-    const db = this.client();
+    const db = this.clientForRead();
+
     if (!db) {
-      return memoryGmailAccountStore.getAccount(normalizedUserId, normalizedEmail);
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for getAccount");
+      }
+      return memoryGmailAccountStore.getAccount(
+        normalizedUserId,
+        normalizedEmail
+      );
     }
 
     const { data, error } = await db
-      .from("gmail_accounts")
+      .from(TABLE)
       .select("*")
       .eq("user_id", normalizedUserId)
       .eq("email", normalizedEmail)
       .maybeSingle();
 
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.getAccount(
-          normalizedUserId,
-          normalizedEmail
-        );
-      }
       this.handleDbError("getAccount", error, {
         user_id: normalizedUserId,
         email: normalizedEmail,
@@ -154,33 +176,38 @@ export class GmailAccountRepository {
 
   async countAccounts(userId: string): Promise<number> {
     const normalizedUserId = this.normalizeUserId(userId);
-    const db = this.client();
+    const db = this.clientForRead();
+
     if (!db) {
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for countAccounts");
+      }
       return memoryGmailAccountStore.countAccounts(normalizedUserId);
     }
 
     const { count, error } = await db
-      .from("gmail_accounts")
+      .from(TABLE)
       .select("*", { count: "exact", head: true })
       .eq("user_id", normalizedUserId);
 
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.countAccounts(normalizedUserId);
-      }
       this.handleDbError("countAccounts", error, { user_id: normalizedUserId });
     }
 
     return count ?? 0;
   }
 
+  /**
+   * Insert or update gmail_accounts. Duplicate (user_id, email) updates tokens in place.
+   */
   async upsertAccount(
     userId: string,
     input: UpsertGmailAccountInput
   ): Promise<{ account: GmailAccountRecord; isNew: boolean }> {
     const normalizedUserId = this.normalizeUserId(userId);
     const normalizedEmail = normalizeEmail(input.email);
-    const db = this.client();
+    const db = this.clientForWrite();
+
     if (!db) {
       return memoryGmailAccountStore.upsertAccount(normalizedUserId, {
         ...input,
@@ -190,7 +217,7 @@ export class GmailAccountRepository {
 
     const existing = await this.getAccount(normalizedUserId, normalizedEmail);
 
-    console.log("[gmail/repository] upsertAccount", {
+    logDbWriteStart(SCOPE, "upsertAccount", TABLE, {
       user_id: normalizedUserId,
       email: normalizedEmail,
       exists: Boolean(existing),
@@ -198,21 +225,30 @@ export class GmailAccountRepository {
     });
 
     if (existing) {
+      const updatePayload = {
+        access_token: input.accessToken,
+        refresh_token: input.refreshToken ?? existing.refreshToken,
+        token_expires_at: input.tokenExpiresAt ?? existing.tokenExpiresAt,
+      };
+
+      logDbWriteStart(SCOPE, "update", TABLE, {
+        account_id: existing.id,
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
+
       const { data, error, status, statusText } = await db
-        .from("gmail_accounts")
-        .update({
-          access_token: input.accessToken,
-          refresh_token: input.refreshToken ?? existing.refreshToken,
-          token_expires_at: input.tokenExpiresAt ?? existing.tokenExpiresAt,
-        })
+        .from(TABLE)
+        .update(updatePayload)
         .eq("id", existing.id)
         .select("*");
 
-      console.log("[gmail/repository] update response", {
+      logDbWriteResult(SCOPE, "update", TABLE, {
         httpStatus: status,
         statusText,
         error,
         rows: Array.isArray(data) ? data.length : 0,
+        data,
       });
 
       if (error) {
@@ -229,7 +265,7 @@ export class GmailAccountRepository {
 
       if (!row) {
         throw new Error(
-          `updateAccount returned no row for ${normalizedEmail}`
+          `updateAccount returned no row for ${normalizedEmail} (account_id=${existing.id})`
         );
       }
 
@@ -244,20 +280,19 @@ export class GmailAccountRepository {
       token_expires_at: input.tokenExpiresAt ?? null,
     };
 
-    console.log("[gmail/repository] insert request", {
+    logDbWriteStart(SCOPE, "insert", TABLE, {
       user_id: insertPayload.user_id,
       email: insertPayload.email,
       has_access_token: Boolean(insertPayload.access_token),
       has_refresh_token: Boolean(insertPayload.refresh_token),
-      token_expires_at: insertPayload.token_expires_at,
     });
 
     const { data, error, status, statusText } = await db
-      .from("gmail_accounts")
+      .from(TABLE)
       .insert(insertPayload)
       .select("*");
 
-    console.log("[gmail/repository] insert response", {
+    logDbWriteResult(SCOPE, "insert", TABLE, {
       httpStatus: status,
       statusText,
       error,
@@ -266,26 +301,34 @@ export class GmailAccountRepository {
     });
 
     if (error) {
-      // Race: another request inserted the same (user_id, email) — update instead.
       if (isUniqueViolation(error)) {
-        console.warn("[gmail/repository] unique violation — updating existing", {
+        console.warn(`[${SCOPE}] duplicate insert — updating existing row`, {
           user_id: normalizedUserId,
           email: normalizedEmail,
         });
         const raced = await this.getAccount(normalizedUserId, normalizedEmail);
         if (raced) {
-          const { data: updated, error: updateError } = await db
-            .from("gmail_accounts")
-            .update({
-              access_token: input.accessToken,
-              refresh_token: input.refreshToken ?? raced.refreshToken,
-              token_expires_at: input.tokenExpiresAt ?? raced.tokenExpiresAt,
-            })
-            .eq("id", raced.id)
-            .select("*");
+          const { data: updated, error: updateError, status, statusText } =
+            await db
+              .from(TABLE)
+              .update({
+                access_token: input.accessToken,
+                refresh_token: input.refreshToken ?? raced.refreshToken,
+                token_expires_at: input.tokenExpiresAt ?? raced.tokenExpiresAt,
+              })
+              .eq("id", raced.id)
+              .select("*");
+
+          logDbWriteResult(SCOPE, "updateAfterDuplicate", TABLE, {
+            httpStatus: status,
+            statusText,
+            error: updateError,
+            rows: Array.isArray(updated) ? updated.length : 0,
+            data: updated,
+          });
 
           if (updateError) {
-            this.handleDbError("updateAccountAfterRace", updateError, {
+            this.handleDbError("updateAfterDuplicate", updateError, {
               user_id: normalizedUserId,
               email: normalizedEmail,
             });
@@ -298,16 +341,8 @@ export class GmailAccountRepository {
           if (racedRow) {
             return { account: mapRow(racedRow), isNew: false };
           }
-
           return { account: raced, isNew: false };
         }
-      }
-
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.upsertAccount(normalizedUserId, {
-          ...input,
-          email: normalizedEmail,
-        });
       }
 
       this.handleDbError("insertAccount", error, {
@@ -316,28 +351,57 @@ export class GmailAccountRepository {
       });
     }
 
-    const row = Array.isArray(data)
+    let row = Array.isArray(data)
       ? (data[0] as GmailAccountRow | undefined)
       : (data as GmailAccountRow | null);
 
     if (!row) {
-      // Insert may have succeeded without returning a row — read back.
       const readBack = await this.getAccount(normalizedUserId, normalizedEmail);
-      if (readBack) {
-        return { account: readBack, isNew: true };
+      if (!readBack) {
+        throw new Error(
+          `insertAccount succeeded but row not readable for ${normalizedEmail}`
+        );
       }
-      throw new Error(
-        `insertAccount returned no row for ${normalizedEmail} after insert`
-      );
+      row = {
+        id: readBack.id,
+        user_id: readBack.userId,
+        email: readBack.email,
+        access_token: readBack.accessToken,
+        refresh_token: readBack.refreshToken,
+        token_expires_at: readBack.tokenExpiresAt,
+        connected_at: readBack.connectedAt,
+        last_synced_at: readBack.lastSyncedAt,
+        last_sync_count: readBack.lastSyncCount,
+      };
     }
 
-    console.log("[gmail/repository] insert success", {
+    console.log(`[${SCOPE}] insert verified`, {
       id: row.id,
       user_id: row.user_id,
       email: row.email,
     });
 
     return { account: mapRow(row), isNew: true };
+  }
+
+  /** Confirm a row exists in Supabase after upsert (production safety check). */
+  async verifyPersisted(
+    userId: string,
+    email: string,
+    expectedId?: string
+  ): Promise<GmailAccountRecord> {
+    const saved = await this.getAccount(userId, email);
+    if (!saved) {
+      throw new Error(
+        `gmail_accounts verify failed: no row for user_id=${normalizeSubscriptionUserId(userId)} email=${normalizeEmail(email)}`
+      );
+    }
+    if (expectedId && saved.id !== expectedId) {
+      throw new Error(
+        `gmail_accounts verify failed: id mismatch expected=${expectedId} actual=${saved.id}`
+      );
+    }
+    return saved;
   }
 
   async updateTokens(
@@ -351,8 +415,12 @@ export class GmailAccountRepository {
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
     const normalizedEmail = normalizeEmail(email);
-    const db = this.client();
+    const db = this.clientForWrite();
+
     if (!db) {
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for updateTokens");
+      }
       return memoryGmailAccountStore.updateTokens(
         normalizedUserId,
         normalizedEmail,
@@ -360,8 +428,13 @@ export class GmailAccountRepository {
       );
     }
 
-    const { data, error } = await db
-      .from("gmail_accounts")
+    logDbWriteStart(SCOPE, "updateTokens", TABLE, {
+      user_id: normalizedUserId,
+      email: normalizedEmail,
+    });
+
+    const { data, error, status, statusText } = await db
+      .from(TABLE)
       .update({
         access_token: tokens.accessToken,
         refresh_token: tokens.refreshToken,
@@ -372,14 +445,15 @@ export class GmailAccountRepository {
       .select("*")
       .maybeSingle();
 
+    logDbWriteResult(SCOPE, "updateTokens", TABLE, {
+      httpStatus: status,
+      statusText,
+      error,
+      rows: data ? 1 : 0,
+      data,
+    });
+
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.updateTokens(
-          normalizedUserId,
-          normalizedEmail,
-          tokens
-        );
-      }
       this.handleDbError("updateTokens", error, {
         user_id: normalizedUserId,
         email: normalizedEmail,
@@ -396,10 +470,13 @@ export class GmailAccountRepository {
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
     const normalizedEmail = normalizeEmail(email);
-    const db = this.client();
+    const db = this.clientForWrite();
     const now = new Date().toISOString();
 
     if (!db) {
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for updateSyncStatus");
+      }
       return memoryGmailAccountStore.updateSyncStatus(
         normalizedUserId,
         normalizedEmail,
@@ -407,8 +484,14 @@ export class GmailAccountRepository {
       );
     }
 
-    const { data, error } = await db
-      .from("gmail_accounts")
+    logDbWriteStart(SCOPE, "updateSyncStatus", TABLE, {
+      user_id: normalizedUserId,
+      email: normalizedEmail,
+      syncCount,
+    });
+
+    const { data, error, status, statusText } = await db
+      .from(TABLE)
       .update({
         last_synced_at: now,
         last_sync_count: syncCount,
@@ -418,14 +501,15 @@ export class GmailAccountRepository {
       .select("*")
       .maybeSingle();
 
+    logDbWriteResult(SCOPE, "updateSyncStatus", TABLE, {
+      httpStatus: status,
+      statusText,
+      error,
+      rows: data ? 1 : 0,
+      data,
+    });
+
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.updateSyncStatus(
-          normalizedUserId,
-          normalizedEmail,
-          syncCount
-        );
-      }
       this.handleDbError("updateSyncStatus", error, {
         user_id: normalizedUserId,
         email: normalizedEmail,
@@ -438,27 +522,37 @@ export class GmailAccountRepository {
   async deleteAccount(userId: string, email: string): Promise<boolean> {
     const normalizedUserId = this.normalizeUserId(userId);
     const normalizedEmail = normalizeEmail(email);
-    const db = this.client();
+    const db = this.clientForWrite();
+
     if (!db) {
+      if (!useMemoryFallback()) {
+        throw new Error("Supabase admin client unavailable for deleteAccount");
+      }
       return memoryGmailAccountStore.deleteAccount(
         normalizedUserId,
         normalizedEmail
       );
     }
 
-    const { error, count } = await db
-      .from("gmail_accounts")
+    logDbWriteStart(SCOPE, "delete", TABLE, {
+      user_id: normalizedUserId,
+      email: normalizedEmail,
+    });
+
+    const { error, count, status, statusText } = await db
+      .from(TABLE)
       .delete({ count: "exact" })
       .eq("user_id", normalizedUserId)
       .eq("email", normalizedEmail);
 
+    logDbWriteResult(SCOPE, "delete", TABLE, {
+      httpStatus: status,
+      statusText,
+      error,
+      rows: count ?? 0,
+    });
+
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.deleteAccount(
-          normalizedUserId,
-          normalizedEmail
-        );
-      }
       this.handleDbError("deleteAccount", error, {
         user_id: normalizedUserId,
         email: normalizedEmail,
