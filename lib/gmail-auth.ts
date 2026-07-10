@@ -201,8 +201,10 @@ export async function getConnectableTokens(request: NextRequest): Promise<
     }
   | { ok: false; status: 401 | 403; error: string; code: string }
 > {
+  console.log("[gmail-auth] step:resolve-user");
   const userId = await resolveUserId();
   if (!userId) {
+    console.error("[gmail-auth] step:resolve-user — no session email");
     return {
       ok: false,
       status: 401,
@@ -211,12 +213,21 @@ export async function getConnectableTokens(request: NextRequest): Promise<
     };
   }
 
+  console.log("[gmail-auth] step:resolve-tokens", { userId });
   const sessionTokens = await resolveSessionTokens(request);
   if (!sessionTokens?.accessToken) {
+    const jwt = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
     logApiError("gmail-auth", new Error("No OAuth access token in session"), {
       userId,
-      hasJwt: Boolean(
-        await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+      hasJwt: Boolean(jwt),
+      jwtKeys: jwt ? Object.keys(jwt) : [],
+      hasAccessTokenInJwt: Boolean(jwt && "accessToken" in jwt && jwt.accessToken),
+      hasRefreshTokenInJwt: Boolean(
+        jwt && "refreshToken" in jwt && jwt.refreshToken
       ),
     });
 
@@ -228,6 +239,13 @@ export async function getConnectableTokens(request: NextRequest): Promise<
       code: "OAUTH_DENIED",
     };
   }
+
+  console.log("[gmail-auth] step:tokens-ok", {
+    userId,
+    hasAccessToken: true,
+    hasRefreshToken: Boolean(sessionTokens.refreshToken),
+    accessTokenExpires: sessionTokens.accessTokenExpires ?? null,
+  });
 
   return {
     ok: true,

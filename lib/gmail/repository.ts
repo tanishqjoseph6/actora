@@ -1,4 +1,10 @@
-import { getSupabaseAdmin, isMissingGmailSchemaError, isSupabaseNetworkError, requireSupabaseAdmin } from "@/lib/supabase-admin";
+import {
+  getSupabaseAdmin,
+  isMissingGmailSchemaError,
+  isSupabaseNetworkError,
+  requireSupabaseAdmin,
+} from "@/lib/supabase-admin";
+import { logApiError } from "@/lib/api/log-error";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { memoryGmailAccountStore } from "./memory-store";
 import type {
@@ -32,6 +38,20 @@ function mapRow(row: GmailAccountRow): GmailAccountRecord {
   };
 }
 
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function isUniqueViolation(error: { message?: string; code?: string }): boolean {
+  const message = (error.message ?? "").toLowerCase();
+  return (
+    error.code === "23505" ||
+    message.includes("duplicate key") ||
+    message.includes("unique constraint") ||
+    message.includes("gmail_accounts_user_email_key")
+  );
+}
+
 export class GmailAccountRepository {
   private client() {
     if (process.env.NODE_ENV === "production") {
@@ -40,7 +60,13 @@ export class GmailAccountRepository {
     return getSupabaseAdmin();
   }
 
-  private handleDbError(error: { message: string }): never {
+  private handleDbError(
+    operation: string,
+    error: { message: string; code?: string; details?: string; hint?: string },
+    context?: Record<string, unknown>
+  ): never {
+    logApiError("gmail/repository", error, { operation, ...context });
+
     if (isMissingGmailSchemaError(error.message)) {
       throw new Error(
         "Gmail account tables not found. Run supabase/migrations/002_gmail_accounts.sql in the Supabase SQL Editor."
@@ -48,10 +74,14 @@ export class GmailAccountRepository {
     }
     if (isSupabaseNetworkError(error.message)) {
       throw new Error(
-        "Could not reach Supabase to save Gmail account. Check NEXT_PUBLIC_SUPABASE_URL."
+        `Could not reach Supabase during ${operation}: ${error.message}`
       );
     }
-    throw new Error(error.message);
+    throw new Error(
+      `${operation} failed: ${error.message}` +
+        (error.code ? ` (${error.code})` : "") +
+        (error.details ? ` — ${error.details}` : "")
+    );
   }
 
   private normalizeUserId(userId: string): string {
@@ -65,6 +95,8 @@ export class GmailAccountRepository {
       return memoryGmailAccountStore.listAccounts(normalizedUserId);
     }
 
+    console.log("[gmail/repository] listAccounts", { user_id: normalizedUserId });
+
     const { data, error } = await db
       .from("gmail_accounts")
       .select("*")
@@ -75,7 +107,7 @@ export class GmailAccountRepository {
       if (isMissingGmailSchemaError(error.message)) {
         return memoryGmailAccountStore.listAccounts(normalizedUserId);
       }
-      this.handleDbError(error);
+      this.handleDbError("listAccounts", error, { user_id: normalizedUserId });
     }
 
     return (data as GmailAccountRow[]).map(mapRow);
@@ -86,23 +118,30 @@ export class GmailAccountRepository {
     email: string
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
+    const normalizedEmail = normalizeEmail(email);
     const db = this.client();
     if (!db) {
-      return memoryGmailAccountStore.getAccount(normalizedUserId, email);
+      return memoryGmailAccountStore.getAccount(normalizedUserId, normalizedEmail);
     }
 
     const { data, error } = await db
       .from("gmail_accounts")
       .select("*")
       .eq("user_id", normalizedUserId)
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .maybeSingle();
 
     if (error) {
       if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.getAccount(normalizedUserId, email);
+        return memoryGmailAccountStore.getAccount(
+          normalizedUserId,
+          normalizedEmail
+        );
       }
-      this.handleDbError(error);
+      this.handleDbError("getAccount", error, {
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
     }
 
     return data ? mapRow(data as GmailAccountRow) : null;
@@ -129,7 +168,7 @@ export class GmailAccountRepository {
       if (isMissingGmailSchemaError(error.message)) {
         return memoryGmailAccountStore.countAccounts(normalizedUserId);
       }
-      this.handleDbError(error);
+      this.handleDbError("countAccounts", error, { user_id: normalizedUserId });
     }
 
     return count ?? 0;
@@ -140,15 +179,26 @@ export class GmailAccountRepository {
     input: UpsertGmailAccountInput
   ): Promise<{ account: GmailAccountRecord; isNew: boolean }> {
     const normalizedUserId = this.normalizeUserId(userId);
+    const normalizedEmail = normalizeEmail(input.email);
     const db = this.client();
     if (!db) {
-      return memoryGmailAccountStore.upsertAccount(normalizedUserId, input);
+      return memoryGmailAccountStore.upsertAccount(normalizedUserId, {
+        ...input,
+        email: normalizedEmail,
+      });
     }
 
-    const existing = await this.getAccount(normalizedUserId, input.email);
+    const existing = await this.getAccount(normalizedUserId, normalizedEmail);
+
+    console.log("[gmail/repository] upsertAccount", {
+      user_id: normalizedUserId,
+      email: normalizedEmail,
+      exists: Boolean(existing),
+      hasRefreshToken: Boolean(input.refreshToken),
+    });
 
     if (existing) {
-      const { data, error } = await db
+      const { data, error, status, statusText } = await db
         .from("gmail_accounts")
         .update({
           access_token: input.accessToken,
@@ -156,33 +206,138 @@ export class GmailAccountRepository {
           token_expires_at: input.tokenExpiresAt ?? existing.tokenExpiresAt,
         })
         .eq("id", existing.id)
-        .select("*")
-        .single();
+        .select("*");
 
-      if (error) this.handleDbError(error);
-      return { account: mapRow(data as GmailAccountRow), isNew: false };
+      console.log("[gmail/repository] update response", {
+        httpStatus: status,
+        statusText,
+        error,
+        rows: Array.isArray(data) ? data.length : 0,
+      });
+
+      if (error) {
+        this.handleDbError("updateAccount", error, {
+          user_id: normalizedUserId,
+          email: normalizedEmail,
+          account_id: existing.id,
+        });
+      }
+
+      const row = Array.isArray(data)
+        ? (data[0] as GmailAccountRow | undefined)
+        : (data as GmailAccountRow | null);
+
+      if (!row) {
+        throw new Error(
+          `updateAccount returned no row for ${normalizedEmail}`
+        );
+      }
+
+      return { account: mapRow(row), isNew: false };
     }
 
-    const { data, error } = await db
+    const insertPayload = {
+      user_id: normalizedUserId,
+      email: normalizedEmail,
+      access_token: input.accessToken,
+      refresh_token: input.refreshToken ?? null,
+      token_expires_at: input.tokenExpiresAt ?? null,
+    };
+
+    console.log("[gmail/repository] insert request", {
+      user_id: insertPayload.user_id,
+      email: insertPayload.email,
+      has_access_token: Boolean(insertPayload.access_token),
+      has_refresh_token: Boolean(insertPayload.refresh_token),
+      token_expires_at: insertPayload.token_expires_at,
+    });
+
+    const { data, error, status, statusText } = await db
       .from("gmail_accounts")
-      .insert({
-        user_id: normalizedUserId,
-        email: input.email,
-        access_token: input.accessToken,
-        refresh_token: input.refreshToken ?? null,
-        token_expires_at: input.tokenExpiresAt ?? null,
-      })
-      .select("*")
-      .single();
+      .insert(insertPayload)
+      .select("*");
+
+    console.log("[gmail/repository] insert response", {
+      httpStatus: status,
+      statusText,
+      error,
+      rows: Array.isArray(data) ? data.length : 0,
+      data,
+    });
 
     if (error) {
-      if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.upsertAccount(normalizedUserId, input);
+      // Race: another request inserted the same (user_id, email) — update instead.
+      if (isUniqueViolation(error)) {
+        console.warn("[gmail/repository] unique violation — updating existing", {
+          user_id: normalizedUserId,
+          email: normalizedEmail,
+        });
+        const raced = await this.getAccount(normalizedUserId, normalizedEmail);
+        if (raced) {
+          const { data: updated, error: updateError } = await db
+            .from("gmail_accounts")
+            .update({
+              access_token: input.accessToken,
+              refresh_token: input.refreshToken ?? raced.refreshToken,
+              token_expires_at: input.tokenExpiresAt ?? raced.tokenExpiresAt,
+            })
+            .eq("id", raced.id)
+            .select("*");
+
+          if (updateError) {
+            this.handleDbError("updateAccountAfterRace", updateError, {
+              user_id: normalizedUserId,
+              email: normalizedEmail,
+            });
+          }
+
+          const racedRow = Array.isArray(updated)
+            ? (updated[0] as GmailAccountRow | undefined)
+            : (updated as GmailAccountRow | null);
+
+          if (racedRow) {
+            return { account: mapRow(racedRow), isNew: false };
+          }
+
+          return { account: raced, isNew: false };
+        }
       }
-      this.handleDbError(error);
+
+      if (isMissingGmailSchemaError(error.message)) {
+        return memoryGmailAccountStore.upsertAccount(normalizedUserId, {
+          ...input,
+          email: normalizedEmail,
+        });
+      }
+
+      this.handleDbError("insertAccount", error, {
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
     }
 
-    return { account: mapRow(data as GmailAccountRow), isNew: true };
+    const row = Array.isArray(data)
+      ? (data[0] as GmailAccountRow | undefined)
+      : (data as GmailAccountRow | null);
+
+    if (!row) {
+      // Insert may have succeeded without returning a row — read back.
+      const readBack = await this.getAccount(normalizedUserId, normalizedEmail);
+      if (readBack) {
+        return { account: readBack, isNew: true };
+      }
+      throw new Error(
+        `insertAccount returned no row for ${normalizedEmail} after insert`
+      );
+    }
+
+    console.log("[gmail/repository] insert success", {
+      id: row.id,
+      user_id: row.user_id,
+      email: row.email,
+    });
+
+    return { account: mapRow(row), isNew: true };
   }
 
   async updateTokens(
@@ -195,9 +350,14 @@ export class GmailAccountRepository {
     }
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
+    const normalizedEmail = normalizeEmail(email);
     const db = this.client();
     if (!db) {
-      return memoryGmailAccountStore.updateTokens(normalizedUserId, email, tokens);
+      return memoryGmailAccountStore.updateTokens(
+        normalizedUserId,
+        normalizedEmail,
+        tokens
+      );
     }
 
     const { data, error } = await db
@@ -208,15 +368,22 @@ export class GmailAccountRepository {
         token_expires_at: tokens.tokenExpiresAt,
       })
       .eq("user_id", normalizedUserId)
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .select("*")
       .maybeSingle();
 
     if (error) {
       if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.updateTokens(normalizedUserId, email, tokens);
+        return memoryGmailAccountStore.updateTokens(
+          normalizedUserId,
+          normalizedEmail,
+          tokens
+        );
       }
-      this.handleDbError(error);
+      this.handleDbError("updateTokens", error, {
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
     }
 
     return data ? mapRow(data as GmailAccountRow) : null;
@@ -228,13 +395,14 @@ export class GmailAccountRepository {
     syncCount: number
   ): Promise<GmailAccountRecord | null> {
     const normalizedUserId = this.normalizeUserId(userId);
+    const normalizedEmail = normalizeEmail(email);
     const db = this.client();
     const now = new Date().toISOString();
 
     if (!db) {
       return memoryGmailAccountStore.updateSyncStatus(
         normalizedUserId,
-        email,
+        normalizedEmail,
         syncCount
       );
     }
@@ -246,7 +414,7 @@ export class GmailAccountRepository {
         last_sync_count: syncCount,
       })
       .eq("user_id", normalizedUserId)
-      .eq("email", email)
+      .eq("email", normalizedEmail)
       .select("*")
       .maybeSingle();
 
@@ -254,11 +422,14 @@ export class GmailAccountRepository {
       if (isMissingGmailSchemaError(error.message)) {
         return memoryGmailAccountStore.updateSyncStatus(
           normalizedUserId,
-          email,
+          normalizedEmail,
           syncCount
         );
       }
-      this.handleDbError(error);
+      this.handleDbError("updateSyncStatus", error, {
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
     }
 
     return data ? mapRow(data as GmailAccountRow) : null;
@@ -266,22 +437,32 @@ export class GmailAccountRepository {
 
   async deleteAccount(userId: string, email: string): Promise<boolean> {
     const normalizedUserId = this.normalizeUserId(userId);
+    const normalizedEmail = normalizeEmail(email);
     const db = this.client();
     if (!db) {
-      return memoryGmailAccountStore.deleteAccount(normalizedUserId, email);
+      return memoryGmailAccountStore.deleteAccount(
+        normalizedUserId,
+        normalizedEmail
+      );
     }
 
     const { error, count } = await db
       .from("gmail_accounts")
       .delete({ count: "exact" })
       .eq("user_id", normalizedUserId)
-      .eq("email", email);
+      .eq("email", normalizedEmail);
 
     if (error) {
       if (isMissingGmailSchemaError(error.message)) {
-        return memoryGmailAccountStore.deleteAccount(normalizedUserId, email);
+        return memoryGmailAccountStore.deleteAccount(
+          normalizedUserId,
+          normalizedEmail
+        );
       }
-      this.handleDbError(error);
+      this.handleDbError("deleteAccount", error, {
+        user_id: normalizedUserId,
+        email: normalizedEmail,
+      });
     }
 
     return (count ?? 0) > 0;

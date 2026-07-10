@@ -49,17 +49,16 @@ export function checkGmailAuthEnv(): GmailAuthEnvStatus {
 export function logGmailAuthEnv(scope: string): GmailAuthEnvStatus {
   const status = checkGmailAuthEnv();
 
+  console.log(`[${scope}] Gmail auth env`, {
+    ok: status.ok,
+    missing: status.missing,
+    appUrl: status.appUrl,
+    googleCallbackUrl: status.googleCallbackUrl,
+    checks: status.checks,
+  });
+
   if (!status.ok) {
-    console.error(`[${scope}] Missing required env:`, status.missing, {
-      appUrl: status.appUrl,
-      googleCallbackUrl: status.googleCallbackUrl,
-      checks: status.checks,
-    });
-  } else if (process.env.NODE_ENV === "development") {
-    console.log(`[${scope}] Gmail auth env OK`, {
-      appUrl: status.appUrl,
-      googleCallbackUrl: status.googleCallbackUrl,
-    });
+    console.error(`[${scope}] Missing required env:`, status.missing);
   }
 
   if (

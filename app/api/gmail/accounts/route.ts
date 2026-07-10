@@ -20,12 +20,36 @@ export async function GET() {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const accounts = await gmailAccountRepository.listAccounts(userId);
+  console.log("[gmail/accounts] GET", { userId });
 
-  return NextResponse.json({
-    accounts: accounts.map(toPublicGmailAccount),
-    connected: accounts.length > 0,
-  });
+  try {
+    const accounts = await gmailAccountRepository.listAccounts(userId);
+
+    console.log("[gmail/accounts] GET ok", {
+      userId,
+      count: accounts.length,
+      emails: accounts.map((a) => a.email),
+    });
+
+    return NextResponse.json({
+      accounts: accounts.map(toPublicGmailAccount),
+      connected: accounts.length > 0,
+    });
+  } catch (error) {
+    console.error("[gmail/accounts] GET failed", {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not load Gmail accounts.",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(request: NextRequest) {

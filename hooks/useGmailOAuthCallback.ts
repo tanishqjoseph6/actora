@@ -18,7 +18,7 @@ type GmailConnectResponse = {
   isNew: boolean;
   reconnected: boolean;
   syncedCount: number;
-  syncWarning?: string;
+  syncPending?: boolean;
   accounts: GmailAccountPublic[];
   code?: string;
   error?: string;
@@ -51,6 +51,7 @@ export function useGmailOAuthCallback(options?: {
 
   const onSuccessRef = useRef(options?.onSuccess);
   onSuccessRef.current = options?.onSuccess;
+  const inFlightRef = useRef(false);
 
   const clearCallbackParam = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -61,9 +62,17 @@ export function useGmailOAuthCallback(options?: {
 
   const waitForSessionTokens = useCallback(async (): Promise<boolean> => {
     for (let attempt = 0; attempt < MAX_CONNECT_RETRIES; attempt += 1) {
+      console.log("[gmail-oauth-callback] waiting for session tokens", {
+        attempt,
+      });
       await updateSession();
       const session = await getSession();
       if (session?.accessToken || session?.user?.email) {
+        console.log("[gmail-oauth-callback] session ready", {
+          attempt,
+          hasAccessToken: Boolean(session.accessToken),
+          email: session.user?.email,
+        });
         return true;
       }
       await sleep(RETRY_DELAY_MS);
@@ -77,26 +86,44 @@ export function useGmailOAuthCallback(options?: {
     let lastError: string | null = null;
 
     for (let attempt = 0; attempt < MAX_CONNECT_RETRIES; attempt += 1) {
+      console.log("[gmail-oauth-callback] POST /api/gmail/connect", { attempt });
+
       const result = await fetchJson<GmailConnectResponse>("/api/gmail/connect", {
         method: "POST",
       });
 
       if (result.ok) {
         const { data } = result;
+        console.log("[gmail-oauth-callback] connect success", {
+          email: data.account.email,
+          isNew: data.isNew,
+          syncPending: data.syncPending,
+        });
+
+        // Client-side sync kick (server also runs after() background sync).
+        void fetchJson("/api/gmail/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.account.email }),
+        }).then((syncResult) => {
+          console.log("[gmail-oauth-callback] background sync", {
+            ok: syncResult.ok,
+            email: data.account.email,
+          });
+        });
+
         await onSuccessRef.current?.(data);
 
         if (typeof window !== "undefined") {
-          sessionStorage.removeItem(CONNECT_IDEMPOTENCY_KEY);
+          sessionStorage.setItem(CONNECT_IDEMPOTENCY_KEY, "done");
         }
 
         setState({
           connecting: false,
-          tone: data.syncWarning ? "error" : "success",
-          message: data.syncWarning
-            ? data.syncWarning
-            : data.reconnected
-              ? `Gmail reconnected as ${data.account.email}.`
-              : `Gmail connected as ${data.account.email}.`,
+          tone: "success",
+          message: data.reconnected
+            ? `Gmail reconnected as ${data.account.email}.`
+            : `Gmail connected as ${data.account.email}.`,
           connectedEmail: data.account.email,
         });
 
@@ -105,6 +132,13 @@ export function useGmailOAuthCallback(options?: {
       }
 
       lastError = result.error.message;
+      console.error("[gmail-oauth-callback] connect failed", {
+        attempt,
+        status: result.error.status,
+        code: result.error.code,
+        message: result.error.message,
+        details: result.error.details,
+      });
 
       if (
         result.error.code === "OAUTH_DENIED" &&
@@ -116,6 +150,10 @@ export function useGmailOAuthCallback(options?: {
       }
 
       break;
+    }
+
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(CONNECT_IDEMPOTENCY_KEY);
     }
 
     setState({
@@ -135,19 +173,19 @@ export function useGmailOAuthCallback(options?: {
   useEffect(() => {
     const shouldConnect = searchParams.get(GMAIL_OAUTH_CALLBACK_PARAM) === "1";
     if (!shouldConnect) return;
+    if (inFlightRef.current) return;
 
     if (typeof window !== "undefined") {
-      const prior = sessionStorage.getItem(CONNECT_IDEMPOTENCY_KEY);
-      if (prior === "done") {
+      if (sessionStorage.getItem(CONNECT_IDEMPOTENCY_KEY) === "done") {
         clearCallbackParam();
         return;
       }
-      sessionStorage.setItem(CONNECT_IDEMPOTENCY_KEY, "pending");
     }
 
     if (sessionStatus === "loading") return;
 
     if (sessionStatus !== "authenticated") {
+      console.error("[gmail-oauth-callback] not authenticated after OAuth");
       setState({
         connecting: false,
         tone: "error",
@@ -158,22 +196,31 @@ export function useGmailOAuthCallback(options?: {
       return;
     }
 
-    void (async () => {
-      const ready = await waitForSessionTokens();
-      if (!ready) {
-        setState({
-          connecting: false,
-          tone: "error",
-          message: "Session not ready. Please try connecting Gmail again.",
-          connectedEmail: null,
-        });
-        clearCallbackParam();
-        return;
-      }
+    inFlightRef.current = true;
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(CONNECT_IDEMPOTENCY_KEY, "pending");
+    }
 
-      const result = await completeGmailConnection();
-      if (result.ok && typeof window !== "undefined") {
-        sessionStorage.setItem(CONNECT_IDEMPOTENCY_KEY, "done");
+    void (async () => {
+      console.log(
+        "[gmail-oauth-callback] OAuth callback received — completing connect"
+      );
+      try {
+        const ready = await waitForSessionTokens();
+        if (!ready) {
+          setState({
+            connecting: false,
+            tone: "error",
+            message: "Session not ready. Please try connecting Gmail again.",
+            connectedEmail: null,
+          });
+          clearCallbackParam();
+          return;
+        }
+
+        await completeGmailConnection();
+      } finally {
+        inFlightRef.current = false;
       }
     })();
   }, [

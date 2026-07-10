@@ -25,14 +25,33 @@ export async function getGmailProfileEmail(
   auth: InstanceType<typeof google.auth.OAuth2>
 ): Promise<string> {
   const gmail = google.gmail({ version: "v1", auth });
-  const profile = await gmail.users.getProfile({ userId: "me" });
-  const email = profile.data.emailAddress;
 
-  if (!email) {
-    throw new Error("Could not read Gmail profile email.");
+  try {
+    const profile = await gmail.users.getProfile({ userId: "me" });
+    const email = profile.data.emailAddress?.trim().toLowerCase();
+
+    if (!email) {
+      throw new Error("Could not read Gmail profile email.");
+    }
+
+    return email;
+  } catch (error) {
+    const cause =
+      error instanceof Error
+        ? (error as Error & { cause?: unknown }).cause
+        : undefined;
+
+    console.error("[gmail/oauth] getGmailProfileEmail failed", {
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      cause:
+        cause instanceof Error
+          ? { name: cause.name, message: cause.message }
+          : cause,
+    });
+
+    throw error;
   }
-
-  return email;
 }
 
 export async function refreshOAuthTokens(refreshToken: string): Promise<{

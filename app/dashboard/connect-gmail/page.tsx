@@ -40,12 +40,11 @@ function ConnectGmailContent() {
       await refreshAccounts();
       await refreshSubscription();
       setSelectedEmail(data.account.email);
-      setStatusTone(data.syncWarning ? "error" : "success");
+      setStatusTone("success");
       setStatusMessage(
-        data.syncWarning ??
-          (data.reconnected
-            ? `Reconnected ${data.account.email}. Synced ${data.syncedCount} recent emails.`
-            : `Gmail connected as ${data.account.email}. Synced ${data.syncedCount} recent emails.`)
+        data.reconnected
+          ? `Reconnected ${data.account.email}. Inbox sync started.`
+          : `Gmail connected as ${data.account.email}. Inbox sync started.`
       );
     },
   });
@@ -64,6 +63,10 @@ function ConnectGmailContent() {
   }, [accounts.length, inboxLimit, subscription]);
 
   const startGoogleOAuth = useCallback(async (reconnectEmail?: string) => {
+    console.log("[connect-gmail] starting Google OAuth", {
+      callbackUrl: GMAIL_OAUTH_CALLBACK_URL,
+      reconnectEmail: reconnectEmail ?? null,
+    });
     await signIn(
       "google",
       { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
@@ -95,15 +98,21 @@ function ConnectGmailContent() {
       return { ok: false as const, code: result.error.code, status: result.error.status };
     }
 
+    // Fire-and-forget inbox sync after account is saved.
+    void fetchJson("/api/gmail/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: result.data.account.email }),
+    });
+
     await refreshAccounts();
     await refreshSubscription();
     setSelectedEmail(result.data.account.email);
-    setStatusTone(result.data.syncWarning ? "error" : "success");
+    setStatusTone("success");
     setStatusMessage(
-      result.data.syncWarning ??
-        (result.data.reconnected
-          ? `Reconnected ${result.data.account.email}. Synced ${result.data.syncedCount} recent emails.`
-          : `Gmail connected as ${result.data.account.email}. Synced ${result.data.syncedCount} recent emails.`)
+      result.data.reconnected
+        ? `Reconnected ${result.data.account.email}. Inbox sync started.`
+        : `Gmail connected as ${result.data.account.email}. Inbox sync started.`
     );
     return { ok: true as const, data: result.data };
   }, [refreshAccounts, refreshSubscription, setSelectedEmail]);

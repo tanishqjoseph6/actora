@@ -18,6 +18,21 @@ const ERROR_PATTERNS: Array<{
 }> = [
   {
     match: (m) =>
+      m.includes("could not reach supabase") ||
+      (m.includes("supabase") &&
+        (m.includes("fetch failed") ||
+          m.includes("econnrefused") ||
+          m.includes("enotfound") ||
+          m.includes("etimedout"))),
+    result: {
+      message:
+        "Could not reach the database to save your Gmail account. Try again in a moment.",
+      code: "GMAIL_API_ERROR",
+      status: 503,
+    },
+  },
+  {
+    match: (m) =>
       m.includes("fetch failed") ||
       m.includes("ECONNREFUSED") ||
       m.includes("ENOTFOUND") ||

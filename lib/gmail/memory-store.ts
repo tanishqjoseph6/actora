@@ -18,8 +18,11 @@ class MemoryGmailAccountStore {
     userId: string,
     email: string
   ): Promise<GmailAccountRecord | null> {
+    const normalizedEmail = email.trim().toLowerCase();
     return (
-      (this.accounts.get(userId) ?? []).find((a) => a.email === email) ?? null
+      (this.accounts.get(userId) ?? []).find(
+        (a) => a.email === normalizedEmail
+      ) ?? null
     );
   }
 
@@ -32,7 +35,8 @@ class MemoryGmailAccountStore {
     input: UpsertGmailAccountInput
   ): Promise<{ account: GmailAccountRecord; isNew: boolean }> {
     const list = this.accounts.get(userId) ?? [];
-    const existing = list.find((a) => a.email === input.email);
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const existing = list.find((a) => a.email === normalizedEmail);
     const now = new Date().toISOString();
 
     if (existing) {
@@ -52,7 +56,7 @@ class MemoryGmailAccountStore {
     const created: GmailAccountRecord = {
       id: randomUUID(),
       userId,
-      email: input.email,
+      email: normalizedEmail,
       accessToken: input.accessToken,
       refreshToken: input.refreshToken ?? null,
       tokenExpiresAt: input.tokenExpiresAt ?? null,
@@ -75,7 +79,8 @@ class MemoryGmailAccountStore {
     }
   ): Promise<GmailAccountRecord | null> {
     const list = this.accounts.get(userId) ?? [];
-    const index = list.findIndex((a) => a.email === email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const index = list.findIndex((a) => a.email === normalizedEmail);
     if (index === -1) return null;
 
     const updated: GmailAccountRecord = {
@@ -97,7 +102,8 @@ class MemoryGmailAccountStore {
     syncCount: number
   ): Promise<GmailAccountRecord | null> {
     const list = this.accounts.get(userId) ?? [];
-    const index = list.findIndex((a) => a.email === email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const index = list.findIndex((a) => a.email === normalizedEmail);
     if (index === -1) return null;
 
     const updated: GmailAccountRecord = {
@@ -114,7 +120,8 @@ class MemoryGmailAccountStore {
 
   async deleteAccount(userId: string, email: string): Promise<boolean> {
     const list = this.accounts.get(userId) ?? [];
-    const next = list.filter((a) => a.email !== email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const next = list.filter((a) => a.email !== normalizedEmail);
     if (next.length === list.length) return false;
     this.accounts.set(userId, next);
     return true;
