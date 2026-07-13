@@ -25,7 +25,7 @@ export function LandingPage() {
           <div className="max-w-7xl mx-auto px-5 sm:px-8">
             <PricingSection
               title="Pricing"
-              subtitle="Start free. Upgrade when you need more power."
+              subtitle="Start a free 14-day trial. No credit card required."
               mode="marketing"
             />
           </div>

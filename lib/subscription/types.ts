@@ -25,9 +25,18 @@ export type UserSubscription = {
   currentPeriodEnd: string;
   usage: UsageMetrics;
   updatedAt: string;
+  isTrial: boolean;
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
+  trialExpired: boolean;
 };
 
 export type SubscriptionSnapshot = UserSubscription & {
   limits: PlanLimits;
   planName: string;
+  trialActive: boolean;
+  remainingTrialDays: number;
+  remainingTrialHours: number;
+  trialProgressPercent: number;
+  hasProductAccess: boolean;
 };

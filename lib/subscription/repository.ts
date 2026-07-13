@@ -15,6 +15,13 @@ import type { UserSubscriptionRow } from "@/lib/supabase/database.types";
 import type { BillingInterval, PlanId, SubscriptionStatus } from "./types";
 import { DEFAULT_PLAN_ID } from "./plans";
 import { normalizeSubscriptionUserId } from "./user-id";
+import {
+  computeTrialEndsAt,
+  emptyTrialFields,
+  hasTrialExpired,
+  isPaidPlanId,
+  type TrialFields,
+} from "@/lib/trial/helpers";
 
 export type StoredSubscription = {
   userId: string;
@@ -25,6 +32,10 @@ export type StoredSubscription = {
   razorpaySubscriptionId?: string | null;
   razorpayPlanId?: string | null;
   updatedAt: string;
+  isTrial: boolean;
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
+  trialExpired: boolean;
 };
 
 export type SubscriptionUpsertMetadata = {
@@ -32,6 +43,12 @@ export type SubscriptionUpsertMetadata = {
   razorpayPlanId?: string;
   currentPeriodEnd?: string;
   status?: SubscriptionStatus;
+  /** When upgrading to a paid plan, clears trial flags. */
+  clearTrial?: boolean;
+  isTrial?: boolean;
+  trialStartedAt?: string | null;
+  trialEndsAt?: string | null;
+  trialExpired?: boolean;
 };
 
 const TABLE = "user_subscriptions";
@@ -59,6 +76,7 @@ function createDefaultStored(userId: string): StoredSubscription {
     razorpaySubscriptionId: null,
     razorpayPlanId: null,
     updatedAt: new Date().toISOString(),
+    ...emptyTrialFields(),
   };
 }
 
@@ -72,12 +90,25 @@ function mapRow(row: UserSubscriptionRow): StoredSubscription {
     razorpaySubscriptionId: row.razorpay_subscription_id,
     razorpayPlanId: row.razorpay_plan_id,
     updatedAt: row.updated_at,
+    isTrial: Boolean(row.is_trial),
+    trialStartedAt: row.trial_started_at ?? null,
+    trialEndsAt: row.trial_ends_at ?? null,
+    trialExpired: Boolean(row.trial_expired),
+  };
+}
+
+function trialFieldsFromStored(stored: StoredSubscription): TrialFields {
+  return {
+    isTrial: stored.isTrial,
+    trialStartedAt: stored.trialStartedAt,
+    trialEndsAt: stored.trialEndsAt,
+    trialExpired: stored.trialExpired,
   };
 }
 
 function logUpsertFailure(
   operation: string,
-  row: UserSubscriptionRow,
+  row: Record<string, unknown>,
   error: {
     message: string;
     code?: string;
@@ -99,13 +130,17 @@ function logUpsertFailure(
 function buildUpsertPayload(
   row: UserSubscriptionRow,
   includeRazorpayColumns: boolean
-): Record<string, string | null> {
-  const base = {
+): Record<string, string | boolean | null> {
+  const base: Record<string, string | boolean | null> = {
     user_id: row.user_id,
     plan_id: row.plan_id,
     status: row.status,
     billing_interval: row.billing_interval,
     current_period_end: row.current_period_end,
+    is_trial: row.is_trial,
+    trial_started_at: row.trial_started_at,
+    trial_ends_at: row.trial_ends_at,
+    trial_expired: row.trial_expired,
   };
 
   if (!includeRazorpayColumns) {
@@ -166,12 +201,12 @@ async function executeUpsert(
     return { data: saved, error: null };
   }
 
-  const { data: readBack, error: readError, status: readStatus, statusText: readStatusText } =
-    await db
-      .from(TABLE)
-      .select("*")
-      .eq("user_id", row.user_id)
-      .maybeSingle();
+  const {
+    data: readBack,
+    error: readError,
+    status: readStatus,
+    statusText: readStatusText,
+  } = await db.from(TABLE).select("*").eq("user_id", row.user_id).maybeSingle();
 
   logDbWriteResult(SCOPE, "upsert-read-back", TABLE, {
     httpStatus: readStatus,
@@ -202,8 +237,8 @@ export async function upsertUserSubscription(
   const db = requireSupabaseAdmin();
 
   const { data: existingRow, error: existingError } = await db
-    .from("user_subscriptions")
-    .select("razorpay_subscription_id, razorpay_plan_id, current_period_end")
+    .from(TABLE)
+    .select("*")
     .eq("user_id", normalizedUserId)
     .maybeSingle();
 
@@ -214,6 +249,9 @@ export async function upsertUserSubscription(
     });
   }
 
+  const existing = existingRow as UserSubscriptionRow | null;
+  const convertingToPaid = isPaidPlanId(planId) || metadata.clearTrial === true;
+
   const row: UserSubscriptionRow = {
     user_id: normalizedUserId,
     plan_id: planId,
@@ -221,25 +259,36 @@ export async function upsertUserSubscription(
     billing_interval: billingInterval,
     current_period_end:
       metadata.currentPeriodEnd ??
-      existingRow?.current_period_end ??
+      existing?.current_period_end ??
       getNextRenewalDate(billingInterval),
     razorpay_subscription_id:
       metadata.razorpaySubscriptionId ??
-      existingRow?.razorpay_subscription_id ??
+      existing?.razorpay_subscription_id ??
       null,
     razorpay_plan_id:
-      metadata.razorpayPlanId ?? existingRow?.razorpay_plan_id ?? null,
+      metadata.razorpayPlanId ?? existing?.razorpay_plan_id ?? null,
     updated_at: new Date().toISOString(),
+    is_trial: convertingToPaid
+      ? false
+      : (metadata.isTrial ?? existing?.is_trial ?? false),
+    trial_started_at: convertingToPaid
+      ? existing?.trial_started_at ?? null
+      : (metadata.trialStartedAt ?? existing?.trial_started_at ?? null),
+    trial_ends_at: convertingToPaid
+      ? existing?.trial_ends_at ?? null
+      : (metadata.trialEndsAt ?? existing?.trial_ends_at ?? null),
+    trial_expired: convertingToPaid
+      ? true
+      : (metadata.trialExpired ?? existing?.trial_expired ?? false),
   };
 
   console.log("[subscription/repository] upsertUserSubscription start", {
     user_id: row.user_id,
     plan_id: row.plan_id,
     status: row.status,
-    billing_interval: row.billing_interval,
-    razorpay_subscription_id: row.razorpay_subscription_id,
-    razorpay_plan_id: row.razorpay_plan_id,
-    current_period_end: row.current_period_end,
+    is_trial: row.is_trial,
+    trial_expired: row.trial_expired,
+    convertingToPaid,
   });
 
   let result = await executeUpsert(db, row, true);
@@ -257,9 +306,7 @@ export async function upsertUserSubscription(
   }
 
   if (result.error) {
-    logUpsertFailure("upsertUserSubscription", row, result.error, {
-      line: "lib/subscription/repository.ts:executeUpsert",
-    });
+    logUpsertFailure("upsertUserSubscription", row, result.error);
 
     if (isMissingUserSubscriptionsSchemaError(result.error.message)) {
       throw new Error(
@@ -279,50 +326,101 @@ export async function upsertUserSubscription(
   }
 
   if (!result.data) {
-    const message = "upsertUserSubscription returned no row after upsert and read-back";
-    console.error(`[subscription/repository] ${message}`, { row });
-    throw new Error(message);
+    throw new Error(
+      "upsertUserSubscription returned no row after upsert and read-back"
+    );
   }
 
   const stored = mapRow(result.data);
-
-  const { data: verifyRow, error: verifyError } = await db
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", normalizedUserId)
-    .maybeSingle();
-
-  logDbWriteResult(SCOPE, "upsert-verify", TABLE, {
-    error: verifyError,
-    rows: verifyRow ? 1 : 0,
-    data: verifyRow,
-  });
-
-  if (verifyError || !verifyRow) {
-    throw new Error(
-      `user_subscriptions upsert verify failed for ${normalizedUserId}: ${formatPostgrestError(verifyError ?? { message: "row not found after upsert" })}`
-    );
-  }
-
-  if ((verifyRow as UserSubscriptionRow).plan_id !== planId) {
-    throw new Error(
-      `user_subscriptions verify plan mismatch: expected ${planId}, got ${(verifyRow as UserSubscriptionRow).plan_id}`
-    );
-  }
-
   memoryStore.set(normalizedUserId, stored);
 
   console.log("[subscription/repository] upsertUserSubscription success", {
     user_id: stored.userId,
     plan_id: stored.planId,
-    status: stored.status,
-    razorpay_subscription_id: stored.razorpaySubscriptionId,
-    razorpay_plan_id: stored.razorpayPlanId,
-    current_period_end: stored.currentPeriodEnd,
-    updated_at: stored.updatedAt,
+    is_trial: stored.isTrial,
+    trial_ends_at: stored.trialEndsAt,
   });
 
   return stored;
+}
+
+/**
+ * Lazily expire a trial that has passed trial_ends_at.
+ * Idempotent — safe to call on every subscription read.
+ */
+export async function expireTrialIfNeeded(
+  stored: StoredSubscription
+): Promise<StoredSubscription> {
+  if (!hasTrialExpired(trialFieldsFromStored(stored))) {
+    return stored;
+  }
+
+  if (stored.trialExpired && stored.planId === "free") {
+    return stored;
+  }
+
+  if (isPaidPlanId(stored.planId) && !stored.isTrial) {
+    return stored;
+  }
+
+  console.log("[subscription/repository] expiring trial", {
+    user_id: stored.userId,
+    trial_ends_at: stored.trialEndsAt,
+  });
+
+  return upsertUserSubscription(stored.userId, "free", "monthly", {
+    status: "active",
+    isTrial: false,
+    trialStartedAt: stored.trialStartedAt,
+    trialEndsAt: stored.trialEndsAt,
+    trialExpired: true,
+    currentPeriodEnd: stored.currentPeriodEnd,
+    razorpaySubscriptionId: stored.razorpaySubscriptionId ?? undefined,
+    razorpayPlanId: stored.razorpayPlanId ?? undefined,
+  });
+}
+
+/**
+ * Start a one-time 14-day trial. Rejects if the user already had a trial
+ * or already has a paid plan.
+ */
+export async function startTrialSubscription(
+  userId: string
+): Promise<{ stored: StoredSubscription; created: boolean; reason?: string }> {
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const existing = await getStoredSubscription(normalizedUserId);
+
+  if (isPaidPlanId(existing.planId) && existing.status === "active") {
+    return {
+      stored: existing,
+      created: false,
+      reason: "already_paid",
+    };
+  }
+
+  if (existing.isTrial || existing.trialExpired || existing.trialStartedAt) {
+    const refreshed = await expireTrialIfNeeded(existing);
+    return {
+      stored: refreshed,
+      created: false,
+      reason: "trial_already_used",
+    };
+  }
+
+  // Row may be a virtual default (no DB row) — still safe to upsert trial once.
+  const startedAt = new Date();
+  const endsAt = computeTrialEndsAt(startedAt);
+
+  const stored = await upsertUserSubscription(normalizedUserId, "trial", "monthly", {
+    status: "active",
+    isTrial: true,
+    trialStartedAt: startedAt.toISOString(),
+    trialEndsAt: endsAt.toISOString(),
+    trialExpired: false,
+    currentPeriodEnd: endsAt.toISOString(),
+  });
+
+  return { stored, created: true };
 }
 
 export async function getStoredSubscription(
@@ -342,7 +440,7 @@ export async function getStoredSubscription(
   }
 
   const { data, error } = await db
-    .from("user_subscriptions")
+    .from(TABLE)
     .select("*")
     .eq("user_id", normalizedUserId)
     .maybeSingle();
@@ -367,21 +465,12 @@ export async function getStoredSubscription(
   }
 
   if (!data) {
-    console.log("[subscription/repository] no row for user — defaulting to free", {
-      user_id: normalizedUserId,
-    });
     return createDefaultStored(normalizedUserId);
   }
 
-  const subscription = mapRow(data as UserSubscriptionRow);
+  let subscription = mapRow(data as UserSubscriptionRow);
+  subscription = await expireTrialIfNeeded(subscription);
   memoryStore.set(normalizedUserId, subscription);
-
-  console.log("[subscription/repository] getStoredSubscription hit", {
-    user_id: subscription.userId,
-    plan_id: subscription.planId,
-    razorpay_subscription_id: subscription.razorpaySubscriptionId,
-  });
-
   return subscription;
 }
 
@@ -397,6 +486,10 @@ export async function persistSubscription(
       currentPeriodEnd: subscription.currentPeriodEnd,
       razorpaySubscriptionId: subscription.razorpaySubscriptionId ?? undefined,
       razorpayPlanId: subscription.razorpayPlanId ?? undefined,
+      isTrial: subscription.isTrial,
+      trialStartedAt: subscription.trialStartedAt,
+      trialEndsAt: subscription.trialEndsAt,
+      trialExpired: subscription.trialExpired,
     }
   );
 }
@@ -407,5 +500,23 @@ export async function setStoredPlan(
   billingInterval: BillingInterval = "monthly",
   metadata: SubscriptionUpsertMetadata = {}
 ): Promise<StoredSubscription> {
-  return upsertUserSubscription(userId, planId, billingInterval, metadata);
+  return upsertUserSubscription(userId, planId, billingInterval, {
+    ...metadata,
+    clearTrial: isPaidPlanId(planId) ? true : metadata.clearTrial,
+  });
+}
+
+export async function listActiveTrialsForEmailJob(): Promise<StoredSubscription[]> {
+  const db = requireSupabaseAdmin();
+  const { data, error } = await db
+    .from(TABLE)
+    .select("*")
+    .eq("is_trial", true)
+    .eq("trial_expired", false);
+
+  if (error) {
+    throw new Error(`listActiveTrialsForEmailJob failed: ${formatPostgrestError(error)}`);
+  }
+
+  return (data as UserSubscriptionRow[]).map(mapRow);
 }

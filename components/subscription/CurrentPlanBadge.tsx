@@ -22,6 +22,11 @@ export function CurrentPlanBadge({
   const planId = subscription?.planId ?? "free";
   const planName = subscription?.planName ?? "Free";
   const styles = getPlanBadgeStyles(planId);
+  const statusLabel = subscription?.trialActive
+    ? `${subscription.remainingTrialDays}d left`
+    : subscription?.trialExpired
+      ? "Expired"
+      : "Active";
 
   if (compact) {
     return (
@@ -41,7 +46,7 @@ export function CurrentPlanBadge({
         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${styles.badge}`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
-        Active
+        {statusLabel}
       </span>
     </div>
   );

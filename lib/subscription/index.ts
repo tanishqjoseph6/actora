@@ -47,6 +47,19 @@ export {
 } from "./provider";
 
 export type { SubscriptionUpsertMetadata } from "./repository";
-export { upsertUserSubscription } from "./repository";
+export {
+  upsertUserSubscription,
+  startTrialSubscription,
+  expireTrialIfNeeded,
+} from "./repository";
 
 export type { SubscriptionProvider } from "./provider";
+
+export {
+  isTrialActive,
+  hasTrialExpired,
+  getRemainingTrialDays,
+  getRemainingTrialHours,
+  hasProductAccess,
+  TRIAL_DURATION_DAYS,
+} from "@/lib/trial/helpers";

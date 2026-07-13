@@ -12,10 +12,10 @@ import { isBillingCurrency } from "@/lib/billing/currency";
 import { getRazorpayPlanId, isPaidPlan } from "@/lib/billing/pricing";
 import { parseRazorpayNotes } from "@/lib/billing/razorpay-notes";
 import {
+  subscriptionProvider,
   toSubscriptionSnapshot,
   type SubscriptionUpsertMetadata,
 } from "@/lib/subscription";
-import { setStoredPlan } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 function noteMatches(
@@ -246,26 +246,21 @@ export async function POST(request: NextRequest) {
       upsertMetadata,
     });
 
-    const stored = await setStoredPlan(userId, planId, period, upsertMetadata);
+    const stored = await subscriptionProvider.setPlan(
+      userId,
+      planId,
+      period,
+      upsertMetadata
+    );
 
     console.log("[razorpay/verify] step:upsert — success", {
       userId: stored.userId,
       planId: stored.planId,
       billingInterval: stored.billingInterval,
-      razorpaySubscriptionId: stored.razorpaySubscriptionId,
-      razorpayPlanId: stored.razorpayPlanId,
       updatedAt: stored.updatedAt,
     });
 
-    const snapshot = toSubscriptionSnapshot({
-      userId: stored.userId,
-      planId: stored.planId,
-      status: stored.status,
-      billingInterval: stored.billingInterval,
-      currentPeriodEnd: stored.currentPeriodEnd,
-      usage: { aiActionsUsed: 0, inboxesConnected: 0 },
-      updatedAt: stored.updatedAt,
-    });
+    const snapshot = toSubscriptionSnapshot(stored);
 
     return NextResponse.json({
       success: true,

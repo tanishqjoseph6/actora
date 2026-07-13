@@ -10,6 +10,7 @@ import {
 } from "@/lib/subscription";
 import { UpgradeButton } from "./UpgradeButton";
 import { usePlanGate } from "./PlanGateProvider";
+import { TrialExpiredPanel } from "./TrialExpiredPanel";
 
 type LockedFeaturePanelProps = {
   feature: PlanFeature;
@@ -83,6 +84,14 @@ export function FeatureGate({
     return fullPage ? (
       <DashboardPageSkeleton statCards={4} rows={4} />
     ) : null;
+  }
+
+  if (
+    subscription?.trialExpired &&
+    !subscription.trialActive &&
+    !subscription.hasProductAccess
+  ) {
+    return <TrialExpiredPanel compact={compact && !fullPage} />;
   }
 
   const planId = subscription?.planId ?? "free";

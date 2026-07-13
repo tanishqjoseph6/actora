@@ -20,6 +20,15 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     shared_inbox: false,
     team_workspace: false,
   },
+  /** Trial unlocks the same product surface as Pro (no Team-only features). */
+  trial: {
+    automations: true,
+    meetings: true,
+    analytics: true,
+    full_crm: true,
+    shared_inbox: false,
+    team_workspace: false,
+  },
   pro: {
     automations: true,
     meetings: true,

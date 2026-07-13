@@ -48,7 +48,14 @@ export function CurrentPlanSection({
         ) : (
           <>
         <p className="text-sm text-gray-400 mt-3">
-          Renews on <span className="text-gray-200">{renewalDate}</span>
+          {subscription?.trialActive
+            ? `Trial ends on `
+            : `Renews on `}
+          <span className="text-gray-200">
+            {subscription?.trialActive && subscription.trialEndsAt
+              ? formatRenewalDate(subscription.trialEndsAt)
+              : renewalDate}
+          </span>
         </p>
 
         <div className="flex flex-wrap gap-3 mt-6">

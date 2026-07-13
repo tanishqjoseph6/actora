@@ -17,4 +17,14 @@ export type UserSubscriptionRow = {
   razorpay_subscription_id: string | null;
   razorpay_plan_id: string | null;
   updated_at: string;
+  is_trial: boolean;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  trial_expired: boolean;
+};
+
+export type TrialEmailLogRow = {
+  user_id: string;
+  email_type: "day_0" | "day_7" | "day_12" | "day_14";
+  sent_at: string;
 };

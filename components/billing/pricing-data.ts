@@ -2,7 +2,7 @@ import type { BillingCurrency } from "@/lib/billing/currency";
 
 export type BillingPeriod = "monthly" | "yearly";
 
-export type PlanId = "free" | "starter" | "pro" | "enterprise";
+export type PlanId = "free" | "trial" | "starter" | "pro" | "enterprise";
 
 export type PaidPlanId = "starter" | "pro";
 
@@ -108,17 +108,17 @@ const PRICING_PLAN_TEMPLATES: Omit<
 >[] = [
   {
     id: "free",
-    name: "Free",
-    description: "Everything you need to get started",
+    name: "Free Trial",
+    description: "No credit card required — 14 days of full Pro access",
     monthlyPrice: 0,
     features: [
-      "1 Gmail Inbox",
-      "AI Inbox",
-      "Basic CRM",
-      "100 AI Actions/month",
-      "Community Support",
+      "14-day Pro trial",
+      "Unlimited Gmail Accounts during trial",
+      "AI Inbox, CRM & Automations",
+      "Analytics & Meetings",
+      "No credit card required",
     ],
-    cta: "Current Plan",
+    cta: "Start Free 14-Day Trial",
     ctaVariant: "outline",
   },
   {
@@ -194,7 +194,7 @@ export function getDisplayPlans(
   period: BillingPeriod
 ): PricingPlan[] {
   return PRICING_PLAN_TEMPLATES.map((template) => {
-    if (template.id === "free") {
+    if (template.id === "free" || template.id === "trial") {
       return {
         ...template,
         priceLabel: "$0",
@@ -212,7 +212,11 @@ export function getDisplayPlans(
       };
     }
 
-    const priceConfig = getPlanPriceConfig(currency, period, template.id);
+    const priceConfig = getPlanPriceConfig(
+      currency,
+      period,
+      template.id as PaidPlanId
+    );
     return {
       ...template,
       priceLabel: priceConfig.priceLabel,

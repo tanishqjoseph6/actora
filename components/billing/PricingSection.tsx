@@ -81,7 +81,12 @@ export function PricingSection({
       if (subscription) {
         applySubscription(subscription);
       }
-      await updateSession({ planId });
+      await updateSession({
+        planId,
+        isTrial: false,
+        trialExpired: true,
+        trialEndsAt: subscription?.trialEndsAt ?? null,
+      });
       await refreshSubscription();
       closeUpgrade();
       await onPaymentSuccess?.();
@@ -108,7 +113,7 @@ export function PricingSection({
   });
 
   const handleSelect = useCallback(
-    (plan: PricingPlan) => {
+    async (plan: PricingPlan) => {
       if (plan.id === "enterprise") {
         window.location.href = ENTERPRISE_MAILTO;
         return;
@@ -116,6 +121,44 @@ export function PricingSection({
 
       if (plan.id === "free") {
         if (mode === "marketing") {
+          if (session) {
+            setToast({
+              type: "info",
+              title: "Starting trial…",
+              message: "Activating your 14-day free trial.",
+            });
+            try {
+              const res = await fetch("/api/trial/start", { method: "POST" });
+              const data = await res.json();
+              if (!res.ok && data.code !== "TRIAL_ALREADY_USED") {
+                setToast({
+                  type: "error",
+                  title: "Could not start trial",
+                  message: data.error ?? "Please try again.",
+                });
+                return;
+              }
+              await refreshSubscription();
+              await updateSession({
+                planId: data.subscription?.planId ?? "trial",
+                isTrial: data.trial?.trialActive ?? true,
+                trialEndsAt: data.trial?.trialEndsAt ?? null,
+                trialExpired: data.trial?.trialExpired ?? false,
+              });
+              queuePlanActivationToast(
+                "Trial started",
+                "Your 14-day Actora free trial is now active."
+              );
+              router.push("/dashboard");
+            } catch {
+              setToast({
+                type: "error",
+                title: "Could not start trial",
+                message: "Please try again.",
+              });
+            }
+            return;
+          }
           router.push("/signup");
         }
         return;
@@ -133,7 +176,16 @@ export function PricingSection({
 
       openUpgrade(plan, period, currency);
     },
-    [mode, session, period, currency, openUpgrade, router]
+    [
+      mode,
+      session,
+      period,
+      currency,
+      openUpgrade,
+      router,
+      refreshSubscription,
+      updateSession,
+    ]
   );
 
   const handleDevUpgrade = useCallback(

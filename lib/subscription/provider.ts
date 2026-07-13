@@ -9,6 +9,13 @@ import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { logApiError } from "@/lib/api/log-error";
 import {
+  getRemainingTrialDays,
+  getRemainingTrialHours,
+  getTrialProgressPercent,
+  hasProductAccess,
+  isTrialActive,
+} from "@/lib/trial/helpers";
+import {
   getStoredSubscription,
   setStoredPlan,
   type StoredSubscription,
@@ -41,6 +48,10 @@ function toUserSubscription(
     currentPeriodEnd: stored.currentPeriodEnd,
     usage,
     updatedAt: stored.updatedAt,
+    isTrial: stored.isTrial,
+    trialStartedAt: stored.trialStartedAt,
+    trialEndsAt: stored.trialEndsAt,
+    trialExpired: stored.trialExpired,
   };
 }
 
@@ -56,6 +67,10 @@ export function createDefaultSubscription(userId: string): UserSubscription {
       inboxesConnected: 0,
     },
     updatedAt: new Date().toISOString(),
+    isTrial: false,
+    trialStartedAt: null,
+    trialEndsAt: null,
+    trialExpired: false,
   };
 }
 
@@ -63,11 +78,26 @@ export function toSubscriptionSnapshot(
   subscription: UserSubscription
 ): SubscriptionSnapshot {
   const limits = getPlanLimits(subscription.planId);
+  const trialFields = {
+    isTrial: subscription.isTrial,
+    trialStartedAt: subscription.trialStartedAt,
+    trialEndsAt: subscription.trialEndsAt,
+    trialExpired: subscription.trialExpired,
+  };
 
   return {
     ...subscription,
     limits,
     planName: getPlanDisplayName(subscription.planId),
+    trialActive: isTrialActive(trialFields),
+    remainingTrialDays: getRemainingTrialDays(trialFields),
+    remainingTrialHours: getRemainingTrialHours(trialFields),
+    trialProgressPercent: getTrialProgressPercent(trialFields),
+    hasProductAccess: hasProductAccess({
+      planId: subscription.planId,
+      status: subscription.status,
+      trial: trialFields,
+    }),
   };
 }
 
@@ -101,10 +131,6 @@ async function loadInboxCountSafely(userId: string): Promise<number> {
 }
 
 class SupabaseSubscriptionProvider implements SubscriptionProvider {
-  /**
-   * Reads plan state directly from Supabase (service role).
-   * Usage/inbox counts are best-effort and never fail the subscription read.
-   */
   async getSubscription(userId: string): Promise<UserSubscription> {
     const stored = await getStoredSubscription(userId);
 

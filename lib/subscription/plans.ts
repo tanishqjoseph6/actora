@@ -9,6 +9,11 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     inboxes: 1,
     unlimited: false,
   },
+  trial: {
+    aiActionsPerMonth: Infinity,
+    inboxes: Infinity,
+    unlimited: true,
+  },
   starter: {
     aiActionsPerMonth: Infinity,
     inboxes: Infinity,
@@ -28,6 +33,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
 
 export const PLAN_DISPLAY_NAMES: Record<PlanId, string> = {
   free: "Free",
+  trial: "Free Trial",
   starter: "Team",
   pro: "Pro",
   enterprise: "Enterprise",
@@ -54,6 +60,11 @@ export function getPlanBadgeStyles(planId: PlanId): {
   dot: string;
 } {
   switch (planId) {
+    case "trial":
+      return {
+        badge: "bg-[#2563EB]/15 border-[#2563EB]/40 text-[#93C5FD]",
+        dot: "bg-[#3B82F6]",
+      };
     case "starter":
       return {
         badge: "bg-[#1D4ED8]/20 border-[#1D4ED8]/50 text-[#93C5FD]",

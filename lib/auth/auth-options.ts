@@ -16,6 +16,8 @@ import {
 } from "@/lib/supabase/config";
 import { getStoredSubscription } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+import { provisionTrialOnSignIn } from "@/lib/trial/service";
+import type { PlanId } from "@/lib/subscription";
 
 configureNextAuthEnv();
 
@@ -187,19 +189,29 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, account, trigger, session, user }) {
-      if (account || user) {
-        let planId = token.planId ?? "free";
-        const email = user?.email ?? token.email;
-        if (email) {
-          try {
-            const stored = await getStoredSubscription(
-              normalizeSubscriptionUserId(email)
-            );
-            planId = stored.planId;
-          } catch (error) {
-            console.error("[next-auth] Failed to load subscription plan:", error);
+      const email = (user?.email ?? token.email) as string | undefined;
+
+      const applySubscriptionToToken = async () => {
+        if (!email) return;
+        try {
+          // Ensure first-time users get a trial before we read plan into the JWT.
+          if (account || user) {
+            await provisionTrialOnSignIn(email);
           }
+          const stored = await getStoredSubscription(
+            normalizeSubscriptionUserId(email)
+          );
+          token.planId = stored.planId as PlanId;
+          token.isTrial = stored.isTrial;
+          token.trialEndsAt = stored.trialEndsAt;
+          token.trialExpired = stored.trialExpired;
+        } catch (error) {
+          console.error("[next-auth] Failed to load subscription plan:", error);
         }
+      };
+
+      if (account || user) {
+        await applySubscriptionToToken();
 
         if (account) {
           return {
@@ -209,19 +221,40 @@ export const authOptions: NextAuthOptions = {
             accessTokenExpires: account.expires_at
               ? account.expires_at * 1000
               : Date.now() + 3600 * 1000,
-            planId,
           };
         }
 
-        return { ...token, planId };
+        return token;
       }
 
-      if (trigger === "update" && session?.planId) {
-        token.planId = session.planId;
+      if (trigger === "update") {
+        if (session?.planId) {
+          token.planId = session.planId as PlanId;
+        }
+        if (typeof session?.isTrial === "boolean") {
+          token.isTrial = session.isTrial;
+        }
+        if (session?.trialEndsAt !== undefined) {
+          token.trialEndsAt = session.trialEndsAt;
+        }
+        if (typeof session?.trialExpired === "boolean") {
+          token.trialExpired = session.trialExpired;
+        }
+        // Refresh from DB when client requests a session update after trial/payment.
+        await applySubscriptionToToken();
       }
 
       if (!token.planId) {
         token.planId = "free";
+      }
+
+      // Periodically refresh trial expiry from DB (every JWT refresh / Google token refresh).
+      if (
+        token.isTrial &&
+        token.trialEndsAt &&
+        new Date(token.trialEndsAt).getTime() <= Date.now()
+      ) {
+        await applySubscriptionToToken();
       }
 
       if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
@@ -238,6 +271,9 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       session.accessToken = token.accessToken;
       session.planId = token.planId ?? "free";
+      session.isTrial = Boolean(token.isTrial);
+      session.trialEndsAt = token.trialEndsAt ?? null;
+      session.trialExpired = Boolean(token.trialExpired);
 
       if (token.error === "RefreshAccessTokenError") {
         session.error = "RefreshAccessTokenError";
@@ -288,11 +324,9 @@ export const authOptions: NextAuthOptions = {
   },
 
   events: {
-    async signIn({ user, account, isNewUser }) {
+    async signIn({ user }) {
       console.log("[next-auth][event][signIn]", {
         email: user.email,
-        provider: account?.provider,
-        isNewUser,
       });
     },
   },

@@ -16,6 +16,7 @@ import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
 import { BillingFaq } from "@/components/billing/premium/BillingFaq";
 import { CurrentPlanSection } from "@/components/billing/premium/CurrentPlanSection";
+import { TrialBillingCard } from "@/components/billing/TrialBillingCard";
 import { useSubscription } from "@/hooks/useSubscription";
 
 export default function Billing() {
@@ -28,6 +29,10 @@ export default function Billing() {
   const handleUpgradePlan = useCallback(() => {
     setProUpgradeRequest((n) => n + 1);
   }, []);
+
+  const showTrialCard =
+    Boolean(subscription?.trialActive) ||
+    Boolean(subscription?.trialExpired && subscription.planId === "free");
 
   return (
     <main className="min-h-screen bg-[#05070B] text-white overflow-hidden">
@@ -42,41 +47,51 @@ export default function Billing() {
           <BillingPageSkeleton />
         ) : (
           <>
-        <PricingSection
-          badge="Billing"
-          title="Billing"
-          subtitle="Manage your subscription, invoices and usage."
-          mode="billing"
-          currentPlanId={subscription?.planId}
-          syncFromUrl
-          onPaymentSuccess={refresh}
-          proUpgradeRequest={proUpgradeRequest}
-          className="mb-16 lg:mb-20"
-        />
+            {showTrialCard && subscription && (
+              <TrialBillingCard subscription={subscription} />
+            )}
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4 }}
-          className="space-y-8 lg:space-y-10 mb-16 lg:mb-20"
-        >
-          <CurrentPlanSection
-            subscription={subscription}
-            loading={loading}
-            onUpgradePlan={handleUpgradePlan}
-          />
-        </motion.div>
+            <div id="pricing">
+              <PricingSection
+                badge="Billing"
+                title="Billing"
+                subtitle="Manage your subscription, invoices and usage."
+                mode="billing"
+                currentPlanId={
+                  subscription?.planId === "trial"
+                    ? "free"
+                    : subscription?.planId
+                }
+                syncFromUrl
+                onPaymentSuccess={refresh}
+                proUpgradeRequest={proUpgradeRequest}
+                className="mb-16 lg:mb-20"
+              />
+            </div>
 
-        <div className="space-y-8 lg:space-y-10 mb-16 lg:mb-20">
-          <ComparisonTable />
-          <BillingFaq />
-        </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="space-y-8 lg:space-y-10 mb-16 lg:mb-20"
+            >
+              <CurrentPlanSection
+                subscription={subscription}
+                loading={loading}
+                onUpgradePlan={handleUpgradePlan}
+              />
+            </motion.div>
 
-        <div className="space-y-6">
-          <BillingHistoryTable />
-          <RazorpayPlaceholder />
-        </div>
+            <div className="space-y-8 lg:space-y-10 mb-16 lg:mb-20">
+              <ComparisonTable />
+              <BillingFaq />
+            </div>
+
+            <div className="space-y-6">
+              <BillingHistoryTable />
+              <RazorpayPlaceholder />
+            </div>
           </>
         )}
       </div>

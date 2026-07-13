@@ -51,8 +51,15 @@ function resolveEffectivePlanId(
   sessionPlan: PlanId
 ): PlanId {
   if (!subscriptionPlan) return sessionPlan;
-  if (subscriptionPlan === "free" && sessionPlan !== "free") {
+  if (
+    (subscriptionPlan === "free" || subscriptionPlan === "trial") &&
+    sessionPlan !== "free" &&
+    sessionPlan !== "trial"
+  ) {
     return sessionPlan;
+  }
+  if (subscriptionPlan === "free" && sessionPlan === "trial") {
+    return "trial";
   }
   return subscriptionPlan;
 }
