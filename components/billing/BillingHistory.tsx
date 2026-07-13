@@ -1,5 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { MOCK_BILLING_HISTORY } from "./pricing-data";
-import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
 
 export function BillingHistoryTable() {
   return (
@@ -55,8 +57,56 @@ export function BillingHistoryTable() {
   );
 }
 
+type RazorpayHealth = {
+  connected: boolean;
+  keyId: boolean;
+  keySecret: boolean;
+  webhookSecret: boolean;
+};
+
+function isRazorpayConnectedFromHealth(razorpay: RazorpayHealth | null): boolean {
+  if (!razorpay) return false;
+  return (
+    razorpay.connected === true ||
+    (razorpay.keyId === true && razorpay.keySecret === true)
+  );
+}
+
 export function RazorpayPlaceholder() {
-  const isConnected = RAZORPAY_CONNECTED;
+  const [status, setStatus] = useState<"loading" | "connected" | "missing">(
+    "loading"
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHealth() {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" });
+        const data = (await response.json()) as {
+          checks?: { razorpay?: RazorpayHealth };
+        };
+        const razorpay = data.checks?.razorpay ?? null;
+        if (!cancelled) {
+          setStatus(
+            isRazorpayConnectedFromHealth(razorpay) ? "connected" : "missing"
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setStatus("missing");
+        }
+      }
+    }
+
+    void loadHealth();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const isConnected = status === "connected";
+  const isLoading = status === "loading";
 
   return (
     <div
@@ -77,19 +127,27 @@ export function RazorpayPlaceholder() {
             Razorpay Payment Gateway
           </h3>
           <p className="text-sm text-gray-400 mt-1">
-            {isConnected
-              ? "Secure payments powered by Razorpay. Checkout is active."
-              : "Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to enable payments."}
+            {isLoading
+              ? "Checking payment gateway status…"
+              : isConnected
+                ? "Secure payments powered by Razorpay. Checkout is active."
+                : "Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to enable payments."}
           </p>
         </div>
         <span
           className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
-            isConnected
-              ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
-              : "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-500"
+            isLoading
+              ? "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-400"
+              : isConnected
+                ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
+                : "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-500"
           }`}
         >
-          {isConnected ? "Connected" : "Not configured"}
+          {isLoading
+            ? "Checking…"
+            : isConnected
+              ? "✅ Razorpay Connected"
+              : "Not configured"}
         </span>
       </div>
     </div>
