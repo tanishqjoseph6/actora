@@ -94,7 +94,7 @@ export function PricingSection({
         "Payment successful!",
         `Welcome to Actora ${planName}. Your plan is now active.`
       );
-      router.push(devUpgradeRedirectTo);
+      router.push(mode === "billing" ? "/billing?payment=success" : devUpgradeRedirectTo);
     },
     onFailure: (message) => {
       setToast({

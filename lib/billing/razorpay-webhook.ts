@@ -6,6 +6,9 @@ import {
   parseRazorpayNotes,
 } from "@/lib/billing/razorpay-notes";
 import { resolveAppPlanFromRazorpayPlanId } from "@/lib/billing/razorpay-plans";
+import { getChargeAmount } from "@/lib/billing/pricing";
+import { recordBillingPayment } from "@/lib/billing/payment-repository";
+import { isBillingCurrency, type BillingCurrency } from "@/lib/billing/currency";
 import { logApiError } from "@/lib/api/log-error";
 import { setStoredPlan } from "@/lib/subscription/repository";
 import type { BillingInterval, PlanId } from "@/lib/subscription/types";
@@ -204,9 +207,43 @@ export async function handleRazorpayWebhook(
     {
       razorpaySubscriptionId: context.subscriptionId,
       razorpayPlanId: context.razorpayPlanId,
+      razorpayPaymentId: context.paymentId,
       currentPeriodEnd: context.currentPeriodEnd,
     }
   );
+
+  if (context.paymentId) {
+    try {
+      const paymentNotes = parseRazorpayNotes(
+        payload.payload?.payment?.entity?.notes
+      );
+      const subscriptionNotes = parseRazorpayNotes(
+        payload.payload?.subscription?.entity?.notes
+      );
+      const rawCurrency =
+        paymentNotes?.currency ?? subscriptionNotes?.currency ?? "USD";
+      const currency: BillingCurrency = isBillingCurrency(rawCurrency)
+        ? rawCurrency
+        : "USD";
+      const amount =
+        getChargeAmount(currency, context.planId, context.period) ?? 0;
+      await recordBillingPayment({
+        userId: context.userId,
+        planId: context.planId,
+        billingInterval: context.period,
+        amount,
+        currency,
+        razorpayPaymentId: context.paymentId,
+        razorpaySubscriptionId: context.subscriptionId,
+        status: "paid",
+      });
+    } catch (error) {
+      logApiError("razorpay-webhook", error, {
+        operation: "recordBillingPayment",
+        paymentId: context.paymentId,
+      });
+    }
+  }
 
   console.log("[razorpay-webhook] step:upsert-success", {
     event,

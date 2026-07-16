@@ -116,6 +116,17 @@ export function PremiumPricingCard({
             {plan.saveNote}
           </motion.p>
         )}
+        {plan.compareAtLabel && plan.saveNote && (
+          <motion.p
+            key={`${plan.id}-compare-${plan.compareAtLabel}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.08 }}
+            className="text-xs text-gray-500 mt-1 line-through"
+          >
+            {plan.compareAtLabel}/year
+          </motion.p>
+        )}
         {isEnterprise && (
           <p className="text-sm text-gray-400 mt-2">Tailored to your organization</p>
         )}

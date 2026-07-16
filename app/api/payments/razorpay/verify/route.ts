@@ -9,7 +9,11 @@ import {
 } from "@/lib/billing/razorpay";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isBillingCurrency } from "@/lib/billing/currency";
-import { getRazorpayPlanId, isPaidPlan } from "@/lib/billing/pricing";
+import { getRazorpayPlanId, getChargeAmount, isPaidPlan } from "@/lib/billing/pricing";
+import {
+  findPaymentByRazorpayId,
+  recordBillingPayment,
+} from "@/lib/billing/payment-repository";
 import { parseRazorpayNotes } from "@/lib/billing/razorpay-notes";
 import {
   subscriptionProvider,
@@ -144,10 +148,29 @@ export async function POST(request: NextRequest) {
 
     console.log("[razorpay/verify] step:signature — ok");
 
+    const existingPayment = await findPaymentByRazorpayId(razorpay_payment_id);
+    if (existingPayment) {
+      const snapshot = toSubscriptionSnapshot(
+        await subscriptionProvider.getSubscription(userId)
+      );
+      console.log("[razorpay/verify] step:duplicate — payment already processed", {
+        paymentId: razorpay_payment_id,
+      });
+      return NextResponse.json({
+        success: true,
+        duplicate: true,
+        subscription: snapshot,
+        paymentId: razorpay_payment_id,
+        razorpayPlanId: expectedPlanId,
+      });
+    }
+
     const razorpay = getRazorpayClient();
     let upsertMetadata: SubscriptionUpsertMetadata = {
       razorpayPlanId: expectedPlanId,
       razorpaySubscriptionId: razorpay_subscription_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
     };
 
     if (razorpay_subscription_id) {
@@ -163,6 +186,8 @@ export async function POST(request: NextRequest) {
       upsertMetadata = {
         razorpaySubscriptionId: razorpay_subscription_id,
         razorpayPlanId: expectedPlanId,
+        razorpayPaymentId: razorpay_payment_id,
+        razorpayOrderId: razorpay_order_id,
         currentPeriodEnd: currentEnd,
       };
 
@@ -252,6 +277,19 @@ export async function POST(request: NextRequest) {
       period,
       upsertMetadata
     );
+
+    const chargeAmount = getChargeAmount(currency, planId, period) ?? 0;
+    await recordBillingPayment({
+      userId,
+      planId,
+      billingInterval: period,
+      amount: chargeAmount,
+      currency,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpayOrderId: razorpay_order_id,
+      razorpaySubscriptionId: razorpay_subscription_id,
+      status: "paid",
+    });
 
     console.log("[razorpay/verify] step:upsert — success", {
       userId: stored.userId,

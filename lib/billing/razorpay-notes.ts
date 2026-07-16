@@ -3,8 +3,11 @@ import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export type ParsedRazorpayNotes = {
   userId?: string;
+  workspaceId?: string;
+  email?: string;
   planId?: string;
   period?: string;
+  billingCycle?: string;
   currency?: string;
   razorpayPlanId?: string;
 };
@@ -28,15 +31,22 @@ export function parseRazorpayNotes(notes: unknown): ParsedRazorpayNotes | null {
   }
 
   const userId = pickNote(record, "userId", "user_id", "email");
+  const workspaceId = pickNote(record, "workspaceId", "workspace_id");
+  const email = pickNote(record, "email");
   const planId = pickNote(record, "planId", "plan_id", "plan")?.toLowerCase();
-  const period = pickNote(record, "period", "billing_period");
+  const period = pickNote(record, "period", "billing_period", "billingCycle");
   const currency = pickNote(record, "currency");
   const razorpayPlanId = pickNote(record, "razorpayPlanId", "razorpay_plan_id");
 
   return {
     userId: userId ? normalizeSubscriptionUserId(userId) : undefined,
+    workspaceId: workspaceId
+      ? normalizeSubscriptionUserId(workspaceId)
+      : undefined,
+    email: email ? normalizeSubscriptionUserId(email) : undefined,
     planId,
     period,
+    billingCycle: period,
     currency,
     razorpayPlanId,
   };

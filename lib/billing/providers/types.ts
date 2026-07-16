@@ -5,6 +5,7 @@ export type PaymentProviderId = "razorpay" | "stripe";
 
 export type CheckoutOrderRequest = {
   userId: string;
+  email?: string;
   planId: PlanId;
   period: BillingPeriod;
   currency: BillingCurrency;

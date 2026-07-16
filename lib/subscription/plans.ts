@@ -21,8 +21,8 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   },
   pro: {
     aiActionsPerMonth: Infinity,
-    inboxes: Infinity,
-    unlimited: true,
+    inboxes: 20,
+    unlimited: false,
   },
   enterprise: {
     aiActionsPerMonth: Infinity,

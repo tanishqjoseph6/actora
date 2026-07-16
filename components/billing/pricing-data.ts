@@ -1,4 +1,11 @@
 import type { BillingCurrency } from "@/lib/billing/currency";
+import {
+  getInrChargeAmount,
+  getInrPriceLabel,
+  getUsdChargeAmount,
+  getUsdPriceLabel,
+} from "@/lib/billing/pricing-amounts";
+import { formatInrPaise } from "@/lib/billing/exchange-rate";
 
 export type BillingPeriod = "monthly" | "yearly";
 
@@ -11,8 +18,52 @@ export type PlanDisplayConfig = {
   priceSuffix: string;
   billingNote?: string;
   saveNote?: string;
+  compareAtLabel?: string;
   chargeAmount: number;
 };
+
+export const YEARLY_DISCOUNT = 0.15;
+
+function buildPlanDisplayConfig(
+  currency: BillingCurrency,
+  period: BillingPeriod,
+  planId: PaidPlanId
+): PlanDisplayConfig {
+  const chargeAmount =
+    currency === "USD"
+      ? getUsdChargeAmount(planId, period)
+      : getInrChargeAmount(planId, period);
+
+  const priceLabel =
+    currency === "USD"
+      ? getUsdPriceLabel(planId, period)
+      : getInrPriceLabel(planId, period);
+
+  const priceSuffix = period === "yearly" ? "/year" : "/month";
+
+  if (period === "yearly") {
+    const fullYearCents =
+      currency === "USD"
+        ? getUsdChargeAmount(planId, "monthly") * 12
+        : getInrChargeAmount(planId, "monthly") * 12;
+
+    const compareAtLabel =
+      currency === "USD"
+        ? `$${(fullYearCents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
+        : formatInrPaise(fullYearCents);
+
+    return {
+      priceLabel,
+      priceSuffix,
+      billingNote: "Billed yearly",
+      saveNote: "Save 15% with annual billing",
+      compareAtLabel,
+      chargeAmount,
+    };
+  }
+
+  return { priceLabel, priceSuffix, chargeAmount };
+}
 
 /** Display prices per currency. Razorpay plan IDs are configured via server env vars. */
 export const BILLING_PRICING: Record<
@@ -21,67 +72,25 @@ export const BILLING_PRICING: Record<
 > = {
   USD: {
     monthly: {
-      pro: {
-        priceLabel: "$25",
-        priceSuffix: "/month",
-        chargeAmount: 2500,
-      },
-      starter: {
-        priceLabel: "$299",
-        priceSuffix: "/month",
-        chargeAmount: 29900,
-      },
+      pro: buildPlanDisplayConfig("USD", "monthly", "pro"),
+      starter: buildPlanDisplayConfig("USD", "monthly", "starter"),
     },
     yearly: {
-      pro: {
-        priceLabel: "$255",
-        priceSuffix: "/year",
-        billingNote: "Billed yearly",
-        saveNote: "Save 15% with annual billing",
-        chargeAmount: 25500,
-      },
-      starter: {
-        priceLabel: "$3,049",
-        priceSuffix: "/year",
-        billingNote: "Billed yearly",
-        saveNote: "Save 15% with annual billing",
-        chargeAmount: 304900,
-      },
+      pro: buildPlanDisplayConfig("USD", "yearly", "pro"),
+      starter: buildPlanDisplayConfig("USD", "yearly", "starter"),
     },
   },
   INR: {
     monthly: {
-      pro: {
-        priceLabel: "₹2,199",
-        priceSuffix: "/month",
-        chargeAmount: 219900,
-      },
-      starter: {
-        priceLabel: "₹24,999",
-        priceSuffix: "/month",
-        chargeAmount: 2499900,
-      },
+      pro: buildPlanDisplayConfig("INR", "monthly", "pro"),
+      starter: buildPlanDisplayConfig("INR", "monthly", "starter"),
     },
     yearly: {
-      pro: {
-        priceLabel: "₹22,429",
-        priceSuffix: "/year",
-        billingNote: "Billed yearly",
-        saveNote: "Save 15% with annual billing",
-        chargeAmount: 2242900,
-      },
-      starter: {
-        priceLabel: "₹254,990",
-        priceSuffix: "/year",
-        billingNote: "Billed yearly",
-        saveNote: "Save 15% with annual billing",
-        chargeAmount: 25499000,
-      },
+      pro: buildPlanDisplayConfig("INR", "yearly", "pro"),
+      starter: buildPlanDisplayConfig("INR", "yearly", "starter"),
     },
   },
 };
-
-export const YEARLY_DISCOUNT = 0.15;
 
 export type PlanPriceConfig = PlanDisplayConfig;
 
@@ -93,6 +102,7 @@ export type PricingPlan = {
   priceSuffix: string;
   billingNote?: string;
   saveNote?: string;
+  compareAtLabel?: string;
   chargeAmount?: number | null;
   monthlyPrice: number | null;
   badge?: string;
@@ -104,18 +114,24 @@ export type PricingPlan = {
 
 const PRICING_PLAN_TEMPLATES: Omit<
   PricingPlan,
-  "priceLabel" | "priceSuffix" | "billingNote" | "saveNote" | "chargeAmount"
+  | "priceLabel"
+  | "priceSuffix"
+  | "billingNote"
+  | "saveNote"
+  | "compareAtLabel"
+  | "chargeAmount"
 >[] = [
   {
     id: "free",
-    name: "Free Trial",
-    description: "No credit card required — 14 days of full Pro access",
+    name: "Free",
+    description: "Start with a 14-day trial — no credit card required",
     monthlyPrice: 0,
     features: [
-      "14-day Pro trial",
-      "Unlimited Gmail Accounts during trial",
-      "AI Inbox, CRM & Automations",
-      "Analytics & Meetings",
+      "14-day free trial",
+      "1 Gmail Account",
+      "Limited AI usage",
+      "Basic Inbox",
+      "Basic CRM",
       "No credit card required",
     ],
     cta: "Start Free 14-Day Trial",
@@ -129,7 +145,7 @@ const PRICING_PLAN_TEMPLATES: Omit<
     badge: "Most Popular",
     recommended: true,
     features: [
-      "Unlimited Gmail Accounts",
+      "20 Gmail Accounts",
       "AI Inbox",
       "CRM",
       "Pipeline",
@@ -148,9 +164,10 @@ const PRICING_PLAN_TEMPLATES: Omit<
     id: "starter",
     name: "Team",
     description: "Collaborate across your entire revenue team",
-    monthlyPrice: 299,
+    monthlyPrice: 69,
     features: [
       "Everything in Pro",
+      "Unlimited Gmail Accounts",
       "Unlimited Team Members",
       "Shared Inbox",
       "Team Workspace",
@@ -197,7 +214,7 @@ export function getDisplayPlans(
     if (template.id === "free" || template.id === "trial") {
       return {
         ...template,
-        priceLabel: "$0",
+        priceLabel: currency === "INR" ? "₹0" : "$0",
         priceSuffix: "/month",
         chargeAmount: null,
       };
@@ -223,6 +240,7 @@ export function getDisplayPlans(
       priceSuffix: priceConfig.priceSuffix,
       billingNote: priceConfig.billingNote,
       saveNote: priceConfig.saveNote,
+      compareAtLabel: priceConfig.compareAtLabel,
       chargeAmount: priceConfig.chargeAmount,
     };
   });
@@ -239,30 +257,6 @@ export function getPlanById(
   return getDisplayPlans(currency, period).find((plan) => plan.id === id);
 }
 
-export const MOCK_BILLING_HISTORY = [
-  {
-    id: "inv_001",
-    date: "Mar 1, 2026",
-    plan: "Free",
-    amount: "$0.00",
-    status: "Paid" as const,
-  },
-  {
-    id: "inv_002",
-    date: "Feb 1, 2026",
-    plan: "Free",
-    amount: "$0.00",
-    status: "Paid" as const,
-  },
-  {
-    id: "inv_003",
-    date: "Jan 1, 2026",
-    plan: "Free",
-    amount: "$0.00",
-    status: "Paid" as const,
-  },
-];
-
 export type ComparisonValue = boolean | string;
 
 export type ComparisonRow = {
@@ -274,13 +268,15 @@ export type ComparisonRow = {
 };
 
 export const COMPARISON_ROWS: ComparisonRow[] = [
-  { label: "Gmail Accounts", free: "1", pro: "Unlimited", team: "Unlimited", enterprise: "Unlimited" },
-  { label: "AI Inbox", free: true, pro: true, team: true, enterprise: true },
+  { label: "Gmail Accounts", free: "1", pro: "20", team: "Unlimited", enterprise: "Unlimited" },
+  { label: "AI Usage", free: "Limited", pro: "Unlimited", team: "Unlimited", enterprise: "Unlimited" },
+  { label: "AI Inbox", free: "Basic", pro: true, team: true, enterprise: true },
   { label: "CRM", free: "Basic", pro: true, team: true, enterprise: true },
   { label: "Automations", free: false, pro: true, team: true, enterprise: true },
   { label: "Meetings", free: false, pro: true, team: true, enterprise: true },
   { label: "Analytics", free: false, pro: true, team: true, enterprise: true },
   { label: "Shared Inbox", free: false, pro: false, team: true, enterprise: true },
+  { label: "Team Members", free: "1", pro: "1", team: "Unlimited", enterprise: "Unlimited" },
   { label: "SSO", free: false, pro: false, team: false, enterprise: true },
   { label: "Priority Support", free: false, pro: true, team: true, enterprise: true },
   { label: "Dedicated Manager", free: false, pro: false, team: false, enterprise: true },
@@ -295,7 +291,7 @@ export const BILLING_FAQ = [
   {
     question: "Can I upgrade anytime?",
     answer:
-      "Yes. Upgrades take effect immediately and are prorated through Razorpay checkout for supported currencies.",
+      "Yes. Upgrades take effect immediately through Razorpay checkout. Downgrades apply at your next renewal date.",
   },
   {
     question: "Do you offer refunds?",
@@ -305,11 +301,11 @@ export const BILLING_FAQ = [
   {
     question: "How many Gmail accounts can I connect?",
     answer:
-      "Free includes 1 inbox. Pro and above include unlimited Gmail accounts for your workspace.",
+      "Free includes 1 inbox. Pro includes 20 Gmail accounts. Team and above include unlimited Gmail accounts.",
   },
   {
     question: "Can I switch plans later?",
     answer:
-      "Absolutely. Move between plans anytime from this page — upgrades open checkout, downgrades apply at renewal.",
+      "Absolutely. Move between Pro and Team anytime from this page — upgrades open checkout, downgrades apply at renewal.",
   },
 ];

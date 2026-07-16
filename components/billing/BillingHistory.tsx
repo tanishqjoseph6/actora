@@ -1,13 +1,59 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MOCK_BILLING_HISTORY } from "./pricing-data";
+
+type PaymentRow = {
+  id: string;
+  date: string;
+  plan: string;
+  amount: string;
+  status: string;
+};
+
+function formatPaymentDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export function BillingHistoryTable() {
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPayments() {
+      try {
+        const response = await fetch("/api/billing/payments", { cache: "no-store" });
+        const data = (await response.json()) as { payments?: PaymentRow[] };
+        if (!cancelled) {
+          setPayments(
+            (data.payments ?? []).map((row) => ({
+              ...row,
+              date: formatPaymentDate(row.date),
+            }))
+          );
+        }
+      } catch {
+        if (!cancelled) setPayments([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadPayments();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] shadow-lg shadow-black/20 overflow-hidden">
       <div className="p-6 sm:p-8 border-b border-[rgba(37, 99, 235,0.1)]">
-        <h3 className="text-lg font-bold text-white">Billing History</h3>
+        <h3 className="text-lg font-bold text-white">Payment History</h3>
         <p className="text-sm text-gray-400 mt-1">
           View and download your past invoices
         </p>
@@ -25,31 +71,49 @@ export function BillingHistoryTable() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_BILLING_HISTORY.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-[rgba(37, 99, 235,0.05)] last:border-0 hover:bg-[#111827]/40 transition-colors duration-200"
-              >
-                <td className="px-6 sm:px-8 py-4 text-gray-300 whitespace-nowrap">
-                  {row.date}
-                </td>
-                <td className="px-6 sm:px-8 py-4 text-white font-medium">
-                  {row.plan}
-                </td>
-                <td className="px-6 sm:px-8 py-4 text-gray-300">{row.amount}</td>
-                <td className="px-6 sm:px-8 py-4">
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-400 text-xs font-medium">
-                    {row.status}
-                  </span>
-                </td>
-                <td className="px-6 sm:px-8 py-4 text-right">
-                  <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgba(37, 99, 235,0.15)] text-[#3B82F6] text-xs font-medium hover:bg-[#3B82F6]/10 transition-all duration-200 active:scale-[0.98]">
-                    <DownloadIcon className="w-3.5 h-3.5" />
-                    Download
-                  </button>
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="px-6 sm:px-8 py-10 text-center text-gray-500">
+                  Loading payment history…
                 </td>
               </tr>
-            ))}
+            ) : payments.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 sm:px-8 py-10 text-center text-gray-500">
+                  No payments yet. Upgrade to a paid plan to see invoices here.
+                </td>
+              </tr>
+            ) : (
+              payments.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-[rgba(37, 99, 235,0.05)] last:border-0 hover:bg-[#111827]/40 transition-colors duration-200"
+                >
+                  <td className="px-6 sm:px-8 py-4 text-gray-300 whitespace-nowrap">
+                    {row.date}
+                  </td>
+                  <td className="px-6 sm:px-8 py-4 text-white font-medium">
+                    {row.plan}
+                  </td>
+                  <td className="px-6 sm:px-8 py-4 text-gray-300">{row.amount}</td>
+                  <td className="px-6 sm:px-8 py-4">
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-400 text-xs font-medium">
+                      {row.status}
+                    </span>
+                  </td>
+                  <td className="px-6 sm:px-8 py-4 text-right">
+                    <a
+                      href={`/api/billing/invoices/${row.id}`}
+                      download
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgba(37, 99, 235,0.15)] text-[#3B82F6] text-xs font-medium hover:bg-[#3B82F6]/10 transition-all duration-200 active:scale-[0.98]"
+                    >
+                      <DownloadIcon className="w-3.5 h-3.5" />
+                      Download
+                    </a>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

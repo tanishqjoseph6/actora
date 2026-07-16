@@ -31,6 +31,8 @@ export type StoredSubscription = {
   currentPeriodEnd: string;
   razorpaySubscriptionId?: string | null;
   razorpayPlanId?: string | null;
+  razorpayPaymentId?: string | null;
+  razorpayOrderId?: string | null;
   updatedAt: string;
   isTrial: boolean;
   trialStartedAt: string | null;
@@ -41,6 +43,8 @@ export type StoredSubscription = {
 export type SubscriptionUpsertMetadata = {
   razorpaySubscriptionId?: string;
   razorpayPlanId?: string;
+  razorpayPaymentId?: string;
+  razorpayOrderId?: string;
   currentPeriodEnd?: string;
   status?: SubscriptionStatus;
   /** When upgrading to a paid plan, clears trial flags. */
@@ -75,6 +79,8 @@ function createDefaultStored(userId: string): StoredSubscription {
     currentPeriodEnd: getNextRenewalDate(),
     razorpaySubscriptionId: null,
     razorpayPlanId: null,
+    razorpayPaymentId: null,
+    razorpayOrderId: null,
     updatedAt: new Date().toISOString(),
     ...emptyTrialFields(),
   };
@@ -89,6 +95,8 @@ function mapRow(row: UserSubscriptionRow): StoredSubscription {
     currentPeriodEnd: row.current_period_end,
     razorpaySubscriptionId: row.razorpay_subscription_id,
     razorpayPlanId: row.razorpay_plan_id,
+    razorpayPaymentId: row.razorpay_payment_id ?? null,
+    razorpayOrderId: row.razorpay_order_id ?? null,
     updatedAt: row.updated_at,
     isTrial: Boolean(row.is_trial),
     trialStartedAt: row.trial_started_at ?? null,
@@ -151,6 +159,8 @@ function buildUpsertPayload(
     ...base,
     razorpay_subscription_id: row.razorpay_subscription_id,
     razorpay_plan_id: row.razorpay_plan_id,
+    razorpay_payment_id: row.razorpay_payment_id,
+    razorpay_order_id: row.razorpay_order_id,
   };
 }
 
@@ -267,6 +277,12 @@ export async function upsertUserSubscription(
       null,
     razorpay_plan_id:
       metadata.razorpayPlanId ?? existing?.razorpay_plan_id ?? null,
+    razorpay_payment_id:
+      metadata.razorpayPaymentId ??
+      existing?.razorpay_payment_id ??
+      null,
+    razorpay_order_id:
+      metadata.razorpayOrderId ?? existing?.razorpay_order_id ?? null,
     updated_at: new Date().toISOString(),
     is_trial: convertingToPaid
       ? false
@@ -296,7 +312,10 @@ export async function upsertUserSubscription(
   if (
     result.error &&
     isMissingRazorpayColumnError(result.error.message) &&
-    (row.razorpay_subscription_id || row.razorpay_plan_id)
+    (row.razorpay_subscription_id ||
+      row.razorpay_plan_id ||
+      row.razorpay_payment_id ||
+      row.razorpay_order_id)
   ) {
     console.warn(
       "[subscription/repository] retrying upsert without Razorpay columns",
@@ -486,6 +505,8 @@ export async function persistSubscription(
       currentPeriodEnd: subscription.currentPeriodEnd,
       razorpaySubscriptionId: subscription.razorpaySubscriptionId ?? undefined,
       razorpayPlanId: subscription.razorpayPlanId ?? undefined,
+      razorpayPaymentId: subscription.razorpayPaymentId ?? undefined,
+      razorpayOrderId: subscription.razorpayOrderId ?? undefined,
       isTrial: subscription.isTrial,
       trialStartedAt: subscription.trialStartedAt,
       trialEndsAt: subscription.trialEndsAt,
@@ -519,4 +540,24 @@ export async function listActiveTrialsForEmailJob(): Promise<StoredSubscription[
   }
 
   return (data as UserSubscriptionRow[]).map(mapRow);
+}
+
+export async function cancelStoredSubscription(
+  userId: string
+): Promise<StoredSubscription> {
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const existing = await getStoredSubscription(normalizedUserId);
+
+  if (!isPaidPlanId(existing.planId) || existing.status === "canceled") {
+    return existing;
+  }
+
+  return upsertUserSubscription(
+    normalizedUserId,
+    existing.planId,
+    existing.billingInterval,
+    {
+      status: "canceled",
+    }
+  );
 }

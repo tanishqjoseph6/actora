@@ -80,6 +80,7 @@ export default function Billing() {
                 subscription={subscription}
                 loading={loading}
                 onUpgradePlan={handleUpgradePlan}
+                onRefresh={refresh}
               />
             </motion.div>
 

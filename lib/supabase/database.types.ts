@@ -16,11 +16,27 @@ export type UserSubscriptionRow = {
   current_period_end: string;
   razorpay_subscription_id: string | null;
   razorpay_plan_id: string | null;
+  razorpay_payment_id: string | null;
+  razorpay_order_id: string | null;
   updated_at: string;
   is_trial: boolean;
   trial_started_at: string | null;
   trial_ends_at: string | null;
   trial_expired: boolean;
+};
+
+export type BillingPaymentRow = {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  billing_interval: string;
+  amount: number;
+  currency: string;
+  razorpay_payment_id: string | null;
+  razorpay_order_id: string | null;
+  razorpay_subscription_id: string | null;
+  status: "paid" | "failed" | "refunded";
+  created_at: string;
 };
 
 export type TrialEmailLogRow = {

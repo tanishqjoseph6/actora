@@ -32,11 +32,13 @@ export function getRazorpayClient(): Razorpay {
 
 export async function createRazorpayOrder({
   userId,
+  email,
   planId,
   period,
   currency,
 }: {
   userId: string;
+  email?: string;
   planId: PlanId;
   period: BillingPeriod;
   currency: BillingCurrency;
@@ -46,6 +48,9 @@ export async function createRazorpayOrder({
   }
 
   const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const normalizedEmail = email
+    ? normalizeSubscriptionUserId(email)
+    : normalizedUserId;
   const razorpayPlanId = getRazorpayPlanId(planId, period);
   const amount = getChargeAmount(currency, planId, period);
 
@@ -60,7 +65,11 @@ export async function createRazorpayOrder({
     total_count: period === "yearly" ? 10 : 120,
     notes: {
       userId: normalizedUserId,
+      workspaceId: normalizedUserId,
+      email: normalizedEmail,
+      plan: planId,
       planId,
+      billingCycle: period,
       period,
       currency,
       razorpayPlanId,
@@ -150,4 +159,11 @@ export function verifyRazorpayWebhookSignature(
     .digest("hex");
 
   return expected === signature;
+}
+
+export async function cancelRazorpaySubscription(
+  subscriptionId: string
+): Promise<void> {
+  const razorpay = getRazorpayClient();
+  await razorpay.subscriptions.cancel(subscriptionId, true);
 }

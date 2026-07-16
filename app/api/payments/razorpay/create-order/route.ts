@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     const provider = getPaymentProviderForCurrency(currency);
     const order = await provider.createOrder({
       userId,
+      email: sessionEmail,
       planId,
       period,
       currency,
