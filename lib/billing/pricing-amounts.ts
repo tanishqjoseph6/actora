@@ -16,7 +16,7 @@ export const USD_CHARGE_AMOUNTS: Record<
   },
   yearly: {
     pro: 25500,
-    starter: 70380,
+    starter: 70400,
   },
 };
 
