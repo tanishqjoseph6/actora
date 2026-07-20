@@ -138,6 +138,11 @@ export function isMissingUserSubscriptionsSchemaError(message: string): boolean 
   return isMissingTableSchemaError(message, "user_subscriptions");
 }
 
+/** True when PostgREST reports the waitlist_notifications schema is missing. */
+export function isMissingWaitlistSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "waitlist_notifications");
+}
+
 function isMissingTableSchemaError(message: string, table: string): boolean {
   const lower = message.toLowerCase();
   return (

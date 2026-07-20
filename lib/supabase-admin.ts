@@ -8,6 +8,7 @@ export {
   isMissingGmailSchemaError,
   isMissingUserUsageSchemaError,
   isMissingUserSubscriptionsSchemaError,
+  isMissingWaitlistSchemaError,
 } from "./supabase/server";
 
 export {
