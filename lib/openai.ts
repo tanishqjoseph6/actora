@@ -70,7 +70,7 @@ export async function generateEmailReply({
     : "";
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     temperature: tone === "short" ? 0.5 : 0.7,
     messages: [
       {
@@ -137,7 +137,7 @@ export async function generateEmailSummary({
     : "";
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     temperature: 0.4,
     messages: [
       {
@@ -262,7 +262,7 @@ export async function generateEmailInsights({
     : "";
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     temperature: 0.3,
     response_format: { type: "json_object" },
     messages: [
@@ -350,7 +350,7 @@ export async function generateCrmContactInsights(input: {
   const openai = getOpenAIClient();
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     temperature: 0.3,
     response_format: { type: "json_object" },
     messages: [

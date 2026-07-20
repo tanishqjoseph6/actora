@@ -67,7 +67,7 @@ export async function* streamAssistantChat(
 
   for (let round = 0; round < 4; round++) {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       temperature: 0.4,
       messages: openaiMessages,
       tools: ASSISTANT_TOOLS,
@@ -121,7 +121,7 @@ export async function* streamAssistantChat(
   }
 
   const stream = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     temperature: 0.4,
     messages: openaiMessages,
     stream: true,
