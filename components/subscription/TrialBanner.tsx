@@ -49,10 +49,8 @@ export function TrialBanner() {
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        className={`relative mb-6 overflow-hidden rounded-2xl border border-[#2563EB]/35 bg-gradient-to-r from-[#0B1220] via-[#0F1A2E] to-[#0B1220] p-4 sm:p-5`}
+        className="relative mb-6 overflow-hidden rounded-[18px] border border-[#3B82F6]/35 bg-[#111111] p-4 sm:p-5"
       >
-        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[#2563EB]/20 blur-3xl" />
-
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white">
@@ -62,7 +60,7 @@ export function TrialBanner() {
               {days} day{days === 1 ? "" : "s"} remaining
               {expiryLabel ? ` · ends ${expiryLabel}` : ""}. Upgrade anytime.
             </p>
-            <div className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-[#1E293B]">
+            <div className="mt-3 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/[0.06]">
               <motion.div
                 className="h-full rounded-full bg-[#3B82F6]"
                 initial={{ width: 0 }}

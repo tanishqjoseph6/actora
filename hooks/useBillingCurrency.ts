@@ -16,7 +16,7 @@ type UseBillingCurrencyResult = {
 };
 
 export function useBillingCurrency(): UseBillingCurrencyResult {
-  const [currency, setCurrencyState] = useState<BillingCurrency>("USD");
+  const [currency, setCurrencyState] = useState<BillingCurrency>("INR");
   const [loading, setLoading] = useState(true);
   const [country, setCountry] = useState<string | null>(null);
 
@@ -49,10 +49,12 @@ export function useBillingCurrency(): UseBillingCurrencyResult {
           if (data.country) setCountry(data.country);
           if (data.currency === "INR" || data.currency === "USD") {
             setCurrencyState(data.currency);
+          } else {
+            setCurrencyState("INR");
           }
         })
         .catch(() => {
-          setCurrencyState("USD");
+          setCurrencyState("INR");
         })
         .finally(() => {
           setLoading(false);

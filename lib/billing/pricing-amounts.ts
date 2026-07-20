@@ -20,6 +20,25 @@ export const USD_CHARGE_AMOUNTS: Record<
   },
 };
 
+/**
+ * Explicit INR display/charge amounts in paise.
+ * Monthly values match the public pricing page (₹2,200 / ₹6,072).
+ * Yearly applies the same 15% annual discount on those monthly rates.
+ */
+export const INR_CHARGE_AMOUNTS: Record<
+  BillingPeriod,
+  Record<PaidPlanId, number>
+> = {
+  monthly: {
+    pro: 220_000,
+    starter: 607_200,
+  },
+  yearly: {
+    pro: Math.round(2200 * 12 * 0.85) * 100,
+    starter: Math.round(6072 * 12 * 0.85) * 100,
+  },
+};
+
 export function getUsdChargeAmount(
   planId: PaidPlanId,
   period: BillingPeriod
@@ -30,9 +49,9 @@ export function getUsdChargeAmount(
 export function getInrChargeAmount(
   planId: PaidPlanId,
   period: BillingPeriod,
-  rate = getUsdInrExchangeRate()
+  _rate = getUsdInrExchangeRate()
 ): number {
-  return usdCentsToInrPaise(USD_CHARGE_AMOUNTS[period][planId], rate);
+  return INR_CHARGE_AMOUNTS[period][planId];
 }
 
 export function getUsdPriceLabel(
@@ -53,8 +72,12 @@ export function getUsdPriceLabel(
 
 export function getInrPriceLabel(
   planId: PaidPlanId,
-  period: BillingPeriod,
-  rate = getUsdInrExchangeRate()
+  period: BillingPeriod
 ): string {
-  return formatInrPaise(getInrChargeAmount(planId, period, rate));
+  return formatInrPaise(getInrChargeAmount(planId, period));
+}
+
+/** Kept for callers that still convert ad-hoc USD amounts. */
+export function convertUsdCentsToInrPaise(usdCents: number): number {
+  return usdCentsToInrPaise(usdCents);
 }

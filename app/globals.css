@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --actora-bg: #05070b;
-  --actora-surface: #0b1220;
-  --actora-card: #111827;
-  --actora-border: #1e293b;
-  --actora-primary: #2563eb;
-  --actora-primary-hover: #3b82f6;
-  --actora-primary-active: #1d4ed8;
+  --actora-bg: #0a0a0a;
+  --actora-surface: #111111;
+  --actora-card: #141414;
+  --actora-border: rgba(255, 255, 255, 0.08);
+  --actora-primary: #3b82f6;
+  --actora-primary-hover: #60a5fa;
+  --actora-primary-active: #2563eb;
   --actora-text: #ffffff;
-  --actora-text-secondary: #94a3b8;
-  --actora-muted: #64748b;
+  --actora-text-secondary: #a1a1aa;
+  --actora-muted: #71717a;
   --actora-success: #22c55e;
   --actora-error: #ef4444;
   --background: var(--actora-bg);
@@ -31,13 +31,13 @@
   --color-actora-muted: var(--actora-muted);
   --color-actora-success: var(--actora-success);
   --color-actora-error: var(--actora-error);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-geist-sans);
 }
 
 body {
   background: var(--actora-bg);
   color: var(--actora-text);
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 @keyframes slide-in-right {

@@ -1,14 +1,8 @@
 import Providers from "./providers";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import { getSiteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const siteUrl = getSiteUrl();
 
@@ -51,8 +45,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans bg-[#050816] text-white">
+    <html lang="en" className={`${GeistSans.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col font-sans bg-[#0A0A0A] text-white">
         <Providers>{children}</Providers>
       </body>
     </html>

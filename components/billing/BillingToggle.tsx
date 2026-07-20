@@ -9,38 +9,40 @@ type BillingToggleProps = {
 
 export function BillingToggle({ period, onChange }: BillingToggleProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <div className="relative flex items-center p-1 rounded-xl bg-[#0B1220] border border-[rgba(37, 99, 235,0.15)] backdrop-blur-sm">
+    <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <div className="relative flex items-center rounded-xl border border-white/[0.08] bg-[#0A0A0A] p-1 backdrop-blur-sm">
         <button
+          type="button"
           onClick={() => onChange("monthly")}
-          className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+          className={`relative z-10 rounded-lg px-5 py-2 text-sm font-medium transition-all duration-300 ${
             period === "monthly"
-              ? "text-[#050816] font-semibold"
-              : "text-gray-400 hover:text-gray-300"
+              ? "font-semibold text-white"
+              : "text-[#71717A] hover:text-[#A1A1AA]"
           }`}
         >
           Monthly
         </button>
         <button
+          type="button"
           onClick={() => onChange("yearly")}
-          className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+          className={`relative z-10 rounded-lg px-5 py-2 text-sm font-medium transition-all duration-300 ${
             period === "yearly"
-              ? "text-[#050816] font-semibold"
-              : "text-gray-400 hover:text-gray-300"
+              ? "font-semibold text-white"
+              : "text-[#71717A] hover:text-[#A1A1AA]"
           }`}
         >
           Yearly
         </button>
         <span
-          className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[#2563EB] transition-all duration-300 ease-out ${
+          className={`absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-lg bg-[#3B82F6] transition-all duration-300 ease-out ${
             period === "yearly" ? "left-[calc(50%+2px)]" : "left-1"
           }`}
           aria-hidden
         />
       </div>
 
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#2563EB] text-xs font-semibold">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/15 px-3 py-1 text-xs font-semibold text-[#3B82F6]">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3B82F6]" />
         Save 15%
       </span>
     </div>

@@ -1,13 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { FadeUp } from "./motion";
+import { cn } from "@/lib/utils";
 
 type SectionHeaderProps = {
   badge?: string;
   title: string;
-  subtitle: string;
-  align?: "center" | "left";
-  id?: string;
+  subtitle?: string;
+  align?: "left" | "center";
+  className?: string;
 };
 
 export function SectionHeader({
@@ -15,30 +16,29 @@ export function SectionHeader({
   title,
   subtitle,
   align = "center",
-  id,
+  className,
 }: SectionHeaderProps) {
-  const centered = align === "center";
-
   return (
-    <motion.div
-      id={id}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5 }}
-      className={centered ? "text-center max-w-2xl mx-auto mb-12 sm:mb-16" : "mb-8 sm:mb-10 max-w-xl"}
+    <FadeUp
+      className={cn(
+        "mb-12 sm:mb-16 max-w-2xl",
+        align === "center" ? "mx-auto text-center" : "text-left",
+        className
+      )}
     >
       {badge && (
-        <span className="inline-flex items-center gap-2 px-3 py-1 mb-4 rounded-full border border-[#1E293B] bg-[#111827] text-[#2563EB] text-xs font-semibold uppercase tracking-wider">
+        <p className="mb-4 text-xs font-medium uppercase tracking-[0.14em] text-[#3B82F6]">
           {badge}
-        </span>
+        </p>
       )}
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
+      <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold tracking-tight text-white leading-[1.15]">
         {title}
       </h2>
-      <p className={`mt-4 text-base sm:text-lg text-[#94A3B8] leading-relaxed ${centered ? "" : ""}`}>
-        {subtitle}
-      </p>
-    </motion.div>
+      {subtitle && (
+        <p className="mt-4 text-base sm:text-lg text-[#A1A1AA] leading-relaxed">
+          {subtitle}
+        </p>
+      )}
+    </FadeUp>
   );
 }

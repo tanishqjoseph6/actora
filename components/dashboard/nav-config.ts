@@ -1,9 +1,26 @@
 import type { PlanFeature } from "@/lib/subscription";
 
+export type NavIconName =
+  | "inbox"
+  | "crm"
+  | "tasks"
+  | "meetings"
+  | "automations"
+  | "assistant"
+  | "analytics"
+  | "billing"
+  | "settings"
+  | "contacts"
+  | "companies"
+  | "pipeline"
+  | "deals"
+  | "overview"
+  | "actions";
+
 export type NavItem = {
   href: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
   /** Prefix match for nested routes (e.g. /dashboard/crm) */
   matchPrefix?: string;
   /** Only highlight when pathname matches href exactly */
@@ -17,33 +34,44 @@ export type NavSection = {
   items: NavItem[];
 };
 
+/** Primary workspace nav — matches landing product surfaces */
 export const MAIN_NAV: NavItem[] = [
-  { href: "/dashboard/inbox", label: "Inbox", icon: "📥", matchPrefix: "/dashboard/inbox" },
-  { href: "/dashboard", label: "Overview", icon: "🏠", exact: true },
+  {
+    href: "/dashboard/inbox",
+    label: "AI Inbox",
+    icon: "inbox",
+    matchPrefix: "/dashboard/inbox",
+  },
+  {
+    href: "/dashboard/crm",
+    label: "CRM",
+    icon: "crm",
+    matchPrefix: "/dashboard/crm",
+  },
+  { href: "/dashboard/tasks", label: "Tasks", icon: "tasks" },
+  {
+    href: "/dashboard/meetings",
+    label: "Meetings",
+    icon: "meetings",
+    feature: "meetings",
+  },
   {
     href: "/dashboard/automations",
     label: "Automations",
-    icon: "🤖",
+    icon: "automations",
     matchPrefix: "/dashboard/automations",
     feature: "automations",
   },
   {
-    href: "/dashboard/actions",
-    label: "Actions",
-    icon: "⚡",
-    feature: "automations",
+    href: "/dashboard",
+    label: "AI Assistant",
+    icon: "assistant",
+    exact: true,
   },
-  {
-    href: "/dashboard/meetings",
-    label: "Meetings",
-    icon: "📅",
-    feature: "meetings",
-  },
-  { href: "/dashboard/tasks", label: "Tasks", icon: "📝" },
   {
     href: "/dashboard/summary",
     label: "Analytics",
-    icon: "📊",
+    icon: "analytics",
     feature: "analytics",
   },
 ];
@@ -52,41 +80,42 @@ export const CRM_NAV: NavItem[] = [
   {
     href: "/dashboard/crm",
     label: "Overview",
-    icon: "✨",
+    icon: "overview",
     matchPrefix: "/dashboard/crm",
     exact: true,
   },
   {
     href: "/dashboard/crm/contacts",
     label: "Contacts",
-    icon: "👤",
+    icon: "contacts",
     matchPrefix: "/dashboard/crm/contacts",
   },
   {
     href: "/dashboard/crm/companies",
     label: "Companies",
-    icon: "🏢",
+    icon: "companies",
     matchPrefix: "/dashboard/crm/companies",
     feature: "full_crm",
   },
   {
     href: "/dashboard/crm/pipeline",
     label: "Pipeline",
-    icon: "📊",
+    icon: "pipeline",
     matchPrefix: "/dashboard/crm/pipeline",
     feature: "full_crm",
   },
   {
     href: "/dashboard/crm/deals",
     label: "Deals",
-    icon: "💼",
+    icon: "deals",
     matchPrefix: "/dashboard/crm/deals",
     feature: "full_crm",
   },
 ];
 
 export const FOOTER_NAV: NavItem[] = [
-  { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
+  { href: "/billing", label: "Billing", icon: "billing" },
+  { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
 export type CrmTab = {

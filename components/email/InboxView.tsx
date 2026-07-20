@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { PenSquare } from "lucide-react";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
@@ -29,7 +30,7 @@ export function InboxView({ compact = false }: InboxViewProps) {
       {!compact && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 lg:mb-8">
           <div>
-            <p className={`text-sm ${dashboard.subtle} mb-2`}>📥 Mail</p>
+            <p className={`text-sm ${dashboard.subtle} mb-2`}>Mail</p>
             <h1 className={dashboard.pageTitle}>AI Inbox</h1>
             <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>
               Gmail messages with AI summaries, smart replies, and one-click actions.
@@ -187,6 +188,29 @@ export function InboxView({ compact = false }: InboxViewProps) {
           }}
         />
       )}
+
+      {!compact && !showConnectPrompt && (
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => {
+            const target =
+              inbox.selectedEmail ??
+              inbox.filteredEmails[0] ??
+              inbox.emails[0];
+            if (target) {
+              inbox.openEmailWithAiReply(target);
+            }
+          }}
+          className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3B82F6] text-white shadow-[0_12px_40px_rgba(59,130,246,0.35)] transition-colors hover:bg-[#3B82F6] sm:bottom-8 sm:right-8"
+          aria-label="Compose AI reply"
+        >
+          <PenSquare className="h-5 w-5" strokeWidth={1.75} />
+        </motion.button>
+      )}
     </>
   );
 }
@@ -209,8 +233,8 @@ function FilterChip({
       className={`
         inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200
         ${active
-          ? "bg-[#2563EB] text-white border border-[#2563EB]"
-          : "bg-[#0B1220] border border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/40 hover:text-white"
+          ? "bg-[#3B82F6] text-white border border-[#3B82F6]"
+          : "bg-[#0A0A0A] border border-white/[0.08] text-[#A1A1AA] hover:border-[#3B82F6]/40 hover:text-white"
         }
       `}
     >
@@ -232,7 +256,7 @@ function ConnectGmailState({ error }: { error: string | null }) {
         "Link Gmail to pull in messages, get AI summaries on every thread, and draft smart replies without leaving Actora."
       }
       cta={{ label: "Connect Gmail", href: "/dashboard/connect-gmail" }}
-      className="border-dashed bg-[#0B1220]/50"
+      className="border-dashed bg-[#0A0A0A]/50"
     />
   );
 }
@@ -315,7 +339,7 @@ function EmailSkeletonList() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#0B1220] border border-[#1E293B]"
+          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#0A0A0A] border border-white/[0.06]"
         >
           <Skeleton className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2.5">

@@ -1,0 +1,35 @@
+import {
+  Bot,
+  Building2,
+  Calendar,
+  Contact,
+  CreditCard,
+  Handshake,
+  Inbox,
+  Kanban,
+  LayoutDashboard,
+  ListTodo,
+  Settings,
+  Sparkles,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
+import type { NavIconName } from "./nav-config";
+
+export const NAV_ICONS: Record<NavIconName, LucideIcon> = {
+  inbox: Inbox,
+  crm: Kanban,
+  tasks: ListTodo,
+  meetings: Calendar,
+  automations: Workflow,
+  assistant: Bot,
+  analytics: Sparkles,
+  billing: CreditCard,
+  settings: Settings,
+  contacts: Contact,
+  companies: Building2,
+  pipeline: LayoutDashboard,
+  deals: Handshake,
+  overview: LayoutDashboard,
+  actions: Sparkles,
+};

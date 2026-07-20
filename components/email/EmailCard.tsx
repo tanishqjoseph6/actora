@@ -36,14 +36,14 @@ export function EmailCard({
       onClick={() => onSelect(email)}
       className={`
         group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-[16px]
-        bg-[#111827] border transition-all duration-300 ease-out cursor-pointer interactive-lift
-        hover:border-[#2563EB]/60 hover:shadow-sm hover:shadow-[#2563EB]/5
-        ${email.unread ? "border-l-2 border-l-[#2563EB]" : "border-[#1E293B]"}
-        ${selected ? "border-[#2563EB]/60 bg-[#111827]" : ""}
+        bg-[#111111] border transition-all duration-300 ease-out cursor-pointer
+        hover:-translate-y-0.5 hover:border-[#3B82F6]/50
+        ${email.unread ? "border-l-2 border-l-[#3B82F6]" : "border-white/[0.06]"}
+        ${selected ? "border-[#3B82F6]/50 bg-[#141414]" : ""}
       `}
     >
       {email.unread && (
-        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#2563EB]" aria-hidden />
+        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#3B82F6]" aria-hidden />
       )}
 
       <div
@@ -63,12 +63,12 @@ export function EmailCard({
               {email.sender}
             </p>
             {priority === "high" && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#2563EB]/15 border border-[#2563EB]/30 text-[#93C5FD] uppercase tracking-wide">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#93C5FD] uppercase tracking-wide">
                 Priority
               </span>
             )}
             {email.unread && (
-              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#3B82F6]">
+              <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#3B82F6]/15 border border-white/[0.08] text-[#3B82F6]">
                 Unread
               </span>
             )}
@@ -76,7 +76,7 @@ export function EmailCard({
               <StarIcon className="shrink-0 w-3.5 h-3.5 text-[#3B82F6]" />
             )}
           </div>
-          <time className="shrink-0 text-xs sm:text-sm text-[#64748B] group-hover:text-[#94A3B8] transition-colors">
+          <time className="shrink-0 text-xs sm:text-sm text-[#71717A] group-hover:text-[#A1A1AA] transition-colors">
             {email.date}
           </time>
         </div>
@@ -89,7 +89,7 @@ export function EmailCard({
           {email.subject}
         </p>
 
-        <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] line-clamp-2 leading-relaxed">
+        <p className="mt-1.5 text-xs sm:text-sm text-[#A1A1AA] line-clamp-2 leading-relaxed">
           {email.preview}
         </p>
 
@@ -101,7 +101,7 @@ export function EmailCard({
                 e.stopPropagation();
                 onAiReply(email);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#2563EB] text-white text-xs font-medium hover:bg-[#1D4ED8] transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#3B82F6] text-white text-xs font-medium hover:bg-[#2563EB] transition-colors"
               aria-label={`Reply with AI to ${email.sender}`}
             >
               <SparkleIcon className="w-3 h-3" />
@@ -115,7 +115,7 @@ export function EmailCard({
                 e.stopPropagation();
                 onArchive(email);
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111827] border border-[#1E293B] text-[#94A3B8] text-xs hover:text-white hover:border-[#2563EB]/40 transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111111] border border-white/[0.06] text-[#A1A1AA] text-xs hover:text-white hover:border-[#3B82F6]/40 transition-colors"
               aria-label={`Archive email from ${email.sender}`}
             >
               Archive

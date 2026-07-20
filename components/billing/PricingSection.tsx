@@ -313,15 +313,19 @@ export function PricingSection({
             </div>
           )}
 
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
-            {title}
-          </h2>
+          {title ? (
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white">
+              {title}
+            </h2>
+          ) : null}
 
-          <p className="text-[#94A3B8] mt-4 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            {subtitle}
-          </p>
+          {subtitle ? (
+            <p className="text-[#94A3B8] mt-4 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              {subtitle}
+            </p>
+          ) : null}
 
-          <div className="mt-8">
+          <div className={title || subtitle ? "mt-8" : undefined}>
             <PricingToggles
               period={period}
               currency={currency}

@@ -1,46 +1,51 @@
 "use client";
 
 import { PricingSection } from "@/components/billing/PricingSection";
-import { BillingFaq } from "@/components/billing/premium/BillingFaq";
+import { ComparisonSection } from "./ComparisonSection";
 import { FeaturesGrid } from "./FeaturesGrid";
 import { HeroSection } from "./HeroSection";
+import { LandingFaq } from "./LandingFaq";
 import { LandingFooter } from "./LandingFooter";
 import { LandingNav } from "./LandingNav";
-import { ProductSections } from "./ProductSections";
+import { ProductShowcase } from "./ProductShowcase";
 import { SectionHeader } from "./SectionHeader";
-import { TestimonialsSection } from "./TestimonialsSection";
+import { TrustedBySection } from "./TrustedBySection";
+import { FadeUp } from "./motion";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#05070B] text-white">
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
       <LandingNav />
 
       <main>
         <HeroSection />
+        <TrustedBySection />
         <FeaturesGrid />
-        <ProductSections />
-        <TestimonialsSection />
+        <ProductShowcase />
+        <ComparisonSection />
 
-        <section id="pricing" className="py-20 sm:py-28 border-t border-[#1E293B]/60">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8">
-            <PricingSection
-              title="Pricing"
-              subtitle="Start a free 14-day trial. No credit card required."
-              mode="marketing"
-            />
-          </div>
-        </section>
-
-        <section id="faq" className="pb-20 sm:pb-28 border-t border-[#1E293B]/60">
-          <div className="max-w-3xl mx-auto px-5 sm:px-8">
+        <section
+          id="pricing"
+          className="border-t border-white/[0.06] bg-[#0A0A0A] py-20 sm:py-28"
+        >
+          <div className="mx-auto max-w-6xl px-5 sm:px-8">
             <SectionHeader
-              badge="FAQ"
-              title="Questions & answers"
-              subtitle="Everything you need to know before you upgrade."
+              badge="Pricing"
+              title="Simple pricing for serious operators"
+              subtitle="Start a free 14-day trial. No credit card required."
             />
-            <BillingFaq embedded />
+            <FadeUp>
+              <PricingSection
+                title=""
+                subtitle=""
+                mode="marketing"
+                className="!mb-0"
+              />
+            </FadeUp>
           </div>
         </section>
+
+        <LandingFaq />
       </main>
 
       <LandingFooter />

@@ -10,29 +10,31 @@ type CurrencyToggleProps = {
 
 export function CurrencyToggle({ currency, onChange }: CurrencyToggleProps) {
   return (
-    <div className="relative flex items-center p-1 rounded-xl bg-[#0B1220] border border-[rgba(37, 99, 235,0.15)] backdrop-blur-sm">
+    <div className="relative flex items-center rounded-xl border border-white/[0.08] bg-[#0A0A0A] p-1 backdrop-blur-sm">
       <button
+        type="button"
         onClick={() => onChange("USD")}
-        className={`relative z-10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+        className={`relative z-10 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-300 ${
           currency === "USD"
-            ? "text-[#050816] font-semibold"
-            : "text-gray-400 hover:text-gray-300"
+            ? "font-semibold text-white"
+            : "text-[#71717A] hover:text-[#A1A1AA]"
         }`}
       >
         {CURRENCY_LABELS.USD}
       </button>
       <button
+        type="button"
         onClick={() => onChange("INR")}
-        className={`relative z-10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+        className={`relative z-10 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-300 ${
           currency === "INR"
-            ? "text-[#050816] font-semibold"
-            : "text-gray-400 hover:text-gray-300"
+            ? "font-semibold text-white"
+            : "text-[#71717A] hover:text-[#A1A1AA]"
         }`}
       >
         {CURRENCY_LABELS.INR}
       </button>
       <span
-        className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg bg-[#2563EB] transition-all duration-300 ease-out ${
+        className={`absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-lg bg-[#3B82F6] transition-all duration-300 ease-out ${
           currency === "INR" ? "left-[calc(50%+2px)]" : "left-1"
         }`}
         aria-hidden

@@ -1,99 +1,86 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { CheckCircle2, Mail, Sparkles } from "lucide-react";
 
 export function DashboardMockup() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 32 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.2 }}
-      className="relative mx-auto max-w-5xl"
+      aria-hidden
+      animate={{ y: [0, -10, 0] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      className="relative w-full"
     >
-      <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-[#2563EB]/30 via-[#1E293B]/20 to-transparent blur-sm" />
-      <div className="relative rounded-2xl border border-[#1E293B] bg-[#0B1220] shadow-sm overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1E293B] bg-[#05070B]/60">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#64748B]/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#64748B]/60" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#64748B]/60" />
-          <span className="ml-3 text-[10px] text-[#64748B] font-mono">app.useactora.com/dashboard</span>
+      <div className="absolute -inset-6 rounded-[28px] bg-[#3B82F6]/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/15" />
+          <span className="ml-3 text-[11px] font-medium tracking-wide text-[#71717A]">
+            Actora · AI Inbox
+          </span>
         </div>
 
-        <div className="flex min-h-[280px] sm:min-h-[340px]">
-          <aside className="hidden sm:flex w-48 shrink-0 flex-col border-r border-[#1E293B] p-3 gap-1 bg-[#05070B]/40">
-            <div className="text-xs font-bold text-white mb-3 px-2">Actora</div>
-            {["Inbox", "CRM", "Automations", "Analytics"].map((item, i) => (
+        <div className="grid gap-0 sm:grid-cols-[140px_1fr]">
+          <div className="hidden border-r border-white/[0.06] p-4 sm:block">
+            {["Inbox", "CRM", "Tasks", "Meetings"].map((item, i) => (
               <div
                 key={item}
-                className={`px-3 py-2 rounded-lg text-xs ${
+                className={`mb-1 rounded-xl px-3 py-2 text-xs ${
                   i === 0
-                    ? "bg-[#2563EB]/15 border border-[#2563EB]/30 text-white"
-                    : "text-[#64748B]"
+                    ? "bg-[#3B82F6]/15 text-[#93C5FD]"
+                    : "text-[#71717A]"
                 }`}
               >
                 {item}
               </div>
             ))}
-          </aside>
+          </div>
 
-          <div className="flex-1 p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-[#64748B]">Today</p>
-                <p className="text-sm font-semibold text-white mt-0.5">Good morning, Alex</p>
+          <div className="space-y-3 p-4 sm:p-5">
+            <div className="flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-[#0A0A0A] p-3.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/15 text-[#3B82F6]">
+                <Mail className="h-4 w-4" />
               </div>
-              <div className="hidden sm:flex gap-2">
-                {["12 unread", "3 deals", "AI online"].map((pill) => (
-                  <span
-                    key={pill}
-                    className="text-[10px] px-2.5 py-1 rounded-full border border-[#1E293B] text-[#94A3B8]"
-                  >
-                    {pill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {[
-                { label: "AI Actions", value: "847" },
-                { label: "Pipeline", value: "$124k" },
-                { label: "Response", value: "2.1h" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-xl border border-[#1E293B] bg-[#111827] p-3 hover:border-[#2563EB]/40 transition-colors"
-                >
-                  <p className="text-[10px] text-[#64748B]">{stat.label}</p>
-                  <p className="text-lg font-bold text-white mt-1">{stat.value}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-medium text-white">
+                    Acme · Partnership follow-up
+                  </p>
+                  <span className="shrink-0 text-[10px] text-[#52525B]">2m</span>
                 </div>
-              ))}
+                <p className="mt-1 text-xs leading-relaxed text-[#A1A1AA]">
+                  Can we schedule a demo next week and send pricing?
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="rounded-2xl border border-[#3B82F6]/25 bg-[#3B82F6]/[0.07] p-3.5">
+              <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[#93C5FD]">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI Analysis
+              </div>
+              <p className="text-xs leading-relaxed text-[#D4D4D8]">
+                Intent: demo request · Create CRM deal · Draft reply · Schedule
+                meeting
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
               {[
-                { from: "Jordan Lee", subject: "Re: Q2 proposal timeline", unread: true },
-                { from: "Acme Corp", subject: "Contract review — needs reply", unread: true },
-                { from: "Calendar", subject: "Meeting summary: Product sync", unread: false },
-              ].map((email) => (
+                { label: "CRM updated", sub: "Acme · Qualified" },
+                { label: "Task created", sub: "Send pricing deck" },
+              ].map((card) => (
                 <div
-                  key={email.subject}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
-                    email.unread
-                      ? "border-[#2563EB]/30 bg-[#111827] hover:border-[#2563EB]/50"
-                      : "border-[#1E293B] bg-[#111827]/60 hover:border-[#1E293B]"
-                  }`}
+                  key={card.label}
+                  className="rounded-2xl border border-white/[0.06] bg-[#0A0A0A] p-3"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                    {email.from.charAt(0)}
+                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {card.label}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-white truncate">{email.from}</p>
-                    <p className="text-[11px] text-[#64748B] truncate">{email.subject}</p>
-                  </div>
-                  {email.unread && (
-                    <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
-                  )}
+                  <p className="text-xs text-[#A1A1AA]">{card.sub}</p>
                 </div>
               ))}
             </div>

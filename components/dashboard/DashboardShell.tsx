@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { PremiumSidebar } from "./premium/PremiumSidebar";
-import { MobileDashboardHeader } from "./MobileDashboardHeader";
+import { DashboardTopNav } from "./premium/DashboardTopNav";
 import { dashboard } from "./premium/dashboard-tokens";
 import { useResetSidebarOnMobile } from "@/hooks/useResetSidebarOnMobile";
 
@@ -12,13 +12,14 @@ type DashboardShellProps = {
   mobileTitle?: string;
 };
 
-/** Shell for sub-pages (CRM, etc.) without global search bar */
+/** Shell for sub-pages — same design language as landing */
 export function DashboardShell({
   children,
   mobileTitle,
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useResetSidebarOnMobile(setSidebarCollapsed);
 
@@ -32,13 +33,15 @@ export function DashboardShell({
           onMobileClose={() => setMobileNavOpen(false)}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          <MobileDashboardHeader
-            title={mobileTitle}
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <DashboardTopNav
             onMenuClick={() => setMobileNavOpen(true)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            title={mobileTitle}
           />
 
-          <section className="flex-1 overflow-y-auto overflow-x-hidden premium-scrollbar p-4 sm:p-6 md:p-8 lg:p-10 min-w-0 max-w-[1600px] mx-auto w-full">
+          <section className="premium-scrollbar mx-auto w-full max-w-[1600px] min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
             {children}
           </section>
         </div>

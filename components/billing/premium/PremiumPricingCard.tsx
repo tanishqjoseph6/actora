@@ -50,10 +50,10 @@ export function PremiumPricingCard({
     <>
       {plan.badge && (
         <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-4 ${
+          className={`mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
             plan.recommended
-              ? "bg-[#2563EB] text-white"
-              : "bg-[#3B82F6]/15 border border-[#1E293B] text-[#3B82F6]"
+              ? "bg-[#3B82F6] text-white"
+              : "border border-white/[0.08] bg-[#3B82F6]/15 text-[#3B82F6]"
           }`}
         >
           {plan.recommended && "✦ "}
@@ -62,25 +62,29 @@ export function PremiumPricingCard({
       )}
 
       {showActiveBadge && (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2563EB]/15 border border-[#1E293B] text-[#2563EB] text-xs font-bold mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] animate-pulse" />
+        <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/15 px-3 py-1 text-xs font-semibold text-[#93C5FD]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3B82F6]" />
           Active
         </span>
       )}
 
-      <div className={!plan.badge && !showActiveBadge ? "" : ""}>
-        <h3 className="text-2xl sm:text-3xl font-bold text-white">{plan.name}</h3>
-        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{plan.description}</p>
+      <div>
+        <h3 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          {plan.name}
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-[#A1A1AA]">
+          {plan.description}
+        </p>
       </div>
 
-      <div className="mt-6 mb-6">
-        <div className="flex items-baseline gap-1 flex-wrap">
+      <div className="mb-6 mt-6">
+        <div className="flex flex-wrap items-baseline gap-1">
           <motion.span
             key={`${plan.id}-${plan.priceLabel}-${plan.priceSuffix}`}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="font-bold tracking-tight text-4xl sm:text-5xl text-white"
+            className="text-4xl font-bold tracking-tight text-[#3B82F6] sm:text-5xl"
           >
             {plan.priceLabel}
           </motion.span>
@@ -89,7 +93,7 @@ export function PremiumPricingCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.05 }}
-            className="text-gray-500 text-sm"
+            className="text-sm text-[#71717A]"
           >
             {plan.priceSuffix}
           </motion.span>
@@ -100,7 +104,7 @@ export function PremiumPricingCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
-            className="text-xs text-[#94A3B8] mt-2"
+            className="mt-2 text-xs text-[#A1A1AA]"
           >
             {plan.billingNote}
           </motion.p>
@@ -111,7 +115,7 @@ export function PremiumPricingCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.05 }}
-            className="text-xs text-[#3B82F6] mt-2"
+            className="mt-2 text-xs text-[#3B82F6]"
           >
             {plan.saveNote}
           </motion.p>
@@ -122,20 +126,22 @@ export function PremiumPricingCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.08 }}
-            className="text-xs text-gray-500 mt-1 line-through"
+            className="mt-1 text-xs text-[#71717A] line-through"
           >
             {plan.compareAtLabel}/year
           </motion.p>
         )}
         {isEnterprise && (
-          <p className="text-sm text-gray-400 mt-2">Tailored to your organization</p>
+          <p className="mt-2 text-sm text-[#A1A1AA]">
+            Tailored to your organization
+          </p>
         )}
       </div>
 
-      <ul className="space-y-3 mb-8 flex-1">
+      <ul className="mb-8 flex-1 space-y-3">
         {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5 text-sm text-gray-300">
-            <CheckIcon className="shrink-0 w-4 h-4 text-[#2563EB] mt-0.5" />
+          <li key={feature} className="flex items-start gap-2.5 text-sm text-white">
+            <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-[#3B82F6]" />
             <span>{feature}</span>
           </li>
         ))}
@@ -144,7 +150,9 @@ export function PremiumPricingCard({
       <PlanButton
         label={ctaLabel}
         variant={plan.ctaVariant}
-        disabled={!marketingMode && (isFreeCurrent || (plan.id === "free" && !isCurrent))}
+        disabled={
+          !marketingMode && (isFreeCurrent || (plan.id === "free" && !isCurrent))
+        }
         onClick={handleClick}
       />
     </>
@@ -157,9 +165,9 @@ export function PremiumPricingCard({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: index * 0.08 }}
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
-        className="relative lg:scale-[1.02] lg:z-10"
+        className="relative lg:z-10 lg:scale-[1.02]"
       >
-        <div className="relative h-full flex flex-col rounded-[24px] bg-[#111827] border-2 border-[#2563EB]/50 p-6 sm:p-8 shadow-lg shadow-black/40">
+        <div className="relative flex h-full flex-col rounded-[20px] border-2 border-[#3B82F6]/45 bg-[#111111] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-8">
           {cardContent}
         </div>
       </motion.div>
@@ -171,8 +179,8 @@ export function PremiumPricingCard({
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.08 }}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      className="h-full flex flex-col rounded-[24px] bg-[#111827] border border-[#1E293B] p-6 sm:p-8 shadow-sm shadow-black/30 transition-colors hover:border-[#2563EB]/40"
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="flex h-full flex-col rounded-[20px] border border-white/[0.06] bg-[#111111] p-6 shadow-sm shadow-black/30 transition-colors hover:border-[#3B82F6]/35 sm:p-8"
     >
       {cardContent}
     </motion.div>
@@ -191,7 +199,7 @@ function PlanButton({
   onClick: () => void;
 }) {
   const base =
-    "w-full py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed";
+    "w-full rounded-2xl py-3.5 text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 
   if (variant === "gradient" || variant === "primary") {
     return (
@@ -199,7 +207,7 @@ function PlanButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-sm disabled:hover:bg-[#2563EB]`}
+        className={`${base} bg-[#3B82F6] text-white hover:bg-[#2563EB] disabled:hover:bg-[#3B82F6]`}
       >
         {label}
       </button>
@@ -212,7 +220,7 @@ function PlanButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`${base} bg-[#05070B]/80 border border-[#1E293B] text-white hover:border-[#2563EB]/40 hover:bg-[#111827]/80`}
+        className={`${base} border border-white/[0.1] bg-[#0A0A0A] text-white hover:border-[#3B82F6]/40 hover:bg-[#111111]`}
       >
         {label}
       </button>
@@ -224,7 +232,7 @@ function PlanButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`${base} border border-[#1E293B] text-[#2563EB] bg-transparent hover:bg-[#2563EB]/5`}
+      className={`${base} border border-white/[0.1] bg-transparent text-[#3B82F6] hover:bg-[#3B82F6]/10`}
     >
       {label}
     </button>
@@ -233,7 +241,13 @@ function PlanButton({
 
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2.5}
+    >
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
   );

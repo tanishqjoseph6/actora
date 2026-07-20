@@ -10,6 +10,7 @@ import {
   MAIN_NAV,
   type NavItem,
 } from "@/components/dashboard/nav-config";
+import { NAV_ICONS } from "@/components/dashboard/nav-icons";
 
 type DashboardSidebarProps = {
   onNavigate?: () => void;
@@ -24,7 +25,7 @@ export function DashboardSidebar({
   const { subscription, loading } = usePlanGate();
   return (
     <aside
-      className={`flex flex-col w-64 min-h-full border-r border-blue-400/20 bg-[#0B1220]/70 backdrop-blur-xl p-6 shrink-0 ${className}`}
+      className={`flex flex-col w-64 min-h-full border-r border-blue-400/20 bg-[#0A0A0A]/70 backdrop-blur-xl p-6 shrink-0 ${className}`}
     >
       <Link
         href="/dashboard"
@@ -81,6 +82,7 @@ function NavGroup({
   return (
     <div className="space-y-1">
       {items.map((item) => {
+        const Icon = NAV_ICONS[item.icon];
         const active = item.exact
           ? pathname === item.href
           : item.matchPrefix
@@ -102,7 +104,7 @@ function NavGroup({
               }
             `}
           >
-            <span aria-hidden>{item.icon}</span>
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
             {item.label}
           </Link>
         );

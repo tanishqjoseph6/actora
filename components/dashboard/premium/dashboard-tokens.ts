@@ -1,31 +1,32 @@
-/** Shared dashboard surface tokens — black + blue only */
+/** Shared dashboard surface tokens — matches landing (black + electric blue) */
 export const dashboard = {
-  bg: "bg-[#05070B]",
-  surface: "bg-[#0B1220]",
-  card: "bg-[#111827]",
-  border: "border-[#1E293B]",
+  bg: "bg-[#0A0A0A]",
+  surface: "bg-[#111111]",
+  card: "bg-[#111111]",
+  border: "border-white/[0.06]",
   cardBase:
-    "rounded-xl border border-[#1E293B] bg-[#111827] shadow-sm",
+    "rounded-[18px] border border-white/[0.06] bg-[#111111] shadow-sm",
   cardHover:
-    "hover:border-[#2563EB]/40 transition-colors duration-200",
+    "hover:border-[#3B82F6]/35 transition-all duration-300 hover:-translate-y-0.5",
   cardInteractive:
-    "rounded-xl border border-[#1E293B] bg-[#111827] shadow-sm interactive-lift interactive-press hover:border-[#2563EB]/40",
+    "rounded-[18px] border border-white/[0.06] bg-[#111111] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#3B82F6]/35 interactive-press",
   cardLg:
-    "rounded-2xl border border-[#1E293B] bg-[#111827] shadow-sm interactive-lift",
-  panel: "rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-6",
+    "rounded-[20px] border border-white/[0.06] bg-[#111111] shadow-sm",
+  panel: "rounded-[18px] border border-white/[0.06] bg-[#111111] p-4 sm:p-6",
   panelLg:
-    "rounded-2xl border border-[#1E293B] bg-[#111827] p-5 sm:p-6 lg:p-8 shadow-sm",
-  pageTitle: "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white",
+    "rounded-[20px] border border-white/[0.06] bg-[#111111] p-5 sm:p-6 lg:p-8 shadow-sm",
+  pageTitle:
+    "text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white",
   pagePadding: "p-4 sm:p-6 md:p-8 lg:p-10",
   pageMaxWidth: "max-w-[1600px] mx-auto w-full",
   input:
-    "w-full rounded-xl bg-[#0B1220] border border-[#1E293B] text-sm text-white placeholder:text-[#64748B] focus:outline-none focus:border-[#2563EB]/50 focus:ring-1 focus:ring-[#2563EB]/20 transition-all duration-200",
+    "w-full rounded-xl bg-[#0A0A0A] border border-white/[0.08] text-sm text-white placeholder:text-[#71717A] focus:outline-none focus:border-[#3B82F6]/50 focus:ring-1 focus:ring-[#3B82F6]/20 transition-all duration-200",
   btnPrimary:
-    "inline-flex items-center justify-center bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold rounded-xl transition-all duration-200 interactive-press hover:shadow-lg hover:shadow-[#2563EB]/20",
+    "inline-flex items-center justify-center bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium rounded-xl transition-all duration-200 interactive-press active:scale-[0.98]",
   btnSecondary:
-    "inline-flex items-center justify-center border border-[#1E293B] bg-[#111827] hover:border-[#2563EB]/50 text-white font-medium rounded-xl transition-all duration-200 interactive-press",
-  muted: "text-[#94A3B8]",
-  subtle: "text-[#64748B]",
+    "inline-flex items-center justify-center border border-white/[0.1] bg-white/[0.02] hover:border-white/[0.18] hover:bg-white/[0.04] text-white font-medium rounded-xl transition-all duration-200 interactive-press active:scale-[0.98]",
+  muted: "text-[#A1A1AA]",
+  subtle: "text-[#71717A]",
   accent: "text-[#3B82F6]",
   textLink: "text-[#3B82F6] hover:text-[#93C5FD] transition-colors",
 } as const;
