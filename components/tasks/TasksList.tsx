@@ -62,7 +62,7 @@ export function TasksList({
             >
               {group.label}
             </h2>
-            <div className="flex-1 h-px bg-[#1E293B]" />
+            <div className="flex-1 h-px bg-white/[0.06]" />
             <span className="text-xs text-[#71717A] tabular-nums">
               {group.tasks.length}
             </span>

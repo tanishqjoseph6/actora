@@ -285,22 +285,36 @@ function NavSection({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              title={collapsed ? item.label : undefined}
+              title={item.label}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 interactive-press",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 interactive-press",
                 active
-                  ? "border border-[#3B82F6]/35 bg-[#3B82F6]/15 text-white"
-                  : "border border-transparent text-[#A1A1AA] hover:bg-white/[0.03] hover:text-white"
+                  ? "border border-[#3B82F6]/35 bg-[#3B82F6]/15 text-white shadow-[0_0_0_1px_rgba(59,130,246,0.08)]"
+                  : "border border-transparent text-[#A1A1AA] hover:-translate-x-0 hover:bg-white/[0.03] hover:text-white"
               )}
             >
+              {active && (
+                <motion.span
+                  layoutId="sidebar-active-pill"
+                  className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-[#3B82F6]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
               <Icon
                 className={cn(
-                  "h-4 w-4 shrink-0",
-                  active ? "text-[#93C5FD]" : "text-[#71717A] group-hover:text-[#A1A1AA]"
+                  "h-4 w-4 shrink-0 transition-colors",
+                  active
+                    ? "text-[#93C5FD]"
+                    : "text-[#71717A] group-hover:text-[#A1A1AA]"
                 )}
                 strokeWidth={1.75}
               />
               {!collapsed && <span className="truncate">{item.label}</span>}
+              {collapsed && (
+                <span className="pointer-events-none absolute left-full z-20 ml-3 whitespace-nowrap rounded-lg border border-white/[0.08] bg-[#111111] px-2.5 py-1.5 text-xs text-white opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
         })}

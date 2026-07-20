@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { AutomationRun, ExecutionLog } from "@/lib/automations/types";
 
 const LOG_STATUS_STYLES = {
@@ -22,14 +23,14 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl overflow-hidden mt-4"
+      className={`${dashboard.cardLg} overflow-hidden mt-4`}
     >
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#1E293B]">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/[0.06]">
         <div>
           <h3 className="text-base font-semibold text-white">
             {run.isTest ? "Test Run" : "Execution"} · {run.automationName}
           </h3>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className={`text-xs ${dashboard.subtle} mt-0.5`}>
             {run.trigger} · {run.durationMs}ms ·{" "}
             <span
               className={
@@ -48,16 +49,16 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
           <button
             type="button"
             onClick={onClose}
-            className="text-xs text-gray-500 hover:text-white px-2 py-1"
+            className={`text-xs ${dashboard.subtle} hover:text-white px-2 py-1 transition-colors`}
           >
             Close
           </button>
         )}
       </div>
 
-      <ul className="divide-y divide-[#2563EB]/5 max-h-80 overflow-y-auto premium-scrollbar">
+      <ul className="divide-y divide-white/[0.06] max-h-80 overflow-y-auto premium-scrollbar">
         {logs.length === 0 ? (
-          <li className="px-5 py-8 text-center text-sm text-gray-500">No step logs recorded for this run.</li>
+          <li className={`px-5 py-8 text-center text-sm ${dashboard.muted}`}>No step logs recorded for this run.</li>
         ) : (
           logs.map((log, i) => (
           <motion.li
@@ -70,12 +71,12 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm text-white">
-                  <span className="text-gray-500 mr-2">Step {log.stepIndex + 1}</span>
+                  <span className={`${dashboard.subtle} mr-2`}>Step {log.stepIndex + 1}</span>
                   {log.label}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">{log.message}</p>
+                <p className={`text-xs ${dashboard.subtle} mt-0.5`}>{log.message}</p>
                 {Object.keys(log.output).length > 0 && (
-                  <pre className="mt-2 text-[10px] text-[#94A3B8] bg-[#111827]/60 rounded-lg p-2 overflow-x-auto">
+                  <pre className="mt-2 text-[10px] text-[#71717A] bg-[#0A0A0A] rounded-lg p-2 overflow-x-auto border border-white/[0.06]">
                     {JSON.stringify(log.output, null, 2)}
                   </pre>
                 )}
@@ -86,7 +87,7 @@ export function ExecutionLogPanel({ run, logs, onClose }: ExecutionLogPanelProps
                 >
                   {log.status}
                 </span>
-                <p className="text-[10px] text-gray-600 mt-1 tabular-nums">{log.durationMs}ms</p>
+                <p className={`text-[10px] ${dashboard.subtle} mt-1 tabular-nums`}>{log.durationMs}ms</p>
               </div>
             </div>
           </motion.li>

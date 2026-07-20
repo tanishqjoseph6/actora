@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { isPaidPlanId } from "@/lib/trial/helpers";
 import {
@@ -74,8 +75,8 @@ export function CurrentPlanSection({
       transition={{ duration: 0.45 }}
       className="grid lg:grid-cols-2 gap-6"
     >
-      <div className="rounded-[24px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-black/20">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
+      <div className={`${dashboard.cardLg} p-6 sm:p-8`}>
+        <p className={`text-xs font-semibold uppercase tracking-wider ${dashboard.subtle} mb-3`}>
           Current plan
         </p>
         <CurrentPlanBadge subscription={subscription} loading={loading} />
@@ -89,10 +90,10 @@ export function CurrentPlanSection({
           </>
         ) : (
           <>
-            <div className="mt-4 space-y-1.5 text-sm text-gray-400">
+            <div className={`mt-4 space-y-1.5 text-sm ${dashboard.muted}`}>
               <p>
                 Billing cycle:{" "}
-                <span className="text-gray-200">
+                <span className="text-white">
                   {subscription?.trialActive
                     ? "14-day trial"
                     : formatBillingCycle(subscription?.billingInterval)}
@@ -104,7 +105,7 @@ export function CurrentPlanSection({
                   : isCanceled
                     ? "Access until "
                     : "Next renewal on "}
-                <span className="text-gray-200">
+                <span className="text-white">
                   {subscription?.trialActive && subscription.trialEndsAt
                     ? formatRenewalDate(subscription.trialEndsAt)
                     : renewalDate}
@@ -125,7 +126,7 @@ export function CurrentPlanSection({
               <button
                 type="button"
                 onClick={onUpgradePlan}
-                className="px-5 py-2.5 rounded-2xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold transition-all shadow-md active:scale-[0.98]"
+                className={`${dashboard.btnPrimary} px-5 py-2.5 text-sm`}
               >
                 {isPaid ? "Change Plan" : "Upgrade Plan"}
               </button>
@@ -133,7 +134,7 @@ export function CurrentPlanSection({
                 <button
                   type="button"
                   onClick={() => setShowCancelConfirm(true)}
-                  className="px-5 py-2.5 rounded-2xl border border-[#1E293B] text-gray-300 text-sm font-medium hover:border-red-500/40 hover:text-red-300 transition-all active:scale-[0.98]"
+                  className={`${dashboard.btnSecondary} px-5 py-2.5 text-sm text-[#FCA5A5] hover:border-red-500/40`}
                 >
                   Cancel Subscription
                 </button>
@@ -141,8 +142,8 @@ export function CurrentPlanSection({
             </div>
 
             {showCancelConfirm && (
-              <div className="mt-4 p-4 rounded-xl bg-[#0B1220] border border-[#1E293B]">
-                <p className="text-sm text-gray-300">
+              <div className={`mt-4 p-4 rounded-[18px] bg-[#0A0A0A] border ${dashboard.border}`}>
+                <p className={`text-sm ${dashboard.muted}`}>
                   Cancel at the end of your billing period? You will keep access until{" "}
                   <span className="text-white">{renewalDate}</span>.
                 </p>
@@ -158,7 +159,7 @@ export function CurrentPlanSection({
                   <button
                     type="button"
                     onClick={() => setShowCancelConfirm(false)}
-                    className="px-4 py-2 rounded-xl border border-[#1E293B] text-gray-400 text-sm hover:text-white"
+                    className={`${dashboard.btnSecondary} px-4 py-2 text-sm ${dashboard.subtle} hover:text-white`}
                   >
                     Keep Plan
                   </button>
@@ -169,7 +170,7 @@ export function CurrentPlanSection({
         )}
       </div>
 
-      <div className="rounded-[24px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-6 sm:p-8 shadow-xl shadow-black/20">
+      <div className={`${dashboard.cardLg} p-6 sm:p-8`}>
         <h3 className="text-lg font-bold text-white mb-5">Usage this month</h3>
         <PlanUsageDisplay subscription={subscription} loading={loading} />
       </div>

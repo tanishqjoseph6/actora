@@ -85,7 +85,7 @@ export function AnalyticsAreaChart({
               y1={h - pad - pct * (h - pad * 2)}
               x2={w - pad}
               y2={h - pad - pct * (h - pad * 2)}
-              stroke="#1E293B"
+              stroke="rgba(255,255,255,0.06)"
               strokeWidth="0.5"
               vectorEffect="non-scaling-stroke"
             />

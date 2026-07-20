@@ -23,13 +23,13 @@ export function SettingsSection({
       id={id}
       className={`${dashboard.cardLg} scroll-mt-24 overflow-hidden`}
     >
-      <div className="p-5 sm:p-6 border-b border-[#1E293B]">
+      <div className="p-5 sm:p-6 border-b border-white/[0.06]">
         <h2 className="text-base font-semibold text-white">{title}</h2>
         <p className={`text-sm ${dashboard.muted} mt-1`}>{description}</p>
       </div>
       <div className="p-5 sm:p-6 space-y-5">{children}</div>
       {footer && (
-        <div className="px-5 sm:px-6 py-4 border-t border-[#1E293B] bg-[#0B1220]/40 flex justify-end">
+        <div className="px-5 sm:px-6 py-4 border-t border-white/[0.06] bg-[#0A0A0A]/40 flex justify-end">
           {footer}
         </div>
       )}
@@ -159,7 +159,7 @@ export function SettingsToggle({
         onClick={() => onChange(!checked)}
         className={`
           relative shrink-0 w-11 h-6 rounded-full transition-colors duration-200
-          ${checked ? "bg-[#2563EB]" : "bg-[#1E293B]"}
+          ${checked ? "bg-[#3B82F6]" : "bg-[#0A0A0A] border border-white/[0.06]"}
         `}
       >
         <span
@@ -174,5 +174,5 @@ export function SettingsToggle({
 }
 
 export function SettingsDivider() {
-  return <div className="border-t border-[#1E293B]" />;
+  return <div className="border-t border-white/[0.06]" />;
 }

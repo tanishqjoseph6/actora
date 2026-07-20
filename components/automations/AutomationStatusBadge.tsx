@@ -8,7 +8,7 @@ const STATUS_CONFIG: Record<
 > = {
   draft: {
     label: "Draft",
-    className: "bg-gray-500/15 text-gray-300 border-gray-400/30",
+    className: "bg-white/[0.04] text-[#A1A1AA] border-white/[0.08]",
   },
   active: {
     label: "Active",

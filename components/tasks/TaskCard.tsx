@@ -48,6 +48,8 @@ export function TaskCard({
         group flex items-start gap-3 sm:gap-4 p-4
         ${dashboard.cardInteractive}
         ${isDone ? "opacity-60" : ""}
+        ${task.priority === "high" && !isDone ? "border-l-2 border-l-red-400/60" : ""}
+        ${task.priority === "medium" && !isDone ? "border-l-2 border-l-amber-400/50" : ""}
         ${dueTone === "overdue" && !isDone ? "border-red-500/25" : ""}
       `}
     >
@@ -136,7 +138,7 @@ export function TaskCard({
               <button
                 type="button"
                 onClick={() => onEdit(task)}
-                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#3B82F6]/20"
+                className="px-2 py-1 rounded-md text-xs bg-[#0A0A0A] border border-white/[0.06] text-[#BFDBFE] hover:border-[#3B82F6]/35 transition-colors"
               >
                 Edit
               </button>
@@ -145,7 +147,7 @@ export function TaskCard({
               <button
                 type="button"
                 onClick={() => onDelete(task)}
-                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#FCA5A5] hover:bg-[#7F1D1D]/30"
+                className="px-2 py-1 rounded-md text-xs bg-[#0A0A0A] border border-white/[0.06] text-[#FCA5A5] hover:border-red-500/30 transition-colors"
               >
                 Delete
               </button>

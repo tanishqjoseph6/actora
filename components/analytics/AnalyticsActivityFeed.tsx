@@ -33,7 +33,7 @@ export function AnalyticsActivityFeed({ items }: AnalyticsActivityFeedProps) {
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/50 hover:border-[#3B82F6]/30 transition-colors interactive-lift"
+              className="flex items-start gap-3 p-3 rounded-[18px] border border-white/[0.06] bg-[#0A0A0A]/50 hover:border-[#3B82F6]/30 transition-all duration-200 hover:-translate-y-0.5"
             >
               <span
                 className={`w-8 h-8 rounded-lg border flex items-center justify-center text-sm shrink-0 ${meta.color}`}

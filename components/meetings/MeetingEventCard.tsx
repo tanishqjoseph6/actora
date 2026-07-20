@@ -64,7 +64,7 @@ export function MeetingEventCard({
           </span>
         </div>
 
-        <div className="hidden sm:block w-px self-stretch bg-[#1E293B] shrink-0" />
+        <div className="hidden sm:block w-px self-stretch bg-white/[0.06] shrink-0" />
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1.5">

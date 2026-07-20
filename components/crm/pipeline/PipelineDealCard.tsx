@@ -45,9 +45,9 @@ export function PipelineDealCard({
       style={style}
       className={`
         group relative interactive-lift transition-all duration-200
-        rounded-xl border bg-[#111111] shadow-sm
+        rounded-[18px] border bg-[#111111] shadow-sm
         ${isDragging ? "opacity-40 scale-[0.98]" : "opacity-100"}
-        ${isSelected ? "border-[#3B82F6]/60 ring-1 ring-[#2563EB]/25" : "border-white/[0.06] hover:border-[#3B82F6]/35"}
+        ${isSelected ? "border-[#3B82F6]/60 ring-1 ring-[#2563EB]/25" : "border-white/[0.06] hover:border-[#3B82F6]/35 hover:-translate-y-0.5"}
       `}
     >
       <div className="flex items-stretch">
@@ -144,7 +144,7 @@ export function PipelineDealCardOverlay({ deal }: { deal: PipelineDeal }) {
   const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
-    <div className="rounded-xl border border-[#3B82F6]/50 bg-[#111111] p-3.5 shadow-xl shadow-black/40 w-[280px] cursor-grabbing rotate-[1.5deg]">
+    <div className="rounded-[18px] border border-[#3B82F6]/50 bg-[#111111] p-3.5 shadow-xl shadow-black/40 w-[280px] cursor-grabbing rotate-[1.5deg]">
       <div className="flex items-start gap-2.5 mb-2">
         <div
           className={`w-9 h-9 rounded-lg bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}

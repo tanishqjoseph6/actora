@@ -33,7 +33,7 @@ export function SettingsSidebar({ activeId }: SettingsSidebarProps) {
                   ${
                     active
                       ? "bg-[#2563EB]/15 text-[#93C5FD] border border-[#2563EB]/30"
-                      : "text-[#94A3B8] hover:text-white hover:bg-[#0B1220] border border-transparent"
+                      : "text-[#71717A] hover:text-white hover:bg-white/[0.04] border border-transparent"
                   }
                 `}
               >
@@ -51,7 +51,7 @@ export function SettingsHeader() {
   return (
     <div className="mb-6 lg:mb-8">
       <p className={`text-sm ${dashboard.subtle} mb-2`}>⚙️ Workspace</p>
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+      <h1 className={dashboard.pageTitle}>
         Settings
       </h1>
       <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>

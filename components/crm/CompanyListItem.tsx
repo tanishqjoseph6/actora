@@ -49,7 +49,7 @@ export function CompanyListItem({ company }: { company: Company }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <h3 className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+              <h3 className="font-semibold text-white group-hover:text-[#93C5FD] transition-colors">
                 {company.name}
               </h3>
             <span
@@ -63,8 +63,8 @@ export function CompanyListItem({ company }: { company: Company }) {
               {STATUS_LABELS[company.status]}
             </span>
             </div>
-            <p className="text-sm text-gray-400">{company.industry}</p>
-            <p className="text-sm text-gray-500 mt-0.5 truncate">{addressLine}</p>
+            <p className={`text-sm ${dashboard.muted}`}>{company.industry}</p>
+            <p className={`text-sm ${dashboard.subtle} mt-0.5 truncate`}>{addressLine}</p>
           </div>
         </div>
 
@@ -87,7 +87,7 @@ export function CompanyListItem({ company }: { company: Company }) {
             <SparkIcon className="w-3 h-3 text-white" />
             <span className="text-xs font-bold text-white">{company.aiScore}</span>
           </div>
-          <span className="text-xs text-gray-500 hidden sm:inline">{company.owner}</span>
+          <span className={`text-xs ${dashboard.subtle} hidden sm:inline`}>{company.owner}</span>
         </div>
       </article>
     </Link>
@@ -105,7 +105,7 @@ function Metric({
 }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
+      <p className={`text-[10px] uppercase tracking-wider ${dashboard.subtle}`}>{label}</p>
       <p
         className={`text-sm font-semibold mt-0.5 ${accent ? dashboard.accent : "text-white"}`}
       >

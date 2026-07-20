@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { dashboard } from "./dashboard-tokens";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -13,6 +14,39 @@ type PremiumMetricCardProps = {
   loading?: boolean;
 };
 
+function useAnimatedNumber(value: string | number) {
+  const numeric =
+    typeof value === "number"
+      ? value
+      : Number.isFinite(Number(value))
+        ? Number(value)
+        : null;
+  const [display, setDisplay] = useState(numeric ?? value);
+
+  useEffect(() => {
+    if (numeric === null) {
+      setDisplay(value);
+      return;
+    }
+    const start = performance.now();
+    const from =
+      typeof display === "number" ? display : 0;
+    const duration = 650;
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (numeric - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- animate on value change only
+  }, [numeric, value]);
+
+  return display;
+}
+
 export function PremiumMetricCard({
   title,
   value,
@@ -23,6 +57,7 @@ export function PremiumMetricCard({
 }: PremiumMetricCardProps) {
   const showTrend = trend !== undefined;
   const showSparkline = sparkline !== undefined && sparkline.length > 1;
+  const animatedValue = useAnimatedNumber(value);
 
   if (loading) {
     return (
@@ -53,7 +88,7 @@ export function PremiumMetricCard({
           animate={{ opacity: 1 }}
           className="text-xl sm:text-2xl font-bold text-white mt-1 tabular-nums truncate"
         >
-          {value}
+          {animatedValue}
         </motion.p>
 
         {(showTrend || showSparkline) && (

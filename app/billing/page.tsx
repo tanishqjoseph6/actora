@@ -35,7 +35,7 @@ export default function Billing() {
     Boolean(subscription?.trialExpired && subscription.planId === "free");
 
   return (
-    <main className="min-h-screen bg-[#05070B] text-white overflow-hidden">
+    <main className="min-h-screen bg-[#0A0A0A] text-white overflow-hidden">
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[#3B82F6]/10 blur-[200px] rounded-full pointer-events-none" />
       <div className="fixed bottom-0 right-0 w-[600px] h-[500px] bg-[#2563EB]/8 blur-[180px] rounded-full pointer-events-none" />
       <div className="fixed top-1/3 -left-32 w-[400px] h-[400px] bg-[#3B82F6]/6 blur-[160px] rounded-full pointer-events-none" />

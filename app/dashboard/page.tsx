@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { PremiumDashboardShell } from "@/components/dashboard/premium/PremiumDashboardShell";
 import { DashboardHero } from "@/components/dashboard/premium/DashboardHero";
+import { AiAssistantPanel } from "@/components/dashboard/premium/AiAssistantPanel";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { DashboardWidgets } from "@/components/dashboard/premium/DashboardWidgets";
 import { InboxView } from "@/components/email/InboxView";
@@ -26,8 +27,9 @@ export default function Dashboard() {
   return (
     <PremiumDashboardShell showTopNav>
       <DashboardHero />
+      <AiAssistantPanel />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-3 lg:gap-4 mb-8 lg:mb-10">
+      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:mb-10 xl:grid-cols-6 lg:gap-4">
         <PremiumMetricCard
           title="Emails"
           value={emailCountDisplay}

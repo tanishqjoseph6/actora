@@ -79,7 +79,7 @@ export function ContactListItem({
             <button
               type="button"
               onClick={() => onEdit(contact)}
-              className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE]"
+              className="px-2 py-1 rounded-md text-xs bg-[#0A0A0A] border border-white/[0.06] text-[#BFDBFE] hover:border-[#3B82F6]/35 transition-colors"
             >
               Edit
             </button>
@@ -88,7 +88,7 @@ export function ContactListItem({
             <button
               type="button"
               onClick={() => onDelete(contact)}
-              className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#FCA5A5]"
+              className="px-2 py-1 rounded-md text-xs bg-[#0A0A0A] border border-white/[0.06] text-[#FCA5A5] hover:border-red-500/30 transition-colors"
             >
               Delete
             </button>

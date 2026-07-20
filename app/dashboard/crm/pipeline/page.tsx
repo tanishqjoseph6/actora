@@ -6,6 +6,7 @@ import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { PipelineBoard } from "@/components/crm/pipeline/PipelineBoard";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { CrmContact } from "@/lib/crm/live";
 
 export default function PipelinePage() {
@@ -51,7 +52,7 @@ export default function PipelinePage() {
           <CrmStatCard title="Avg. AI score" value={stats.avgScore} />
         </div>
 
-        <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-4 sm:p-6 lg:p-8">
+        <div className={`${dashboard.panelLg}`}>
           <PipelineBoard />
         </div>
       </>

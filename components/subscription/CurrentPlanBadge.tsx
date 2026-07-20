@@ -1,17 +1,22 @@
+"use client";
+
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { formatLimit, getPlanBadgeStyles, getUsagePercent } from "@/lib/subscription";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { cn } from "@/lib/utils";
 
 type CurrentPlanBadgeProps = {
   subscription: SubscriptionSnapshot | null;
   loading?: boolean;
   compact?: boolean;
+  onClick?: () => void;
 };
 
 export function CurrentPlanBadge({
   subscription,
   loading,
   compact,
+  onClick,
 }: CurrentPlanBadgeProps) {
   if (loading) {
     return (
@@ -20,34 +25,62 @@ export function CurrentPlanBadge({
   }
 
   const planId = subscription?.planId ?? "free";
-  const planName = subscription?.planName ?? "Free";
-  const styles = getPlanBadgeStyles(planId);
+  const planName = subscription?.trialActive
+    ? "Free Trial"
+    : subscription?.planName ?? "Free";
+  const styles = getPlanBadgeStyles(
+    subscription?.trialActive ? "trial" : planId
+  );
   const statusLabel = subscription?.trialActive
     ? `${subscription.remainingTrialDays}d left`
     : subscription?.trialExpired
       ? "Expired"
       : "Active";
 
+  const badgeClass = cn(
+    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all",
+    styles.badge,
+    onClick &&
+      "cursor-pointer hover:border-[#3B82F6]/50 hover:bg-[#3B82F6]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40"
+  );
+
+  const content = (
+    <>
+      <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
+      {compact ? planName : statusLabel}
+    </>
+  );
+
   if (compact) {
-    return (
-      <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${styles.badge}`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
-        {planName}
-      </span>
-    );
+    if (onClick) {
+      return (
+        <button
+          type="button"
+          onClick={onClick}
+          className={badgeClass}
+          aria-label={`${planName} plan details`}
+        >
+          {content}
+        </button>
+      );
+    }
+    return <span className={badgeClass}>{content}</span>;
   }
 
   return (
     <div className="inline-flex items-center gap-2">
       <span className="text-2xl font-bold text-white">{planName}</span>
-      <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${styles.badge}`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
-        {statusLabel}
-      </span>
+      {onClick ? (
+        <button type="button" onClick={onClick} className={badgeClass}>
+          <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
+          {statusLabel}
+        </button>
+      ) : (
+        <span className={badgeClass}>
+          <span className={`h-1.5 w-1.5 rounded-full ${styles.dot}`} />
+          {statusLabel}
+        </span>
+      )}
     </div>
   );
 }
@@ -60,7 +93,7 @@ type PlanUsageDisplayProps = {
 export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProps) {
   if (loading || !subscription) {
     return (
-      <div className="grid sm:grid-cols-2 gap-6" aria-busy="true">
+      <div className="grid gap-6 sm:grid-cols-2" aria-busy="true">
         <Skeleton className="h-16 w-full rounded-xl" />
         <Skeleton className="h-16 w-full rounded-xl" />
       </div>
@@ -83,7 +116,7 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
   ];
 
   return (
-    <div className="grid sm:grid-cols-2 gap-6">
+    <div className="grid gap-6 sm:grid-cols-2">
       {stats.map((stat) => {
         const percent = getUsagePercent(stat.used, stat.limit);
         const limitLabel = formatLimit(stat.limit);
@@ -91,14 +124,14 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
 
         return (
           <div key={stat.label}>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-[#71717A]">{stat.label}</span>
               <span className="text-sm font-medium text-white">
                 {stat.used}
                 <span className="text-[#71717A]"> / {limitLabel}</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-[#0A0A0A] overflow-hidden">
+            <div className="h-2 overflow-hidden rounded-full bg-[#0A0A0A]">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   isAtLimit ? "bg-[#EF4444]" : "bg-[#3B82F6]"
@@ -106,7 +139,7 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <p className="text-xs text-[#71717A] mt-1.5">{stat.unit}</p>
+            <p className="mt-1.5 text-xs text-[#71717A]">{stat.unit}</p>
           </div>
         );
       })}

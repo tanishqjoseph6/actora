@@ -88,7 +88,7 @@ export function UpcomingMeetingsSection({
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-[#71717A]">
                   {group.label}
                 </h3>
-                <div className="flex-1 h-px bg-[#1E293B]" />
+                <div className="flex-1 h-px bg-white/[0.06]" />
                 <span className="text-xs text-[#71717A] tabular-nums">
                   {group.meetings.length}
                 </span>

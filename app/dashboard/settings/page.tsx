@@ -185,7 +185,7 @@ export default function SettingsPage() {
             title="Integrations"
             description="Connected accounts and third-party services."
           >
-            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-[#1E293B] bg-[#0B1220]`}>
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[18px] border ${dashboard.border} ${dashboard.surface}`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0">
                   <GoogleIcon className="w-5 h-5" />
@@ -203,8 +203,8 @@ export default function SettingsPage() {
                 <span
                   className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border ${
                     gmailConnected
-                      ? "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]"
-                      : "bg-[#0B1220] border-[#1E293B] text-[#64748B]"
+                      ? "bg-[#3B82F6]/15 border-[#3B82F6]/35 text-[#93C5FD]"
+                      : "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]"
                   }`}
                 >
                   {gmailConnected ? "Connected" : "Not connected"}
@@ -218,9 +218,9 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-[#1E293B] bg-[#0B1220] opacity-60`}>
+            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[18px] border ${dashboard.border} ${dashboard.surface} opacity-60`}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#111827] border border-[#1E293B] flex items-center justify-center text-lg shrink-0">
+                <div className={`w-10 h-10 rounded-lg ${dashboard.surface} border ${dashboard.border} flex items-center justify-center text-lg shrink-0`}>
                   📅
                 </div>
                 <div>
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                   <p className={`text-xs ${dashboard.subtle}`}>Sync meetings and schedule follow-ups</p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border border-[#1E293B] text-[#64748B]">
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border ${dashboard.border} ${dashboard.subtle}`}>
                 Coming soon
               </span>
             </div>
@@ -331,14 +331,14 @@ export default function SettingsPage() {
 
             {subscription && (
               <div className="grid sm:grid-cols-2 gap-3 mt-2">
-                <div className="rounded-xl border border-[#1E293B] bg-[#0B1220] p-4">
-                  <p className={`text-xs ${dashboard.subtle}`}>AI actions limit</p>
+                <div className={`rounded-[18px] border ${dashboard.border} ${dashboard.surface} p-4`}>
+                  <p className="text-sm font-medium text-white">AI actions limit</p>
                   <p className="text-sm font-semibold text-white mt-1 tabular-nums">
                     {formatLimit(subscription.limits.aiActionsPerMonth)}/month
                   </p>
                 </div>
-                <div className="rounded-xl border border-[#1E293B] bg-[#0B1220] p-4">
-                  <p className={`text-xs ${dashboard.subtle}`}>Inbox limit</p>
+                <div className={`rounded-[18px] border ${dashboard.border} ${dashboard.surface} p-4`}>
+                  <p className="text-sm font-medium text-white">Inbox limit</p>
                   <p className="text-sm font-semibold text-white mt-1 tabular-nums">
                     {formatLimit(subscription.limits.inboxes)}
                   </p>
@@ -360,7 +360,7 @@ export default function SettingsPage() {
             title="Account"
             description="Session and account actions."
           >
-            <div className={`rounded-xl border border-[#1E293B] bg-[#0B1220] p-4 ${dashboard.muted} text-sm`}>
+            <div className={`rounded-[18px] border ${dashboard.border} ${dashboard.surface} p-4 ${dashboard.muted} text-sm`}>
               Signed in as{" "}
               <span className="text-white font-medium">{email || "—"}</span>
             </div>

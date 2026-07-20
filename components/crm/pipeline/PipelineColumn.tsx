@@ -34,7 +34,7 @@ export function PipelineColumn({
 
   return (
     <div className="flex flex-col w-[min(72vw,260px)] sm:w-[280px] md:w-[308px] shrink-0 snap-start">
-      <div className="mb-3 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-[#111111]">
+      <div className={`mb-3 px-3 py-2.5 rounded-[18px] border border-white/[0.06] bg-[#111111]`}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <span className={`w-2 h-2 rounded-full shrink-0 ${stage.dot}`} />
@@ -54,7 +54,7 @@ export function PipelineColumn({
       <div
         ref={setNodeRef}
         className={`
-          flex-1 min-h-[240px] rounded-xl p-2 space-y-2 transition-all duration-200
+          flex-1 min-h-[240px] rounded-[18px] p-2 space-y-2 transition-all duration-200
           bg-[#0A0A0A]/50 border border-white/[0.06]
           ${isOver ? "border-[#3B82F6]/50 bg-[#3B82F6]/5 ring-1 ring-[#2563EB]/20" : ""}
         `}

@@ -50,6 +50,8 @@ export function MeetingsWeekCalendar({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => onSelectDay(day)}
               className={`
                 flex flex-col rounded-xl border p-3 sm:p-4 text-left transition-all duration-200 min-h-[120px] sm:min-h-[140px]

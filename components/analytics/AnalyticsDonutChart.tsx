@@ -65,7 +65,7 @@ export function AnalyticsDonutChart({
               cy="50"
               r="40"
               fill="none"
-              stroke="#1E293B"
+              stroke="rgba(255,255,255,0.06)"
               strokeWidth="12"
             />
             {segments.map((seg, i) => (

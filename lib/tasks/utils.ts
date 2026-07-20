@@ -26,15 +26,15 @@ export const PRIORITY_STYLES: Record<
 > = {
   high: {
     label: "High",
-    badge: "bg-[#2563EB]/15 border-[#2563EB]/40 text-[#93C5FD]",
+    badge: "bg-red-500/15 border-red-400/30 text-red-300",
   },
   medium: {
     label: "Medium",
-    badge: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
+    badge: "bg-amber-500/15 border-amber-400/30 text-amber-300",
   },
   low: {
     label: "Low",
-    badge: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
+    badge: "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]",
   },
 };
 

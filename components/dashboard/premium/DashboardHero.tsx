@@ -53,11 +53,11 @@ export function DashboardHero() {
       <p className={`text-sm ${dashboard.subtle} mb-2`}>
         {getGreeting()}, {firstName}
       </p>
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight">
-        Your workspace overview
+      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white leading-tight">
+        AI Workspace
       </h1>
       <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>
-        Email, CRM, automations, and insights — in one place.
+        Turn conversations into tasks, CRM updates, and workflows — automatically.
       </p>
 
       {!gmailLoading && connected && primaryAccount && (
