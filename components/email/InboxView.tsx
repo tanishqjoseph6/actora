@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { PenSquare } from "lucide-react";
 import { EmailCard } from "@/components/email/EmailCard";
@@ -9,6 +10,8 @@ import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { useInbox } from "@/hooks/useInbox";
+import { useInboxKeyboardShortcuts } from "@/hooks/useInboxKeyboardShortcuts";
+import { SNOOZE_OPTIONS } from "@/lib/email/snooze-store";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
@@ -22,8 +25,38 @@ export function InboxView({ compact = false }: InboxViewProps) {
   const { subscription, loading: planLoading } = usePlanGate();
   const { connected, loading: accountsLoading, accounts, selectedEmail: activeAccountEmail, setSelectedEmail: setActiveAccount } = useGmailAccounts();
   const inbox = useInbox();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const showConnectPrompt = !accountsLoading && !connected;
+
+  const handleSnooze = useCallback(
+    (email: Parameters<typeof inbox.snoozeEmailById>[0]) => {
+      void inbox.snoozeEmailById(email, SNOOZE_OPTIONS[1].hours);
+    },
+    [inbox]
+  );
+
+  const handleStar = useCallback(
+    (email: { id: string; starred: boolean }) => {
+      void inbox.toggleStar(email.id, !email.starred);
+    },
+    [inbox]
+  );
+
+  useInboxKeyboardShortcuts({
+    enabled: !showConnectPrompt,
+    filteredEmails: inbox.filteredEmails,
+    listFocusIndex: inbox.listFocusIndex,
+    selectedEmail: inbox.selectedEmail,
+    searchInputRef,
+    onFocusSearch: () => searchInputRef.current?.focus(),
+    onOpenEmail: inbox.openEmail,
+    onOpenAiReply: inbox.openEmailWithAiReply,
+    onArchive: (email) => void inbox.archiveEmailById(email.id),
+    onStar: handleStar,
+    onClosePanel: inbox.closeEmail,
+    onMoveFocus: inbox.focusEmailAt,
+  });
 
   return (
     <>
@@ -88,6 +121,7 @@ export function InboxView({ compact = false }: InboxViewProps) {
         <div className="relative mb-4">
           <SearchIcon className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${dashboard.subtle}`} />
           <input
+            ref={searchInputRef}
             type="search"
             placeholder="Search sender, subject, or preview…"
             value={inbox.searchQuery}
@@ -96,7 +130,7 @@ export function InboxView({ compact = false }: InboxViewProps) {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex flex-wrap items-center gap-2 mb-5">
           <FilterChip
             label="All"
             count={inbox.emails.length}
@@ -115,7 +149,61 @@ export function InboxView({ compact = false }: InboxViewProps) {
             active={inbox.activeFilter === "starred"}
             onClick={() => inbox.setActiveFilter("starred")}
           />
+          <FilterChip
+            label="Priority"
+            count={inbox.priorityCount}
+            active={inbox.activeFilter === "priority"}
+            onClick={() => inbox.setActiveFilter("priority")}
+          />
+          <FilterChip
+            label="Snoozed"
+            count={inbox.snoozedCount}
+            active={inbox.activeFilter === "snoozed"}
+            onClick={() => inbox.setActiveFilter("snoozed")}
+          />
+          {!compact && inbox.filteredEmails.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (inbox.bulkMode) inbox.clearSelection();
+                else inbox.setBulkMode(true);
+              }}
+              className={`ml-auto inline-flex items-center px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                inbox.bulkMode
+                  ? "bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#93C5FD]"
+                  : "bg-[#0A0A0A] border border-white/[0.08] text-[#A1A1AA] hover:border-[#3B82F6]/40 hover:text-white"
+              }`}
+            >
+              {inbox.bulkMode ? "Cancel select" : "Select"}
+            </button>
+          )}
         </div>
+
+        {inbox.bulkMode && inbox.selectedIds.size > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#3B82F6]/25 bg-[#3B82F6]/[0.07] px-3 py-2.5">
+            <span className="text-sm text-[#93C5FD]">
+              {inbox.selectedIds.size} selected
+            </span>
+            <button
+              type="button"
+              onClick={inbox.selectAllVisible}
+              className="text-xs text-[#A1A1AA] hover:text-white"
+            >
+              Select all
+            </button>
+            <div className="ml-auto flex flex-wrap gap-2">
+              <BulkButton onClick={() => void inbox.runBulkAction("read")}>
+                Mark read
+              </BulkButton>
+              <BulkButton onClick={() => void inbox.runBulkAction("star")}>
+                Star
+              </BulkButton>
+              <BulkButton onClick={() => void inbox.runBulkAction("archive")}>
+                Archive
+              </BulkButton>
+            </div>
+          </div>
+        )}
 
         {showConnectPrompt && (
           <ConnectGmailState error={inbox.error} />
@@ -164,9 +252,28 @@ export function InboxView({ compact = false }: InboxViewProps) {
                   <EmailCard
                     email={email}
                     selected={inbox.selectedEmail?.id === email.id}
+                    focused={inbox.listFocusIndex === i && !inbox.selectedEmail}
+                    bulkMode={inbox.bulkMode}
+                    bulkSelected={inbox.selectedIds.has(email.id)}
                     onSelect={inbox.openEmail}
                     onAiReply={inbox.openEmailWithAiReply}
-                    onArchive={(target) => void inbox.archiveEmailById(target.id)}
+                    onArchive={
+                      inbox.activeFilter === "snoozed"
+                        ? undefined
+                        : (target) => void inbox.archiveEmailById(target.id)
+                    }
+                    onStar={
+                      inbox.activeFilter === "snoozed" ? undefined : handleStar
+                    }
+                    onSnooze={
+                      inbox.activeFilter === "snoozed" ? undefined : handleSnooze
+                    }
+                    onRestore={
+                      inbox.activeFilter === "snoozed"
+                        ? (target) => void inbox.restoreSnoozedEmail(target.id)
+                        : undefined
+                    }
+                    onToggleBulk={inbox.toggleSelect}
                   />
                 </motion.div>
               ))}
@@ -186,6 +293,12 @@ export function InboxView({ compact = false }: InboxViewProps) {
             const archived = await inbox.archiveEmailById(inbox.selectedEmail!.id);
             return archived;
           }}
+          onStar={(starred) =>
+            void inbox.toggleStar(inbox.selectedEmail!.id, starred)
+          }
+          onSnooze={(hours) =>
+            void inbox.snoozeEmailById(inbox.selectedEmail!, hours)
+          }
         />
       )}
 
@@ -212,6 +325,24 @@ export function InboxView({ compact = false }: InboxViewProps) {
         </motion.button>
       )}
     </>
+  );
+}
+
+function BulkButton({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center rounded-lg border border-white/[0.08] bg-[#111111] px-2.5 py-1 text-xs text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/40 hover:text-white"
+    >
+      {children}
+    </button>
   );
 }
 
@@ -297,7 +428,7 @@ function EmptyState({
   onClearFilters,
   onRefresh,
 }: {
-  filter: "all" | "unread" | "starred";
+  filter: "all" | "unread" | "starred" | "priority" | "snoozed";
   hasSearch: boolean;
   onClearFilters: () => void;
   onRefresh: () => void;
@@ -313,7 +444,13 @@ function EmptyState({
             ? "No emails match your search"
             : filter === "unread"
               ? "No unread emails"
-              : "No starred emails"
+              : filter === "starred"
+                ? "No starred emails"
+                : filter === "priority"
+                  ? "No priority emails"
+                  : filter === "snoozed"
+                    ? "No snoozed emails"
+                    : "No starred emails"
         }
         description="Try a different search term or reset your filters to see all messages."
         cta={{ label: "Clear filters", onClick: onClearFilters }}

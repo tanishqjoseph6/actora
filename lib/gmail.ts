@@ -8,6 +8,25 @@ export type InboxEmail = {
   date: string;
   unread: boolean;
   starred: boolean;
+  priority?: "high" | "medium" | "low";
+  labels?: string[];
+  hasAttachments?: boolean;
+};
+
+export type EmailAttachment = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+};
+
+export type ThreadMessage = {
+  id: string;
+  sender: string;
+  date: string;
+  body: string;
+  preview: string;
+  isCurrent: boolean;
 };
 
 export type EmailDetail = {
@@ -19,11 +38,15 @@ export type EmailDetail = {
   body: string;
   date: string;
   messageIdHeader: string;
-  /** Prior messages in the thread for AI context (excludes current message). */
+  /** Prior messages in this thread for AI context (excludes current message). */
   threadContext: string;
+  threadMessages: ThreadMessage[];
+  attachments: EmailAttachment[];
+  labels: string[];
+  starred: boolean;
 };
 
-const INBOX_BATCH_SIZE = 20;
+const INBOX_BATCH_SIZE = 50;
 
 export function parseSenderEmail(from: string): string {
   const emailMatch = from.match(/<([^>]+)>/);
@@ -194,15 +217,78 @@ function getHeader(
 
 type GmailAuth = NonNullable<NonNullable<Parameters<typeof google.gmail>[0]>["auth"]>;
 
+type GmailPart = {
+  mimeType?: string | null;
+  filename?: string | null;
+  body?: { data?: string | null; attachmentId?: string | null; size?: number | null } | null;
+  parts?: GmailPart[] | null;
+};
+
+function collectAttachments(
+  part: GmailPart,
+  messageId: string,
+  acc: EmailAttachment[] = []
+): EmailAttachment[] {
+  if (part.filename && part.body?.attachmentId) {
+    acc.push({
+      id: part.body.attachmentId,
+      filename: part.filename,
+      mimeType: part.mimeType ?? "application/octet-stream",
+      size: part.body.size ?? 0,
+    });
+  }
+  for (const nested of part.parts ?? []) {
+    collectAttachments(nested, messageId, acc);
+  }
+  return acc;
+}
+
+function mapLabelNames(labelIds: string[] | null | undefined): string[] {
+  if (!labelIds?.length) return [];
+  const skip = new Set(["INBOX", "UNREAD", "STARRED", "IMPORTANT", "SENT", "DRAFT"]);
+  return labelIds.filter((id) => !skip.has(id) && !id.startsWith("CATEGORY_"));
+}
+
+function inferPriority(email: {
+  subject: string;
+  preview: string;
+  unread: boolean;
+  starred: boolean;
+}): "high" | "medium" | "low" | undefined {
+  const haystack = `${email.subject} ${email.preview}`.toLowerCase();
+  if (
+    email.starred ||
+    /\b(urgent|asap|immediate|deadline|action required)\b/.test(haystack)
+  ) {
+    return "high";
+  }
+  if (email.unread && /\b(please|request|question|\?)\b/.test(haystack)) {
+    return "medium";
+  }
+  return undefined;
+}
+
+export type FetchInboxOptions = {
+  maxResults?: number;
+  query?: string;
+};
+
 export async function fetchInboxEmails(
   auth: GmailAuth,
-  maxResults = INBOX_BATCH_SIZE
+  maxResultsOrOptions: number | FetchInboxOptions = INBOX_BATCH_SIZE
 ): Promise<InboxEmail[]> {
+  const options: FetchInboxOptions =
+    typeof maxResultsOrOptions === "number"
+      ? { maxResults: maxResultsOrOptions }
+      : maxResultsOrOptions;
+
+  const maxResults = options.maxResults ?? INBOX_BATCH_SIZE;
   const gmail = google.gmail({ version: "v1", auth });
 
   const listResponse = await gmail.users.messages.list({
     userId: "me",
-    labelIds: ["INBOX"],
+    labelIds: options.query ? undefined : ["INBOX"],
+    q: options.query || undefined,
     maxResults,
   });
 
@@ -224,16 +310,31 @@ export async function fetchInboxEmails(
 
       const headers = detail.data.payload?.headers ?? [];
       const dateHeader = getHeader(headers, "Date");
+      const labelIds = detail.data.labelIds ?? [];
+      const payload = detail.data.payload as GmailPart | undefined;
+      const hasAttachments = payload
+        ? collectAttachments(payload, message.id).length > 0
+        : false;
 
-      return {
+      const item: InboxEmail = {
         id: detail.data.id!,
         sender: parseSender(getHeader(headers, "From")),
         subject: getHeader(headers, "Subject") || "(No subject)",
         preview: detail.data.snippet ?? "",
         date: formatEmailDate(dateHeader),
-        unread: detail.data.labelIds?.includes("UNREAD") ?? false,
-        starred: detail.data.labelIds?.includes("STARRED") ?? false,
-      } satisfies InboxEmail;
+        unread: labelIds.includes("UNREAD"),
+        starred: labelIds.includes("STARRED"),
+        labels: mapLabelNames(labelIds),
+        hasAttachments,
+        priority: inferPriority({
+          subject: getHeader(headers, "Subject") || "(No subject)",
+          preview: detail.data.snippet ?? "",
+          unread: labelIds.includes("UNREAD"),
+          starred: labelIds.includes("STARRED"),
+        }),
+      };
+
+      return item;
     })
   );
 
@@ -243,11 +344,11 @@ export async function fetchInboxEmails(
 const THREAD_CONTEXT_MAX_MESSAGES = 4;
 const THREAD_CONTEXT_BODY_LIMIT = 1500;
 
-async function fetchThreadContext(
+async function fetchThreadMessages(
   gmail: ReturnType<typeof google.gmail>,
   threadId: string,
   currentMessageId: string
-): Promise<string> {
+): Promise<{ threadContext: string; threadMessages: ThreadMessage[] }> {
   const thread = await gmail.users.threads.get({
     userId: "me",
     id: threadId,
@@ -255,24 +356,41 @@ async function fetchThreadContext(
   });
 
   const messages = thread.data.messages ?? [];
-  if (messages.length <= 1) return "";
+  const threadMessages: ThreadMessage[] = messages
+    .filter((msg) => msg.id)
+    .map((msg) => {
+      const headers = msg.payload?.headers ?? [];
+      const body =
+        extractBodyFromPart(msg.payload ?? {}) || msg.snippet || "";
+      return {
+        id: msg.id!,
+        sender: parseSender(getHeader(headers, "From")),
+        date: formatEmailDate(getHeader(headers, "Date")),
+        body,
+        preview: (msg.snippet ?? body).slice(0, 160),
+        isCurrent: msg.id === currentMessageId,
+      };
+    });
 
   const priorMessages = messages
     .filter((msg) => msg.id && msg.id !== currentMessageId)
     .slice(-THREAD_CONTEXT_MAX_MESSAGES);
 
-  if (priorMessages.length === 0) return "";
+  const threadContext =
+    priorMessages.length === 0
+      ? ""
+      : priorMessages
+          .map((msg) => {
+            const headers = msg.payload?.headers ?? [];
+            const from = parseSender(getHeader(headers, "From"));
+            const date = formatEmailDate(getHeader(headers, "Date"));
+            const snippet =
+              extractBodyFromPart(msg.payload ?? {}) || msg.snippet || "";
+            return `[${date}] From ${from}:\n${snippet.slice(0, THREAD_CONTEXT_BODY_LIMIT)}`;
+          })
+          .join("\n\n---\n\n");
 
-  return priorMessages
-    .map((msg) => {
-      const headers = msg.payload?.headers ?? [];
-      const from = parseSender(getHeader(headers, "From"));
-      const date = formatEmailDate(getHeader(headers, "Date"));
-      const snippet =
-        extractBodyFromPart(msg.payload ?? {}) || msg.snippet || "";
-      return `[${date}] From ${from}:\n${snippet.slice(0, THREAD_CONTEXT_BODY_LIMIT)}`;
-    })
-    .join("\n\n---\n\n");
+  return { threadContext, threadMessages };
 }
 
 export async function fetchEmailById(
@@ -299,7 +417,13 @@ export async function fetchEmailById(
     detail.data.snippet ||
     "";
 
-  const threadContext = await fetchThreadContext(
+  const payload = detail.data.payload as GmailPart | undefined;
+  const attachments = payload
+    ? collectAttachments(payload, detail.data.id)
+    : [];
+  const labelIds = detail.data.labelIds ?? [];
+
+  const { threadContext, threadMessages } = await fetchThreadMessages(
     gmail,
     detail.data.threadId,
     detail.data.id
@@ -315,6 +439,10 @@ export async function fetchEmailById(
     date: formatEmailDate(dateHeader),
     messageIdHeader: getHeader(headers, "Message-ID"),
     threadContext,
+    threadMessages,
+    attachments,
+    labels: mapLabelNames(labelIds),
+    starred: labelIds.includes("STARRED"),
   };
 }
 
@@ -439,4 +567,110 @@ export async function searchInboxEmails(
   );
 
   return emails.filter((email): email is InboxEmail => email !== null);
+}
+
+export async function toggleStarEmail(
+  auth: GmailAuth,
+  messageId: string,
+  starred: boolean
+): Promise<void> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: starred
+      ? { addLabelIds: ["STARRED"] }
+      : { removeLabelIds: ["STARRED"] },
+  });
+}
+
+export async function restoreToInbox(
+  auth: GmailAuth,
+  messageId: string
+): Promise<void> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      addLabelIds: ["INBOX"],
+    },
+  });
+}
+
+export async function modifyEmailLabels(
+  auth: GmailAuth,
+  messageId: string,
+  addLabelIds: string[] = [],
+  removeLabelIds: string[] = []
+): Promise<void> {
+  const gmail = google.gmail({ version: "v1", auth });
+
+  await gmail.users.messages.modify({
+    userId: "me",
+    id: messageId,
+    requestBody: {
+      ...(addLabelIds.length ? { addLabelIds } : {}),
+      ...(removeLabelIds.length ? { removeLabelIds } : {}),
+    },
+  });
+}
+
+export async function listGmailLabels(
+  auth: GmailAuth
+): Promise<{ id: string; name: string }[]> {
+  const gmail = google.gmail({ version: "v1", auth });
+  const response = await gmail.users.labels.list({ userId: "me" });
+  return (response.data.labels ?? [])
+    .filter((label) => label.id && label.name && label.type === "user")
+    .map((label) => ({ id: label.id!, name: label.name! }));
+}
+
+export async function fetchAttachmentData(
+  auth: GmailAuth,
+  messageId: string,
+  attachmentId: string
+): Promise<{ data: string; size: number }> {
+  const gmail = google.gmail({ version: "v1", auth });
+  const response = await gmail.users.messages.attachments.get({
+    userId: "me",
+    messageId,
+    id: attachmentId,
+  });
+
+  if (!response.data.data) {
+    throw new Error("Attachment data unavailable.");
+  }
+
+  return {
+    data: response.data.data,
+    size: response.data.size ?? 0,
+  };
+}
+
+export async function bulkModifyEmails(
+  auth: GmailAuth,
+  messageIds: string[],
+  action: "archive" | "read" | "star" | "unstar"
+): Promise<{ success: string[]; failed: string[] }> {
+  const success: string[] = [];
+  const failed: string[] = [];
+
+  await Promise.all(
+    messageIds.map(async (id) => {
+      try {
+        if (action === "archive") await archiveEmail(auth, id);
+        else if (action === "read") await markEmailAsRead(auth, id);
+        else if (action === "star") await toggleStarEmail(auth, id, true);
+        else if (action === "unstar") await toggleStarEmail(auth, id, false);
+        success.push(id);
+      } catch {
+        failed.push(id);
+      }
+    })
+  );
+
+  return { success, failed };
 }

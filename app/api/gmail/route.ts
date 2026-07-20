@@ -16,7 +16,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const emails = await fetchInboxEmails(auth.oauth2Client);
+    const query = request.nextUrl.searchParams.get("q")?.trim();
+    const filter = request.nextUrl.searchParams.get("filter");
+
+    let gmailQuery: string | undefined;
+    if (query) {
+      gmailQuery = `${query} in:inbox`;
+    } else if (filter === "unread") {
+      gmailQuery = "is:unread in:inbox";
+    } else if (filter === "starred") {
+      gmailQuery = "is:starred in:inbox";
+    } else if (filter === "priority") {
+      gmailQuery = "is:unread in:inbox";
+    }
+
+    const emails = await fetchInboxEmails(auth.oauth2Client, {
+      maxResults: 50,
+      query: gmailQuery,
+    });
     const unreadCount = emails.filter((email) => email.unread).length;
 
     await gmailAccountRepository.updateSyncStatus(

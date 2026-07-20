@@ -20,8 +20,14 @@ import {
   setCachedSummary,
 } from "@/lib/email/summary-cache";
 import {
+  getCachedInsights,
+  setCachedInsights,
+} from "@/lib/email/insights-cache";
+import { SNOOZE_OPTIONS } from "@/lib/email/snooze-store";
+import {
   REPLY_TONE_LABELS,
   REPLY_TONES,
+  type EmailInsights,
   type ReplyTone,
 } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
@@ -37,6 +43,8 @@ type EmailDetailPanelProps = {
   onAiReplyOpened?: () => void;
   onMarkRead?: () => void;
   onArchive?: () => Promise<boolean>;
+  onStar?: (starred: boolean) => void;
+  onSnooze?: (hours: number) => void;
 };
 
 type PanelState = "loading" | "ready" | "error";
@@ -51,6 +59,8 @@ export function EmailDetailPanel({
   onAiReplyOpened,
   onMarkRead,
   onArchive,
+  onStar,
+  onSnooze,
 }: EmailDetailPanelProps) {
   const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
   const composerRef = useRef<ReplyComposerHandle>(null);
@@ -73,6 +83,15 @@ export function EmailDetailPanel({
   >("idle");
   const [isArchiving, setIsArchiving] = useState(false);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [starred, setStarred] = useState(email.starred);
+  const [showSnoozePicker, setShowSnoozePicker] = useState(false);
+  const [insights, setInsights] = useState<EmailInsights | null>(null);
+  const [insightsState, setInsightsState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [availableLabels, setAvailableLabels] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   const resetComposer = useCallback(() => {
     setReply(EMPTY_REPLY);
@@ -142,12 +161,66 @@ export function EmailDetailPanel({
     [checkAiAction, email.id, showLimitModal, refreshSubscription]
   );
 
+  const generateInsights = useCallback(
+    async (emailDetail: EmailDetail, options?: { skipCache?: boolean }) => {
+      if (!checkAiAction()) return;
+
+      if (!options?.skipCache) {
+        const cached = getCachedInsights(email.id);
+        if (cached) {
+          setInsights(cached);
+          setInsightsState("ready");
+          return;
+        }
+      }
+
+      setInsightsState("loading");
+
+      try {
+        const res = await fetch("/api/gmail/ai-insights", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sender: emailDetail.sender,
+            subject: emailDetail.subject,
+            emailBody: emailDetail.body,
+            threadContext: emailDetail.threadContext,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (isPlanLimitError(data)) {
+            showLimitModal(data.error, data.limitType);
+            setInsightsState("idle");
+            return;
+          }
+          setInsightsState("error");
+          return;
+        }
+
+        setInsights(data.insights);
+        setInsightsState("ready");
+        setCachedInsights(email.id, data.insights);
+        await refreshSubscription();
+      } catch {
+        setInsightsState("error");
+      }
+    },
+    [checkAiAction, email.id, showLimitModal, refreshSubscription]
+  );
+
   const loadDetail = useCallback(async () => {
     setPanelState("loading");
     setPanelError(null);
     resetComposer();
     setSummary(null);
     setSummaryState("idle");
+    setInsights(null);
+    setInsightsState("idle");
+    setStarred(email.starred);
+    setShowSnoozePicker(false);
 
     try {
       const accountQuery = accountEmail
@@ -174,6 +247,23 @@ export function EmailDetailPanel({
         void generateSummary(loadedDetail);
       }
 
+      void generateInsights(loadedDetail);
+
+      try {
+        const accountQuery = accountEmail
+          ? `?account=${encodeURIComponent(accountEmail)}`
+          : "";
+        const labelsRes = await fetch(`/api/gmail/labels${accountQuery}`);
+        if (labelsRes.ok) {
+          const labelsData = await labelsRes.json();
+          setAvailableLabels(labelsData.labels ?? []);
+        }
+      } catch {
+        setAvailableLabels([]);
+      }
+
+      setStarred(loadedDetail.starred ?? email.starred);
+
       if (openAiReply) {
         setShowTonePicker(true);
         onAiReplyOpened?.();
@@ -193,6 +283,7 @@ export function EmailDetailPanel({
     email.id,
     email.unread,
     generateSummary,
+    generateInsights,
     onAiReplyOpened,
     onMarkRead,
     openAiReply,
@@ -451,6 +542,74 @@ export function EmailDetailPanel({
     }
   };
 
+  const handleGenerateDraft = () => {
+    setComposerOpen(true);
+    void generateReply(selectedTone);
+  };
+
+  const handleStar = () => {
+    const next = !starred;
+    setStarred(next);
+    onStar?.(next);
+    setToast({
+      type: "success",
+      title: next ? "Starred" : "Unstarred",
+      message: next ? "Email added to starred." : "Star removed.",
+    });
+  };
+
+  const handleSnooze = (hours: number) => {
+    setShowSnoozePicker(false);
+    onSnooze?.(hours);
+    setToast({
+      type: "success",
+      title: "Snoozed",
+      message: "Email archived until the snooze time.",
+    });
+    onClose();
+  };
+
+  const handleNextAction = (type: EmailInsights["nextActions"][0]["type"]) => {
+    if (type === "reply" || type === "follow_up") {
+      setShowTonePicker(true);
+      return;
+    }
+    if (type === "archive") {
+      void handleArchive();
+      return;
+    }
+    if (type === "schedule") {
+      setToast({
+        type: "success",
+        title: "Schedule",
+        message: "Use the scheduling actions below to book time.",
+      });
+    }
+  };
+
+  const handleToggleLabel = async (labelId: string, active: boolean) => {
+    if (!detail) return;
+    const accountQuery = accountEmail
+      ? `?account=${encodeURIComponent(accountEmail)}`
+      : "";
+    await fetch(`/api/gmail/${detail.id}/labels${accountQuery}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        addLabelIds: active ? [] : [labelId],
+        removeLabelIds: active ? [labelId] : [],
+      }),
+    });
+    await loadDetail();
+  };
+
+  const attachmentUrl = (attachmentId: string, filename: string, mimeType: string) => {
+    const accountQuery = accountEmail
+      ? `&account=${encodeURIComponent(accountEmail)}`
+      : "";
+    return `/api/gmail/${email.id}/attachments/${attachmentId}?filename=${encodeURIComponent(filename)}&mimeType=${encodeURIComponent(mimeType)}${accountQuery}`;
+  };
+
   const initials = getInitials(email.sender);
   const gradient = getAvatarGradient(email.sender);
 
@@ -557,7 +716,41 @@ export function EmailDetailPanel({
                     Mark as Read
                   </ActionButton>
                 )}
+                {onStar && (
+                  <ActionButton onClick={handleStar} disabled={isArchiving}>
+                    <StarIcon className="w-4 h-4" filled={starred} />
+                    {starred ? "Unstar" : "Star"}
+                  </ActionButton>
+                )}
+                {onSnooze && (
+                  <ActionButton
+                    onClick={() => setShowSnoozePicker((v) => !v)}
+                    disabled={isArchiving}
+                  >
+                    Snooze
+                  </ActionButton>
+                )}
               </div>
+
+              {showSnoozePicker && (
+                <div className="mt-3 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06] backdrop-blur-sm animate-fade-in">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-3">
+                    Snooze until
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SNOOZE_OPTIONS.map((option) => (
+                      <button
+                        key={option.label}
+                        type="button"
+                        onClick={() => handleSnooze(option.hours)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/30 hover:text-white transition-all duration-200"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <EmailSchedulingActions
                 subject={detail.subject}
@@ -645,6 +838,178 @@ export function EmailDetailPanel({
                 )}
               </div>
 
+              {(insightsState === "loading" ||
+                (insightsState === "ready" && insights)) && (
+                <div className="mt-4 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06]">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h3 className="text-sm font-semibold text-white">
+                      Smart priority
+                    </h3>
+                    {insightsState === "ready" && insights && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          insights.priority === "high"
+                            ? "bg-[#3B82F6]/15 text-[#93C5FD] border border-[#3B82F6]/30"
+                            : insights.priority === "medium"
+                              ? "bg-white/[0.04] text-[#A1A1AA] border border-white/[0.08]"
+                              : "bg-white/[0.03] text-[#71717A] border border-white/[0.06]"
+                        }`}
+                      >
+                        {insights.priority}
+                      </span>
+                    )}
+                  </div>
+                  {insightsState === "loading" && <SkeletonText lines={2} />}
+                  {insightsState === "ready" && insights && (
+                    <>
+                      <p className="text-sm text-[#CBD5E1]">
+                        {insights.priorityReason}
+                      </p>
+                      {insights.nextActions.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {insights.nextActions.map((action) => (
+                            <button
+                              key={action.label}
+                              type="button"
+                              onClick={() => handleNextAction(action.type)}
+                              className="inline-flex items-center rounded-lg border border-[#3B82F6]/25 bg-[#3B82F6]/10 px-2.5 py-1 text-xs text-[#93C5FD] transition-colors hover:bg-[#3B82F6]/15"
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {insightsState === "ready" &&
+                insights &&
+                insights.followUps.length > 0 && (
+                  <div className="mt-4 p-4 rounded-2xl bg-[#111111] border border-[#3B82F6]/20">
+                    <h3 className="text-sm font-semibold text-white mb-3">
+                      Suggested follow-ups
+                    </h3>
+                    <ul className="space-y-3">
+                      {insights.followUps.map((item) => (
+                        <li
+                          key={item.label}
+                          className="rounded-xl border border-white/[0.06] bg-[#0A0A0A] px-3 py-2.5"
+                        >
+                          <p className="text-sm font-medium text-white">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-xs text-[#71717A]">
+                            {item.timing}
+                            {item.draftHint ? ` · ${item.draftHint}` : ""}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowTonePicker(true);
+                              setComposerOpen(true);
+                            }}
+                            className="mt-2 text-xs font-medium text-[#3B82F6] hover:text-[#93C5FD]"
+                          >
+                            Draft follow-up
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {detail.threadMessages.length > 1 && (
+                <div className="mt-6 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#71717A] mb-3">
+                    Thread timeline
+                  </p>
+                  <ul className="space-y-3">
+                    {detail.threadMessages.map((msg) => (
+                      <li
+                        key={msg.id}
+                        className={`rounded-xl border px-3 py-2.5 ${
+                          msg.isCurrent
+                            ? "border-[#3B82F6]/35 bg-[#3B82F6]/10"
+                            : "border-white/[0.06] bg-[#0A0A0A]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-white truncate">
+                            {msg.sender}
+                          </p>
+                          <time className="shrink-0 text-[11px] text-[#71717A]">
+                            {msg.date}
+                          </time>
+                        </div>
+                        <p className="mt-1 text-xs text-[#A1A1AA] line-clamp-2">
+                          {msg.preview}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {detail.attachments.length > 0 && (
+                <div className="mt-6 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#71717A] mb-3">
+                    Attachments
+                  </p>
+                  <ul className="space-y-2">
+                    {detail.attachments.map((file) => (
+                      <li key={file.id}>
+                        <a
+                          href={attachmentUrl(
+                            file.id,
+                            file.filename,
+                            file.mimeType
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-[#0A0A0A] px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/30 hover:text-white"
+                        >
+                          <span className="truncate">{file.filename}</span>
+                          <span className="shrink-0 text-xs text-[#71717A]">
+                            {file.size > 0
+                              ? `${Math.max(1, Math.round(file.size / 1024))} KB`
+                              : "Preview"}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(detail.labels.length > 0 || availableLabels.length > 0) && (
+                <div className="mt-6 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#71717A] mb-3">
+                    Labels
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableLabels.slice(0, 8).map((label) => {
+                      const active = detail.labels.includes(label.id);
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          onClick={() => void handleToggleLabel(label.id, active)}
+                          className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                            active
+                              ? "bg-[#3B82F6]/15 border border-[#3B82F6]/35 text-[#93C5FD]"
+                              : "border border-white/[0.08] text-[#71717A] hover:text-white"
+                          }`}
+                        >
+                          {label.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-6 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06]">
                 <p className="text-xs font-medium uppercase tracking-wider text-[#71717A] mb-3">
                   Full message
@@ -665,6 +1030,15 @@ export function EmailDetailPanel({
                       <span className="text-xs px-2.5 py-1 rounded-full bg-[#3B82F6]/10 border border-white/[0.06] text-[#93C5FD]">
                         {REPLY_TONE_LABELS[selectedTone]}
                       </span>
+                    )}
+                    {!isGenerating && isComposerEmpty(reply.plain, reply.html) && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateDraft}
+                        className="text-xs font-medium text-[#3B82F6] hover:text-[#93C5FD]"
+                      >
+                        Generate draft
+                      </button>
                     )}
                   </div>
 
@@ -852,6 +1226,26 @@ function SendIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+    </svg>
+  );
+}
+
+function StarIcon({
+  className,
+  filled,
+}: {
+  className?: string;
+  filled?: boolean;
+}) {
+  return (
+    <svg
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      viewBox="0 0 20 20"
+      stroke="currentColor"
+      strokeWidth={filled ? 0 : 1.5}
+    >
+      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
     </svg>
   );
 }

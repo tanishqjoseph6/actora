@@ -184,3 +184,125 @@ export async function generateEmailSummaryWithRetry(
     }
   }
 }
+
+export type FollowUpSuggestion = {
+  label: string;
+  timing: string;
+  draftHint: string;
+};
+
+export type NextActionSuggestion = {
+  label: string;
+  type: "reply" | "schedule" | "task" | "archive" | "follow_up";
+};
+
+export type EmailInsights = {
+  priority: "high" | "medium" | "low";
+  priorityReason: string;
+  followUps: FollowUpSuggestion[];
+  nextActions: NextActionSuggestion[];
+};
+
+function parseInsightsJson(raw: string): EmailInsights {
+  const parsed = JSON.parse(raw) as Partial<EmailInsights>;
+  return {
+    priority:
+      parsed.priority === "high" || parsed.priority === "medium"
+        ? parsed.priority
+        : "low",
+    priorityReason:
+      typeof parsed.priorityReason === "string"
+        ? parsed.priorityReason
+        : "No priority context available.",
+    followUps: Array.isArray(parsed.followUps)
+      ? parsed.followUps
+          .filter((item) => item && typeof item.label === "string")
+          .slice(0, 4)
+          .map((item) => ({
+            label: item.label,
+            timing: typeof item.timing === "string" ? item.timing : "This week",
+            draftHint:
+              typeof item.draftHint === "string" ? item.draftHint : "",
+          }))
+      : [],
+    nextActions: Array.isArray(parsed.nextActions)
+      ? parsed.nextActions
+          .filter((item) => item && typeof item.label === "string")
+          .slice(0, 5)
+          .map((item) => ({
+            label: item.label,
+            type:
+              item.type === "reply" ||
+              item.type === "schedule" ||
+              item.type === "task" ||
+              item.type === "archive" ||
+              item.type === "follow_up"
+                ? item.type
+                : "reply",
+          }))
+      : [],
+  };
+}
+
+export async function generateEmailInsights({
+  sender,
+  subject,
+  body,
+  threadContext,
+}: {
+  sender: string;
+  subject: string;
+  body: string;
+  threadContext?: string;
+}): Promise<EmailInsights> {
+  const openai = getOpenAIClient();
+
+  const threadSection = threadContext?.trim()
+    ? `\n\nPrior messages in this thread:\n${threadContext.slice(0, 6000)}`
+    : "";
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: `You are Actora, an email intelligence assistant. Analyze the email and return JSON only with:
+- priority: "high" | "medium" | "low"
+- priorityReason: one short sentence
+- followUps: array of up to 3 objects { label, timing, draftHint } for suggested follow-up messages
+- nextActions: array of up to 4 objects { label, type } where type is reply|schedule|task|archive|follow_up
+Be practical and specific to the email content.`,
+      },
+      {
+        role: "user",
+        content: `Analyze this email.
+
+From: ${sender}
+Subject: ${subject}
+
+Email body:
+${body.slice(0, 10000)}${threadSection}`,
+      },
+    ],
+  });
+
+  const raw = response.choices[0]?.message?.content?.trim();
+  if (!raw) throw new Error("OpenAI returned empty insights.");
+  return parseInsightsJson(raw);
+}
+
+export async function generateEmailInsightsWithRetry(
+  input: Parameters<typeof generateEmailInsights>[0]
+): Promise<EmailInsights> {
+  try {
+    return await generateEmailInsights(input);
+  } catch (firstError) {
+    try {
+      return await generateEmailInsights(input);
+    } catch {
+      throw firstError;
+    }
+  }
+}
