@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { PremiumDashboardShell } from "@/components/dashboard/premium/PremiumDashboardShell";
 import { DashboardHero } from "@/components/dashboard/premium/DashboardHero";
 import { AiAssistantPanel } from "@/components/dashboard/premium/AiAssistantPanel";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
@@ -25,7 +24,7 @@ export default function Dashboard() {
   }, [stats.emailCount, statsLoading]);
 
   return (
-    <PremiumDashboardShell showTopNav>
+    <>
       <DashboardHero />
       <AiAssistantPanel />
 
@@ -83,6 +82,6 @@ export default function Dashboard() {
           loading={statsLoading}
         />
       </div>
-    </PremiumDashboardShell>
+    </>
   );
 }

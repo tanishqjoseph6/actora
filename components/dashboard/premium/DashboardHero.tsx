@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { dashboard } from "./dashboard-tokens";
@@ -74,7 +74,7 @@ export function DashboardHero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 + i * 0.04 }}
           >
-            <Link
+            <PrefetchLink
               href={action.href}
               className={
                 action.primary
@@ -83,7 +83,7 @@ export function DashboardHero() {
               }
             >
               {action.label}
-            </Link>
+            </PrefetchLink>
           </motion.div>
         ))}
       </div>

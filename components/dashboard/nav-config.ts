@@ -119,6 +119,36 @@ export const FOOTER_NAV: NavItem[] = [
   { href: "/dashboard/settings", label: "Settings", icon: "settings" },
 ];
 
+/** Routes warmed on dashboard load + sidebar hover for instant navigation */
+export const DASHBOARD_PREFETCH_ROUTES = [
+  "/dashboard",
+  "/dashboard/inbox",
+  "/dashboard/crm",
+  "/dashboard/crm/contacts",
+  "/dashboard/crm/companies",
+  "/dashboard/crm/pipeline",
+  "/dashboard/crm/deals",
+  "/dashboard/tasks",
+  "/dashboard/calendar",
+  "/dashboard/automations",
+  "/dashboard/summary",
+  "/dashboard/settings",
+  "/dashboard/connect-gmail",
+  "/billing",
+] as const;
+
+export const DASHBOARD_MOBILE_TITLES: Record<string, string> = {
+  "/dashboard/inbox": "AI Inbox",
+  "/dashboard/crm": "CRM",
+  "/dashboard/tasks": "Tasks",
+  "/dashboard/calendar": "Calendar",
+  "/dashboard/automations": "Automations",
+  "/dashboard/summary": "Analytics",
+  "/dashboard/settings": "Settings",
+  "/dashboard/connect-gmail": "Connect Gmail",
+  "/dashboard/actions": "Actions",
+};
+
 export type CrmTab = {
   href: string;
   label: string;

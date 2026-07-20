@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Menu } from "lucide-react";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
@@ -17,7 +17,7 @@ type DashboardTopNavProps = {
   title?: string;
 };
 
-export function DashboardTopNav({
+export const DashboardTopNav = memo(function DashboardTopNav({
   onMenuClick,
   searchQuery = "",
   onSearchChange,
@@ -73,4 +73,4 @@ export function DashboardTopNav({
       />
     </>
   );
-}
+});

@@ -2,8 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import {
+  getCachedData,
+  setCachedData,
+} from "@/lib/client-data/query-cache";
 import type { PlanId } from "@/lib/subscription";
 import type { BillingInterval, SubscriptionSnapshot } from "@/lib/subscription";
+
+const CACHE_KEY = "subscription";
+const CACHE_TTL_MS = 5 * 60_000;
 
 type UseSubscriptionResult = {
   subscription: SubscriptionSnapshot | null;
@@ -17,9 +24,11 @@ type UseSubscriptionResult = {
 export function useSubscription(): UseSubscriptionResult {
   const { data: session, status, update: updateSession } = useSession();
   const [subscription, setSubscription] = useState<SubscriptionSnapshot | null>(
-    null
+    () => getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS)
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS)
+  );
   const [error, setError] = useState<string | null>(null);
 
   const userId = session?.user?.email
@@ -32,6 +41,7 @@ export function useSubscription(): UseSubscriptionResult {
       planId: snapshot.planId,
     });
     setSubscription(snapshot);
+    setCachedData(CACHE_KEY, snapshot);
     setLoading(false);
     setError(null);
   }, []);
@@ -49,6 +59,9 @@ export function useSubscription(): UseSubscriptionResult {
 
     setError(null);
 
+    const cached = getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS);
+    if (!cached) setLoading(true);
+
     try {
       const res = await fetch("/api/subscription");
       const data = await res.json();
@@ -64,6 +77,7 @@ export function useSubscription(): UseSubscriptionResult {
       });
 
       setSubscription(data.subscription);
+      setCachedData(CACHE_KEY, data.subscription);
 
       if (data.subscription.planId !== sessionPlanId) {
         await updateSession({ planId: data.subscription.planId });
@@ -98,6 +112,7 @@ export function useSubscription(): UseSubscriptionResult {
         }
 
         setSubscription(data.subscription);
+        setCachedData(CACHE_KEY, data.subscription);
         await updateSession({ planId: data.subscription.planId });
         return true;
       } catch {

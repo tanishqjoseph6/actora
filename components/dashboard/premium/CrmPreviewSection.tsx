@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
 import { motion } from "framer-motion";
 import type { DashboardContactPreview } from "@/lib/dashboard/types";
 import { CrmPreviewSkeleton } from "./CrmPreviewSkeleton";
@@ -48,12 +48,12 @@ export function CrmPreviewSection({
             )}
           </p>
         </div>
-        <Link
+        <PrefetchLink
           href="/dashboard/crm"
           className="text-xs font-medium text-[#2563EB] hover:text-[#93C5FD] transition-colors"
         >
           Open CRM →
-        </Link>
+        </PrefetchLink>
       </div>
 
       {Object.keys(statusCounts).length > 0 && (

@@ -1,16 +1,50 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
-import { AnalyticsActivityFeed } from "@/components/analytics/AnalyticsActivityFeed";
-import { AnalyticsAreaChart } from "@/components/analytics/AnalyticsAreaChart";
-import { AnalyticsBarChart } from "@/components/analytics/AnalyticsBarChart";
-import { AnalyticsDonutChart } from "@/components/analytics/AnalyticsDonutChart";
 import { AnalyticsHeader } from "@/components/analytics/AnalyticsHeader";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { formatKpiCurrency, getAnalyticsSnapshot } from "@/lib/analytics/mock-data";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
+
+function ChartSkeleton() {
+  return <Skeleton className="h-[280px] w-full rounded-[20px]" />;
+}
+
+const AnalyticsActivityFeed = dynamic(
+  () =>
+    import("@/components/analytics/AnalyticsActivityFeed").then((m) => ({
+      default: m.AnalyticsActivityFeed,
+    })),
+  { loading: () => <Skeleton className="h-64 w-full rounded-[20px]" /> }
+);
+
+const AnalyticsAreaChart = dynamic(
+  () =>
+    import("@/components/analytics/AnalyticsAreaChart").then((m) => ({
+      default: m.AnalyticsAreaChart,
+    })),
+  { loading: ChartSkeleton, ssr: false }
+);
+
+const AnalyticsBarChart = dynamic(
+  () =>
+    import("@/components/analytics/AnalyticsBarChart").then((m) => ({
+      default: m.AnalyticsBarChart,
+    })),
+  { loading: ChartSkeleton, ssr: false }
+);
+
+const AnalyticsDonutChart = dynamic(
+  () =>
+    import("@/components/analytics/AnalyticsDonutChart").then((m) => ({
+      default: m.AnalyticsDonutChart,
+    })),
+  { loading: ChartSkeleton, ssr: false }
+);
 
 const PERIOD_CHIPS = [
   { id: "7d", label: "7 days" },

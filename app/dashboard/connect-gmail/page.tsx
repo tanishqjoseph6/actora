@@ -176,38 +176,31 @@ function ConnectGmailContent() {
 
   const handleDisconnect = async (email: string) => {
     setStatusMessage(null);
-    const result = await disconnectAccount(email);
+    const ok = await disconnectAccount(email);
     await refreshSubscription();
 
-    if (result.ok) {
+    if (ok) {
       setStatusTone("success");
       setStatusMessage(`Disconnected ${email}.`);
       return;
     }
 
     setStatusTone("error");
-    setStatusMessage(result.error ?? "Could not disconnect Gmail account.");
+    setStatusMessage(accountsError ?? "Could not disconnect Gmail account.");
   };
 
   const handleSync = async (email: string) => {
     setStatusMessage(null);
-    const result = await syncAccount(email);
+    const ok = await syncAccount(email);
 
-    if (result.ok) {
-      const synced = result.data?.results?.find(
-        (entry: { email: string }) => entry.email === email
-      );
-      setStatusTone(synced?.error ? "error" : "success");
-      setStatusMessage(
-        synced?.error
-          ? synced.error
-          : `Synced ${synced?.syncedCount ?? 0} emails from ${email}.`
-      );
+    if (ok) {
+      setStatusTone("success");
+      setStatusMessage(`Synced inbox for ${email}.`);
       return;
     }
 
     setStatusTone("error");
-    setStatusMessage(result.error ?? "Could not sync Gmail inbox.");
+    setStatusMessage(accountsError ?? "Could not sync Gmail inbox.");
   };
 
   const displayMessage =

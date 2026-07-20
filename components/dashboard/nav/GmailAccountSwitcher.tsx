@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import Link from "next/link";
+import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
 import { Check, ChevronsUpDown, Link2, Mail, Unplug } from "lucide-react";
 import {
   formatGmailSyncTime,
@@ -16,7 +16,7 @@ export function GmailAccountSwitcher() {
   const {
     accounts,
     connected,
-    selectedAccount,
+    primaryAccount,
     loading,
     actionEmail,
     setSelectedEmail,
@@ -26,8 +26,8 @@ export function GmailAccountSwitcher() {
   const close = useCallback(() => setOpen(false), []);
   const ref = useDismissible(open, close);
 
-  const label = selectedAccount?.email ?? (loading ? "Loading…" : "Connect Gmail");
-  const initial = (selectedAccount?.email ?? "G").charAt(0).toUpperCase();
+  const label = primaryAccount?.email ?? (loading ? "Loading…" : "Connect Gmail");
+  const initial = (primaryAccount?.email ?? "G").charAt(0).toUpperCase();
 
   return (
     <div className="relative hidden sm:block" ref={ref}>
@@ -71,7 +71,7 @@ export function GmailAccountSwitcher() {
           )}
 
           {accounts.map((account) => {
-            const active = account.email === selectedAccount?.email;
+            const active = account.email === primaryAccount?.email;
             const busy = actionEmail === account.email;
             return (
               <div
@@ -125,14 +125,14 @@ export function GmailAccountSwitcher() {
         </div>
 
         <div className="border-t border-white/[0.06] p-2">
-          <Link
+          <PrefetchLink
             href="/dashboard/connect-gmail"
             onClick={close}
             className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
           >
             <Link2 className="h-4 w-4 text-[#3B82F6]" />
             Connect another Gmail
-          </Link>
+          </PrefetchLink>
         </div>
       </DropdownShell>
     </div>

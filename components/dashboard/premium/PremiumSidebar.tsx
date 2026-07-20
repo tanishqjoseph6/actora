@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { memo } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ChevronLeft, X } from "lucide-react";
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ActoraLogo } from "@/components/branding/ActoraLogo";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
 import {
   CRM_NAV,
   FOOTER_NAV,
@@ -30,7 +31,7 @@ type PremiumSidebarProps = {
   onMobileClose?: () => void;
 };
 
-export function PremiumSidebar({
+export const PremiumSidebar = memo(function PremiumSidebar({
   collapsed,
   onToggle,
   mobileOpen,
@@ -93,7 +94,7 @@ export function PremiumSidebar({
       </AnimatePresence>
     </>
   );
-}
+});
 
 function SidebarPanel({
   collapsed,
@@ -281,7 +282,7 @@ function NavSection({
           }
 
           return (
-            <Link
+            <PrefetchLink
               key={item.href}
               href={item.href}
               onClick={onNavigate}
@@ -315,7 +316,7 @@ function NavSection({
                   {item.label}
                 </span>
               )}
-            </Link>
+            </PrefetchLink>
           );
         })}
       </div>

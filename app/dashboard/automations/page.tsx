@@ -2,9 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PremiumSidebar } from "@/components/dashboard/premium/PremiumSidebar";
-import { MobileDashboardHeader } from "@/components/dashboard/MobileDashboardHeader";
-import { useResetSidebarOnMobile } from "@/hooks/useResetSidebarOnMobile";
 import { AutomationNavSidebar, AutomationMetricsBar } from "@/components/automations/AutomationNavSidebar";
 import { AutomationHeader } from "@/components/automations/AutomationHeader";
 import { AiTriggerCards } from "@/components/automations/AiTriggerCards";
@@ -52,9 +49,6 @@ export default function AutomationsPage() {
     restoreVersion,
   } = useAutomations();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  useResetSidebarOnMobile(setSidebarCollapsed);
   const [activeView, setActiveView] = useState<AutomationView>("my-automations");
   const [editorOpen, setEditorOpen] = useState(false);
   const [canvasNodes, setCanvasNodes] = useState<WorkflowNode[]>([]);
@@ -328,26 +322,11 @@ export default function AutomationsPage() {
 
   return (
     <FeatureGate feature="automations" fullPage>
-    <main className="min-h-screen bg-[#05070B] text-white">
-      <div className="flex min-h-screen min-w-0">
-        <PremiumSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
-          mobileOpen={mobileNavOpen}
-          onMobileClose={() => setMobileNavOpen(false)}
-        />
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0">
+        <AutomationNavSidebar activeView={activeView} onViewChange={setActiveView} />
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          <MobileDashboardHeader
-            title="Automations"
-            onMenuClick={() => setMobileNavOpen(true)}
-          />
-
-          <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0">
-            <AutomationNavSidebar activeView={activeView} onViewChange={setActiveView} />
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden premium-scrollbar min-w-0">
-              <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-[1600px] mx-auto w-full">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden premium-scrollbar min-w-0">
+          <div className="w-full">
                 <AutomationHeader
                   onNewAutomation={handleNewAutomation}
                   onImport={() => showToast("Import workflow — coming soon")}
@@ -488,8 +467,6 @@ export default function AutomationsPage() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
       <AnimatePresence>
         {toast && (
@@ -503,7 +480,6 @@ export default function AutomationsPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
     </FeatureGate>
   );
 }
