@@ -5,6 +5,10 @@ import { PlanActivationToastListener } from "@/components/billing/PlanActivation
 import { TrialBanner } from "@/components/subscription/TrialBanner";
 import { DashboardShellLayout } from "@/components/dashboard/DashboardShellLayout";
 
+/**
+ * Dashboard-scoped providers + the one shared shell (sidebar + top nav).
+ * Pages under /dashboard should only render page content as children.
+ */
 export function DashboardProviders({ children }: { children: React.ReactNode }) {
   return (
     <PlanGateProvider>
