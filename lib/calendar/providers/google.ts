@@ -35,6 +35,7 @@ function mapGoogleEvent(event: calendar_v3.Schema$Event): CalendarEvent {
     id: event.id ?? crypto.randomUUID(),
     title: event.summary?.trim() || "(No title)",
     description: event.description ?? "",
+    notes: "",
     startAt,
     endAt,
     allDay: Boolean(event.start?.date && !event.start?.dateTime),
@@ -47,6 +48,9 @@ function mapGoogleEvent(event: calendar_v3.Schema$Event): CalendarEvent {
       })),
     location: event.location ?? undefined,
     meetingLink: meetLink,
+    reminderMinutes:
+      event.reminders?.overrides?.[0]?.minutes ??
+      (event.reminders?.useDefault === false ? 0 : 30),
     status,
     source: "google",
     provider: "google",
@@ -90,11 +94,20 @@ async function createEvent(
 
   const body: calendar_v3.Schema$Event = {
     summary: input.title,
-    description: input.description,
+    description: [input.description, input.notes]
+      .filter((part) => part?.trim())
+      .join("\n\n--- Notes ---\n"),
     location: input.location,
     start: { dateTime: input.startAt, timeZone },
     end: { dateTime: input.endAt, timeZone },
     attendees: (input.attendees ?? []).map((email) => ({ email })),
+    reminders: {
+      useDefault: false,
+      overrides:
+        (input.reminderMinutes ?? 30) > 0
+          ? [{ method: "popup", minutes: input.reminderMinutes ?? 30 }]
+          : [],
+    },
   };
 
   if (input.addMeetLink) {
@@ -127,7 +140,10 @@ async function updateEvent(
 
   const patch: calendar_v3.Schema$Event = {};
   if (input.title !== undefined) patch.summary = input.title;
-  if (input.description !== undefined) patch.description = input.description;
+  if (input.description !== undefined || input.notes !== undefined) {
+    const parts = [input.description, input.notes].filter((p) => p?.trim());
+    patch.description = parts.join("\n\n--- Notes ---\n");
+  }
   if (input.location !== undefined) patch.location = input.location;
   if (input.startAt !== undefined) {
     patch.start = { dateTime: input.startAt, timeZone };
@@ -137,6 +153,15 @@ async function updateEvent(
   }
   if (input.attendees !== undefined) {
     patch.attendees = input.attendees.map((email) => ({ email }));
+  }
+  if (input.reminderMinutes !== undefined) {
+    patch.reminders = {
+      useDefault: false,
+      overrides:
+        input.reminderMinutes > 0
+          ? [{ method: "popup", minutes: input.reminderMinutes }]
+          : [],
+    };
   }
   if (input.status === "cancelled") {
     patch.status = "cancelled";

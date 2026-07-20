@@ -51,10 +51,18 @@ export function CalendarConnectCard({ compact }: CalendarConnectCardProps) {
             <p className="text-sm font-semibold text-white">Google Calendar</p>
             <p className={`truncate text-xs ${dashboard.subtle}`}>
               {connected && account
-                ? `${account.accountEmail} · synced ${
-                    account.lastSyncedAt
-                      ? new Date(account.lastSyncedAt).toLocaleString()
-                      : "just now"
+                ? `${account.accountEmail} · ${
+                    syncing
+                      ? "syncing…"
+                      : account.status === "error"
+                        ? "needs reconnect"
+                        : account.lastSyncedAt
+                          ? `synced ${new Date(account.lastSyncedAt).toLocaleString()}`
+                          : "connected"
+                  }${
+                    account.lastSyncCount
+                      ? ` · ${account.lastSyncCount} events`
+                      : ""
                   }`
                 : "Connect to sync meetings automatically"}
             </p>
@@ -63,12 +71,22 @@ export function CalendarConnectCard({ compact }: CalendarConnectCardProps) {
         <div className="flex items-center gap-2">
           <span
             className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-              connected
+              syncing
                 ? "border-[#3B82F6]/35 bg-[#3B82F6]/15 text-[#93C5FD]"
-                : "border-white/[0.06] text-[#71717A]"
+                : connected && account?.status === "error"
+                  ? "border-red-500/30 bg-red-500/10 text-red-300"
+                  : connected
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border-white/[0.06] text-[#71717A]"
             }`}
           >
-            {connected ? "Connected" : "Not connected"}
+            {syncing
+              ? "Syncing"
+              : connected && account?.status === "error"
+                ? "Error"
+                : connected
+                  ? "Connected"
+                  : "Not connected"}
           </span>
           {connected ? (
             <button

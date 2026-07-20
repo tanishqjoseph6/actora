@@ -11,6 +11,7 @@ type MeetingRow = {
   id: string;
   title: string;
   description: string | null;
+  notes?: string | null;
   location: string | null;
   meeting_link: string | null;
   attendees: unknown;
@@ -22,6 +23,8 @@ type MeetingRow = {
   source: string | null;
   contact_email: string | null;
   all_day: boolean | null;
+  reminder_minutes?: number | null;
+  reminder_sent_at?: string | null;
 };
 
 function parseAttendees(raw: unknown): CalendarEvent["attendees"] {
@@ -30,7 +33,11 @@ function parseAttendees(raw: unknown): CalendarEvent["attendees"] {
     .map((item) => {
       if (typeof item === "string") return { email: item };
       if (item && typeof item === "object" && "email" in item) {
-        const obj = item as { email?: string; name?: string; responseStatus?: string };
+        const obj = item as {
+          email?: string;
+          name?: string;
+          responseStatus?: string;
+        };
         if (!obj.email) return null;
         return {
           email: obj.email,
@@ -48,12 +55,15 @@ export function mapMeetingRowToEvent(row: MeetingRow): CalendarEvent {
     id: row.id,
     title: row.title,
     description: row.description ?? "",
+    notes: row.notes ?? "",
     startAt: row.starts_at,
     endAt: row.ends_at ?? row.starts_at,
     allDay: Boolean(row.all_day),
     attendees: parseAttendees(row.attendees),
     location: row.location ?? undefined,
     meetingLink: row.meeting_link ?? undefined,
+    reminderMinutes: row.reminder_minutes ?? 30,
+    reminderSentAt: row.reminder_sent_at ?? null,
     status: (row.status as CalendarEventStatus) ?? "scheduled",
     source: (row.source as CalendarEventSource) ?? "manual",
     provider: (row.provider as CalendarProviderId) ?? null,
@@ -63,8 +73,10 @@ export function mapMeetingRowToEvent(row: MeetingRow): CalendarEvent {
   };
 }
 
-const SELECT_COLS =
-  "id, title, description, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day";
+export const MEETING_SELECT_COLS =
+  "id, title, description, notes, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day, reminder_minutes, reminder_sent_at";
+
+const SELECT_COLS = MEETING_SELECT_COLS;
 
 export async function listStoredCalendarEvents(
   userId: string,
@@ -88,10 +100,11 @@ export async function listStoredCalendarEvents(
 
   const { data, error } = await query;
   if (error) {
-    // Fallback for pre-migration schema
     const legacy = await db
       .from("meetings")
-      .select("id, title, starts_at, ends_at, status")
+      .select(
+        "id, title, description, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day"
+      )
       .eq("user_id", uid)
       .order("starts_at", { ascending: true });
 
@@ -100,24 +113,42 @@ export async function listStoredCalendarEvents(
       return [];
     }
 
-    return (legacy.data ?? []).map((row) =>
-      mapMeetingRowToEvent({
-        id: row.id,
-        title: row.title,
-        description: null,
-        location: null,
-        meeting_link: null,
-        attendees: [],
-        starts_at: row.starts_at,
-        ends_at: row.ends_at,
-        status: row.status,
-        provider: null,
-        external_id: null,
-        source: "manual",
-        contact_email: null,
-        all_day: false,
-      })
-    );
+    return ((legacy.data as MeetingRow[] | null) ?? []).map(mapMeetingRowToEvent);
+  }
+
+  return ((data as MeetingRow[] | null) ?? []).map(mapMeetingRowToEvent);
+}
+
+export async function listLocalUnsyncedMeetings(
+  userId: string
+): Promise<CalendarEvent[]> {
+  const db = getSupabaseAdmin();
+  if (!db) return [];
+
+  const uid = normalizeSubscriptionUserId(userId);
+  const { data, error } = await db
+    .from("meetings")
+    .select(SELECT_COLS)
+    .eq("user_id", uid)
+    .is("external_id", null)
+    .eq("status", "scheduled")
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true });
+
+  if (error) {
+    // notes/reminder columns may be missing before migration 016
+    const fallback = await db
+      .from("meetings")
+      .select(
+        "id, title, description, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day"
+      )
+      .eq("user_id", uid)
+      .is("external_id", null)
+      .eq("status", "scheduled")
+      .gte("starts_at", new Date().toISOString());
+
+    if (fallback.error) return [];
+    return ((fallback.data as MeetingRow[] | null) ?? []).map(mapMeetingRowToEvent);
   }
 
   return ((data as MeetingRow[] | null) ?? []).map(mapMeetingRowToEvent);
@@ -132,7 +163,6 @@ export async function listContactMeetings(
     contactEmail,
   });
 
-  // Also match attendees array when contact_email column empty
   const all = await listStoredCalendarEvents(userId);
   const email = contactEmail.trim().toLowerCase();
   const matched = new Map<string, CalendarEvent>();
@@ -151,7 +181,8 @@ export async function listContactMeetings(
   return {
     previous: list.filter((e) => e.endAt < now || e.status === "completed"),
     upcoming: list.filter(
-      (e) => e.endAt >= now && e.status !== "cancelled" && e.status !== "completed"
+      (e) =>
+        e.endAt >= now && e.status !== "cancelled" && e.status !== "completed"
     ),
   };
 }

@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       syncedCount: result.syncedCount,
+      pushedCount: result.pushedCount,
+      remindersSent: result.remindersSent,
       account: refreshed ? toPublicCalendarAccount(refreshed) : null,
     });
   } catch (error) {

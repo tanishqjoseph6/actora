@@ -51,12 +51,15 @@ export type CalendarEvent = {
   id: string;
   title: string;
   description: string;
+  notes: string;
   startAt: string;
   endAt: string;
   allDay: boolean;
   attendees: CalendarAttendee[];
   location?: string;
   meetingLink?: string;
+  reminderMinutes: number;
+  reminderSentAt?: string | null;
   status: CalendarEventStatus;
   source: CalendarEventSource;
   provider?: CalendarProviderId | null;
@@ -68,11 +71,13 @@ export type CalendarEvent = {
 export type CreateCalendarEventInput = {
   title: string;
   description?: string;
+  notes?: string;
   startAt: string;
   endAt: string;
   attendees?: string[];
   location?: string;
   addMeetLink?: boolean;
+  reminderMinutes?: number;
   contactEmail?: string;
   source?: CalendarEventSource;
   timeZone?: string;

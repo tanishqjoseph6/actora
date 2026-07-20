@@ -46,7 +46,30 @@ export async function PATCH(request: NextRequest, context: Ctx) {
         existing.externalId,
         body
       );
+      remote.notes = body.notes ?? existing.notes;
+      if (body.reminderMinutes !== undefined) {
+        remote.reminderMinutes = body.reminderMinutes;
+      }
       await upsertSyncedMeetings(userId, [remote]);
+
+      const dbAfter = getSupabaseAdmin();
+      if (dbAfter) {
+        const extra: Record<string, unknown> = {
+          updated_at: new Date().toISOString(),
+        };
+        if (body.notes !== undefined) extra.notes = body.notes;
+        if (body.reminderMinutes !== undefined) {
+          extra.reminder_minutes = body.reminderMinutes;
+          extra.reminder_sent_at = null;
+        }
+        if (body.startAt !== undefined) extra.reminder_sent_at = null;
+        await dbAfter
+          .from("meetings")
+          .update(extra)
+          .eq("id", id)
+          .eq("user_id", userId);
+      }
+
       const updated = (await listStoredCalendarEvents(userId)).find(
         (e) => e.id === id || e.externalId === remote.externalId
       );
@@ -63,10 +86,18 @@ export async function PATCH(request: NextRequest, context: Ctx) {
     };
     if (body.title !== undefined) patch.title = body.title;
     if (body.description !== undefined) patch.description = body.description;
+    if (body.notes !== undefined) patch.notes = body.notes;
     if (body.location !== undefined) patch.location = body.location;
-    if (body.startAt !== undefined) patch.starts_at = body.startAt;
+    if (body.startAt !== undefined) {
+      patch.starts_at = body.startAt;
+      patch.reminder_sent_at = null;
+    }
     if (body.endAt !== undefined) patch.ends_at = body.endAt;
     if (body.status !== undefined) patch.status = body.status;
+    if (body.reminderMinutes !== undefined) {
+      patch.reminder_minutes = body.reminderMinutes;
+      patch.reminder_sent_at = null;
+    }
     if (body.attendees !== undefined) {
       patch.attendees = body.attendees.map((e) => ({ email: e }));
     }
@@ -77,15 +108,33 @@ export async function PATCH(request: NextRequest, context: Ctx) {
       .eq("id", id)
       .eq("user_id", userId)
       .select(
-        "id, title, description, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day"
+        "id, title, description, notes, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day, reminder_minutes, reminder_sent_at"
       )
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
-      return NextResponse.json(
-        { error: error?.message ?? "Update failed." },
-        { status: 500 }
-      );
+      // Fallback without notes/reminder columns
+      const legacyPatch = { ...patch };
+      delete legacyPatch.notes;
+      delete legacyPatch.reminder_minutes;
+      delete legacyPatch.reminder_sent_at;
+      const legacy = await db
+        .from("meetings")
+        .update(legacyPatch)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select(
+          "id, title, description, location, meeting_link, attendees, starts_at, ends_at, status, provider, external_id, source, contact_email, all_day"
+        )
+        .maybeSingle();
+
+      if (legacy.error || !legacy.data) {
+        return NextResponse.json(
+          { error: error?.message ?? legacy.error?.message ?? "Update failed." },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({ event: mapMeetingRowToEvent(legacy.data) });
     }
 
     return NextResponse.json({ event: mapMeetingRowToEvent(data) });

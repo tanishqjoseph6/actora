@@ -5,6 +5,7 @@ import {
   calendarAccountRepository,
   toPublicCalendarAccount,
 } from "@/lib/calendar/repository";
+import { processMeetingReminders } from "@/lib/calendar/reminders";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export async function GET() {
@@ -18,9 +19,13 @@ export async function GET() {
   const accounts = await calendarAccountRepository.listByUser(userId);
   const primary = accounts[0] ?? null;
 
+  // Fire-and-forget reminder check when status is polled
+  void processMeetingReminders(userId);
+
   return NextResponse.json({
     connected: Boolean(primary),
     account: primary ? toPublicCalendarAccount(primary) : null,
     accounts: accounts.map(toPublicCalendarAccount),
+    status: primary?.status ?? "disconnected",
   });
 }

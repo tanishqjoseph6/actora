@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CalendarPlus, CalendarRange, CalendarX2 } from "lucide-react";
 import { ScheduleMeetingModal } from "@/components/calendar/ScheduleMeetingModal";
+import type { CalendarEvent } from "@/lib/calendar/types";
 
 type EmailSchedulingActionsProps = {
   subject?: string;
@@ -18,8 +19,42 @@ export function EmailSchedulingActions({
 }: EmailSchedulingActionsProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "reschedule">("create");
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [loadingReschedule, setLoadingReschedule] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+
+  async function openReschedule() {
+    if (!participantEmail) {
+      setNote("No participant email found on this thread.");
+      return;
+    }
+    setLoadingReschedule(true);
+    setNote(null);
+    try {
+      const res = await fetch(
+        `/api/calendar/contact-meetings?email=${encodeURIComponent(participantEmail)}`
+      );
+      const json = (await res.json()) as {
+        upcoming?: CalendarEvent[];
+      };
+      const next = json.upcoming?.[0];
+      if (!next) {
+        setMode("create");
+        setEditingEvent(null);
+        setOpen(true);
+        setNote("No upcoming meeting found — creating a new one.");
+        return;
+      }
+      setMode("reschedule");
+      setEditingEvent(next);
+      setOpen(true);
+    } catch {
+      setNote("Could not load meetings for this contact.");
+    } finally {
+      setLoadingReschedule(false);
+    }
+  }
 
   async function cancelRelatedMeeting() {
     if (!participantEmail) {
@@ -43,7 +78,7 @@ export function EmailSchedulingActions({
       const confirmed = window.confirm(`Cancel “${next.title}”?`);
       if (!confirmed) return;
       await fetch(`/api/calendar/events/${next.id}`, { method: "DELETE" });
-      setNote("Meeting cancelled.");
+      setNote("Meeting cancelled and removed from Google Calendar.");
     } catch {
       setNote("Could not cancel meeting.");
     } finally {
@@ -62,6 +97,7 @@ export function EmailSchedulingActions({
             disabled={disabled}
             onClick={() => {
               setMode("create");
+              setEditingEvent(null);
               setOpen(true);
             }}
           >
@@ -69,14 +105,11 @@ export function EmailSchedulingActions({
             Schedule Meeting
           </ActionChip>
           <ActionChip
-            disabled={disabled}
-            onClick={() => {
-              setMode("reschedule");
-              setOpen(true);
-            }}
+            disabled={disabled || loadingReschedule}
+            onClick={() => void openReschedule()}
           >
             <CalendarRange className="h-3.5 w-3.5" />
-            Reschedule
+            {loadingReschedule ? "Loading…" : "Reschedule"}
           </ActionChip>
           <ActionChip
             disabled={disabled || cancelling}
@@ -97,22 +130,26 @@ export function EmailSchedulingActions({
 
       <ScheduleMeetingModal
         open={open}
-        onClose={() => setOpen(false)}
-        initial={{
-          title:
-            mode === "reschedule"
-              ? `Reschedule: ${subject || "Meeting"}`
-              : subject
-                ? `Meeting: ${subject}`
-                : "Meeting",
-          attendees: participantEmail ?? "",
-          contactEmail: participantEmail,
-          description:
-            mode === "reschedule"
-              ? "Rescheduled from Actora inbox"
-              : "Created from Actora inbox",
-          addMeetLink: true,
+        onClose={() => {
+          setOpen(false);
+          setEditingEvent(null);
         }}
+        editingEvent={editingEvent}
+        initial={
+          mode === "create" || !editingEvent
+            ? {
+                title: subject ? `Meeting: ${subject}` : "Meeting",
+                attendees: participantEmail ?? "",
+                contactEmail: participantEmail,
+                description: "Created from Actora inbox",
+                notes: "",
+                addMeetLink: true,
+                reminderMinutes: 30,
+              }
+            : undefined
+        }
+        onCreated={() => setNote("Meeting created and synced.")}
+        onUpdated={() => setNote("Meeting rescheduled and synced.")}
       />
     </>
   );
