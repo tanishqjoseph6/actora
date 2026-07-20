@@ -47,7 +47,7 @@ export function AnalyticsBarChart({
                 className="w-full max-w-[40px] rounded-t-md bg-gradient-to-t from-[#1D4ED8] to-[#3B82F6] min-h-[4px] relative group"
                 title={`${d.label}: ${d.value}`}
               >
-                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-[#64748B] opacity-0 group-hover:opacity-100 transition-opacity tabular-nums whitespace-nowrap">
+                <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-[#71717A] opacity-0 group-hover:opacity-100 transition-opacity tabular-nums whitespace-nowrap">
                   {d.value}
                 </span>
               </motion.div>

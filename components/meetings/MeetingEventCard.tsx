@@ -16,17 +16,17 @@ const TYPE_STYLES: Record<
   video: {
     label: "Video",
     icon: "📹",
-    badge: "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]",
+    badge: "bg-[#3B82F6]/15 border-[#3B82F6]/35 text-[#93C5FD]",
   },
   "in-person": {
     label: "In person",
     icon: "📍",
-    badge: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
+    badge: "bg-[#1E293B] border-[#334155] text-[#A1A1AA]",
   },
   phone: {
     label: "Phone",
     icon: "📞",
-    badge: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
+    badge: "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]",
   },
 };
 
@@ -72,7 +72,7 @@ export function MeetingEventCard({
               {meeting.title}
             </h3>
             {isScheduled && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border border-[#334155] text-[#64748B] bg-[#0B1220]">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide border border-[#334155] text-[#71717A] bg-[#0A0A0A]">
                 Scheduled
               </span>
             )}
@@ -113,13 +113,13 @@ export function MeetingEventCard({
             {meeting.attendees.slice(0, 4).map((name) => (
               <span
                 key={name}
-                className="px-2 py-0.5 rounded-md text-[10px] font-medium border border-[#1E293B] bg-[#0B1220] text-[#94A3B8]"
+                className="px-2 py-0.5 rounded-md text-[10px] font-medium border border-white/[0.06] bg-[#0A0A0A] text-[#A1A1AA]"
               >
                 {name}
               </span>
             ))}
             {meeting.attendees.length > 4 && (
-              <span className="px-2 py-0.5 text-[10px] text-[#64748B]">
+              <span className="px-2 py-0.5 text-[10px] text-[#71717A]">
                 +{meeting.attendees.length - 4}
               </span>
             )}
@@ -168,7 +168,7 @@ function MetaItem({
   children: ReactNode;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-[#64748B]">
+    <span className="inline-flex items-center gap-1.5 text-xs text-[#71717A]">
       {icon}
       {children}
     </span>

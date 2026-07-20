@@ -66,7 +66,7 @@ export function UpcomingMeetingsSection({
             title={`Nothing scheduled for ${selectedLabel.toLowerCase()}`}
             description="Pick another day on the calendar or view all upcoming meetings across your week."
             cta={{ label: "Show all upcoming", onClick: onClearDayFilter }}
-            className="border-dashed bg-[#111827]/50"
+            className="border-dashed bg-[#111111]/50"
           />
         ) : (
           <PremiumEmptyState
@@ -77,7 +77,7 @@ export function UpcomingMeetingsSection({
               label: "Connect calendar",
               href: "/dashboard/settings#integrations",
             }}
-            className="border-dashed bg-[#111827]/50"
+            className="border-dashed bg-[#111111]/50"
           />
         )
       ) : (
@@ -85,11 +85,11 @@ export function UpcomingMeetingsSection({
           {groups.map((group) => (
             <div key={group.date.toISOString()}>
               <div className="flex items-center gap-3 mb-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#64748B]">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#71717A]">
                   {group.label}
                 </h3>
                 <div className="flex-1 h-px bg-[#1E293B]" />
-                <span className="text-xs text-[#64748B] tabular-nums">
+                <span className="text-xs text-[#71717A] tabular-nums">
                   {group.meetings.length}
                 </span>
               </div>

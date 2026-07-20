@@ -14,7 +14,7 @@ import {
 const DUE_TONE_STYLES = {
   overdue: "text-red-400",
   today: "text-[#3B82F6]",
-  upcoming: "text-[#64748B]",
+  upcoming: "text-[#71717A]",
   done: "text-[#475569]",
 } as const;
 
@@ -59,8 +59,8 @@ export function TaskCard({
           mt-0.5 w-5 h-5 rounded-md border shrink-0 flex items-center justify-center transition-colors
           ${
             isDone
-              ? "bg-[#2563EB] border-[#2563EB] text-white"
-              : "border-[#334155] hover:border-[#2563EB]/60 bg-[#0B1220]"
+              ? "bg-[#3B82F6] border-[#3B82F6] text-white"
+              : "border-[#334155] hover:border-[#3B82F6]/60 bg-[#0A0A0A]"
           }
         `}
       >
@@ -73,13 +73,13 @@ export function TaskCard({
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <h3
             className={`text-sm font-semibold text-white transition-colors ${
-              isDone ? "line-through text-[#64748B]" : "group-hover:text-[#93C5FD]"
+              isDone ? "line-through text-[#71717A]" : "group-hover:text-[#93C5FD]"
             }`}
           >
             {task.title}
           </h3>
           {inProgress && !isDone && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide border border-[#2563EB]/30 text-[#3B82F6] bg-[#2563EB]/10">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide border border-[#3B82F6]/30 text-[#3B82F6] bg-[#3B82F6]/10">
               In progress
             </span>
           )}
@@ -109,8 +109,8 @@ export function TaskCard({
             <span className="text-xs text-[#3B82F6]">{task.companyName}</span>
           )}
 
-          <span className="inline-flex items-center gap-1.5 text-xs text-[#64748B]">
-            <span className="w-5 h-5 rounded-md bg-[#2563EB] flex items-center justify-center text-[8px] font-bold text-white">
+          <span className="inline-flex items-center gap-1.5 text-xs text-[#71717A]">
+            <span className="w-5 h-5 rounded-md bg-[#3B82F6] flex items-center justify-center text-[8px] font-bold text-white">
               {getInitials(task.assignee)}
             </span>
             {task.assignee}
@@ -122,7 +122,7 @@ export function TaskCard({
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-1.5 py-0.5 rounded-md text-[9px] border border-[#1E293B] bg-[#0B1220] text-[#64748B]"
+                className="px-1.5 py-0.5 rounded-md text-[9px] border border-white/[0.06] bg-[#0A0A0A] text-[#71717A]"
               >
                 {tag}
               </span>
@@ -131,12 +131,12 @@ export function TaskCard({
         )}
 
         {(onEdit || onDelete) && (
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-[#1E293B]">
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/[0.06]">
             {onEdit && (
               <button
                 type="button"
                 onClick={() => onEdit(task)}
-                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#2563EB]/20"
+                className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#3B82F6]/20"
               >
                 Edit
               </button>

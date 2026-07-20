@@ -29,15 +29,15 @@ export function CrmPagination({
   const pages = buildPageList(safePage, totalPages);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#1E293B]">
-      <p className="text-sm text-[#64748B] tabular-nums">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-white/[0.06]">
+      <p className="text-sm text-[#71717A] tabular-nums">
         {totalItems === 0 ? (
           "No results"
         ) : (
           <>
-            Showing <span className="text-[#94A3B8]">{start}</span>–
-            <span className="text-[#94A3B8]">{end}</span> of{" "}
-            <span className="text-[#94A3B8]">{totalItems}</span>
+            Showing <span className="text-[#A1A1AA]">{start}</span>–
+            <span className="text-[#A1A1AA]">{end}</span> of{" "}
+            <span className="text-[#A1A1AA]">{totalItems}</span>
           </>
         )}
       </p>
@@ -47,7 +47,7 @@ export function CrmPagination({
           <div className="flex items-center gap-2">
             <label
               htmlFor="crm-page-size"
-              className="text-xs text-[#64748B] uppercase tracking-wider"
+              className="text-xs text-[#71717A] uppercase tracking-wider"
             >
               Rows
             </label>
@@ -55,10 +55,10 @@ export function CrmPagination({
               id="crm-page-size"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="px-2.5 py-1.5 rounded-lg bg-[#0B1220] border border-[#1E293B] text-sm text-[#94A3B8] focus:outline-none focus:border-[#2563EB]/50 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg bg-[#0A0A0A] border border-white/[0.06] text-sm text-[#A1A1AA] focus:outline-none focus:border-[#3B82F6]/50 cursor-pointer"
             >
               {pageSizeOptions.map((size) => (
-                <option key={size} value={size} className="bg-[#111827]">
+                <option key={size} value={size} className="bg-[#111111]">
                   {size}
                 </option>
               ))}
@@ -79,7 +79,7 @@ export function CrmPagination({
             p === "ellipsis" ? (
               <span
                 key={`ellipsis-${i}`}
-                className="px-2 text-[#64748B] text-sm select-none"
+                className="px-2 text-[#71717A] text-sm select-none"
               >
                 …
               </span>
@@ -133,8 +133,8 @@ function PageButton({
         disabled:opacity-40 disabled:cursor-not-allowed
         ${
           active
-            ? "bg-[#2563EB] text-white"
-            : "border border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/40 hover:text-white"
+            ? "bg-[#3B82F6] text-white"
+            : "border border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/40 hover:text-white"
         }
       `}
     >

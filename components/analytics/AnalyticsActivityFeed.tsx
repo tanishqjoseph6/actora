@@ -9,11 +9,11 @@ const TYPE_META: Record<
   ActivityItem["type"],
   { icon: string; color: string }
 > = {
-  email: { icon: "✉️", color: "bg-[#2563EB]/15 border-[#2563EB]/30" },
+  email: { icon: "✉️", color: "bg-[#3B82F6]/15 border-[#3B82F6]/30" },
   task: { icon: "✓", color: "bg-[#1E293B] border-[#334155]" },
-  deal: { icon: "💼", color: "bg-[#2563EB]/10 border-[#2563EB]/25" },
-  meeting: { icon: "📅", color: "bg-[#0B1220] border-[#1E293B]" },
-  ai: { icon: "✦", color: "bg-[#2563EB]/20 border-[#3B82F6]/35" },
+  deal: { icon: "💼", color: "bg-[#3B82F6]/10 border-[#3B82F6]/25" },
+  meeting: { icon: "📅", color: "bg-[#0A0A0A] border-white/[0.06]" },
+  ai: { icon: "✦", color: "bg-[#3B82F6]/20 border-[#3B82F6]/35" },
 };
 
 type AnalyticsActivityFeedProps = {
@@ -33,7 +33,7 @@ export function AnalyticsActivityFeed({ items }: AnalyticsActivityFeedProps) {
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="flex items-start gap-3 p-3 rounded-xl border border-[#1E293B] bg-[#0B1220]/50 hover:border-[#2563EB]/30 transition-colors interactive-lift"
+              className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/50 hover:border-[#3B82F6]/30 transition-colors interactive-lift"
             >
               <span
                 className={`w-8 h-8 rounded-lg border flex items-center justify-center text-sm shrink-0 ${meta.color}`}

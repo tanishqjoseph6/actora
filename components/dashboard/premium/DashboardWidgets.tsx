@@ -145,8 +145,8 @@ function StatusPill({ status }: { status: string }) {
     <span
       className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
         active
-          ? "bg-[#2563EB]/15 text-[#93C5FD] border-[#2563EB]/30"
-          : "bg-[#111827] text-[#64748B] border-[#1E293B]"
+          ? "bg-[#3B82F6]/15 text-[#93C5FD] border-[#3B82F6]/30"
+          : "bg-[#111111] text-[#71717A] border-white/[0.06]"
       }`}
     >
       {status}
@@ -165,10 +165,10 @@ function HealthDot({
     <span className="flex items-center gap-1.5 text-xs">
       <span
         className={`w-2 h-2 rounded-full ${
-          status === "healthy" ? "bg-[#2563EB]" : "bg-[#64748B] animate-pulse"
+          status === "healthy" ? "bg-[#3B82F6]" : "bg-[#64748B] animate-pulse"
         }`}
       />
-      <span className={status === "healthy" ? "text-[#93C5FD]" : "text-[#94A3B8]"}>
+      <span className={status === "healthy" ? "text-[#93C5FD]" : "text-[#A1A1AA]"}>
         {label}
       </span>
     </span>

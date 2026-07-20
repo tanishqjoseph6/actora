@@ -14,7 +14,7 @@ export function CrmPreviewSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-[#1E293B] bg-[#0B1220]/50"
+            className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/50"
           >
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-32" />

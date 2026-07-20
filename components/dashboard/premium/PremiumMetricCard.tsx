@@ -61,7 +61,7 @@ export function PremiumMetricCard({
             {showTrend ? (
               <span
                 className={`text-xs font-medium tabular-nums ${
-                  trend >= 0 ? "text-[#3B82F6]" : "text-[#94A3B8]"
+                  trend >= 0 ? "text-[#3B82F6]" : "text-[#A1A1AA]"
                 }`}
               >
                 {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%

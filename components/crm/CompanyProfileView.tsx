@@ -156,7 +156,7 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-[#111827]/50 border border-blue-400/10 p-3 sm:p-4">
+    <div className="rounded-xl bg-[#111111]/50 border border-blue-400/10 p-3 sm:p-4">
       <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
       <p
         className={`text-lg sm:text-xl font-bold mt-1 ${accent ? "text-white" : "text-white"}`}

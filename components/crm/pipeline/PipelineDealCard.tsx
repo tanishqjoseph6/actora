@@ -45,16 +45,16 @@ export function PipelineDealCard({
       style={style}
       className={`
         group relative interactive-lift transition-all duration-200
-        rounded-xl border bg-[#111827] shadow-sm
+        rounded-xl border bg-[#111111] shadow-sm
         ${isDragging ? "opacity-40 scale-[0.98]" : "opacity-100"}
-        ${isSelected ? "border-[#2563EB]/60 ring-1 ring-[#2563EB]/25" : "border-[#1E293B] hover:border-[#2563EB]/35"}
+        ${isSelected ? "border-[#3B82F6]/60 ring-1 ring-[#2563EB]/25" : "border-white/[0.06] hover:border-[#3B82F6]/35"}
       `}
     >
       <div className="flex items-stretch">
         <button
           type="button"
           ref={setActivatorNodeRef}
-          className="flex items-center justify-center w-8 shrink-0 rounded-l-xl border-r border-[#1E293B] text-[#64748B] hover:text-[#94A3B8] hover:bg-[#0B1220] cursor-grab active:cursor-grabbing touch-none"
+          className="flex items-center justify-center w-8 shrink-0 rounded-l-xl border-r border-white/[0.06] text-[#71717A] hover:text-[#A1A1AA] hover:bg-[#0A0A0A] cursor-grab active:cursor-grabbing touch-none"
           aria-label={`Drag ${deal.title}`}
           {...attributes}
           {...listeners}
@@ -77,7 +77,7 @@ export function PipelineDealCard({
               <h3 className="font-semibold text-white text-sm leading-tight truncate">
                 {deal.companyName}
               </h3>
-              <p className="text-xs text-[#64748B] truncate mt-0.5">{deal.title}</p>
+              <p className="text-xs text-[#71717A] truncate mt-0.5">{deal.title}</p>
             </div>
             <span
               className={`shrink-0 inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-semibold uppercase tracking-wide border ${priorityStyle.badge}`}
@@ -86,8 +86,8 @@ export function PipelineDealCard({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 mb-2.5 text-xs text-[#94A3B8]">
-            <UserIcon className="w-3 h-3 text-[#64748B] shrink-0" />
+          <div className="flex items-center gap-1.5 mb-2.5 text-xs text-[#A1A1AA]">
+            <UserIcon className="w-3 h-3 text-[#71717A] shrink-0" />
             <span className="truncate">{deal.contactName}</span>
           </div>
 
@@ -103,7 +103,7 @@ export function PipelineDealCard({
             </span>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-[#64748B]">
+          <div className="flex items-center justify-between text-[10px] text-[#71717A]">
             <span className="flex items-center gap-1">
               <CalendarIcon className="w-3 h-3" />
               {formatDate(deal.closeDate)}
@@ -112,26 +112,26 @@ export function PipelineDealCard({
           </div>
 
           {deal.labels.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2.5 pt-2.5 border-t border-[#1E293B]">
+            <div className="flex flex-wrap gap-1 mt-2.5 pt-2.5 border-t border-white/[0.06]">
               {deal.labels.slice(0, 3).map((label) => (
                 <span
                   key={label}
-                  className="px-1.5 py-0.5 rounded-md bg-[#0B1220] border border-[#1E293B] text-[9px] text-[#64748B]"
+                  className="px-1.5 py-0.5 rounded-md bg-[#0A0A0A] border border-white/[0.06] text-[9px] text-[#71717A]"
                 >
                   {label}
                 </span>
               ))}
               {deal.labels.length > 3 && (
-                <span className="text-[9px] text-[#64748B]">+{deal.labels.length - 3}</span>
+                <span className="text-[9px] text-[#71717A]">+{deal.labels.length - 3}</span>
               )}
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-[#1E293B]">
-            <div className="w-5 h-5 rounded-md bg-[#2563EB] flex items-center justify-center text-[8px] font-bold text-white">
+          <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-white/[0.06]">
+            <div className="w-5 h-5 rounded-md bg-[#3B82F6] flex items-center justify-center text-[8px] font-bold text-white">
               {getInitials(deal.owner)}
             </div>
-            <span className="text-[10px] text-[#64748B]">{deal.owner}</span>
+            <span className="text-[10px] text-[#71717A]">{deal.owner}</span>
           </div>
         </button>
       </div>
@@ -144,7 +144,7 @@ export function PipelineDealCardOverlay({ deal }: { deal: PipelineDeal }) {
   const aiTier = getAiScoreTier(deal.aiScore);
 
   return (
-    <div className="rounded-xl border border-[#2563EB]/50 bg-[#111827] p-3.5 shadow-xl shadow-black/40 w-[280px] cursor-grabbing rotate-[1.5deg]">
+    <div className="rounded-xl border border-[#3B82F6]/50 bg-[#111111] p-3.5 shadow-xl shadow-black/40 w-[280px] cursor-grabbing rotate-[1.5deg]">
       <div className="flex items-start gap-2.5 mb-2">
         <div
           className={`w-9 h-9 rounded-lg bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}
@@ -153,7 +153,7 @@ export function PipelineDealCardOverlay({ deal }: { deal: PipelineDeal }) {
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-white text-sm truncate">{deal.companyName}</h3>
-          <p className="text-xs text-[#64748B] truncate">{deal.title}</p>
+          <p className="text-xs text-[#71717A] truncate">{deal.title}</p>
         </div>
         <span
           className={`shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border ${priorityStyle.badge}`}

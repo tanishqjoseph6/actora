@@ -57,7 +57,7 @@ export function AnalyticsAreaChart({
           </p>
           <p
             className={`text-xs font-medium tabular-nums ${
-              change >= 0 ? "text-[#3B82F6]" : "text-[#94A3B8]"
+              change >= 0 ? "text-[#3B82F6]" : "text-[#A1A1AA]"
             }`}
           >
             {change >= 0 ? "↑" : "↓"} {Math.abs(change)}%

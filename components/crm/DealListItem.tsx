@@ -58,7 +58,7 @@ export function DealListItem({ deal }: { deal: Deal }) {
             </div>
             <div className={`h-1.5 rounded-full ${dashboard.surface} border ${dashboard.border} overflow-hidden`}>
               <div
-                className="h-full rounded-full bg-[#2563EB] transition-all"
+                className="h-full rounded-full bg-[#3B82F6] transition-all"
                 style={{ width: `${deal.probability}%` }}
               />
             </div>

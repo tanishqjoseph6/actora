@@ -14,10 +14,10 @@ type CrmPreviewSectionProps = {
 };
 
 function getAiTier(score: number): { label: string; className: string } {
-  if (score >= 90) return { label: "Hot", className: "text-[#93C5FD] bg-[#2563EB]/20 border-[#2563EB]/40" };
-  if (score >= 80) return { label: "High", className: "text-[#3B82F6] bg-[#2563EB]/15 border-[#2563EB]/30" };
-  if (score >= 70) return { label: "Medium", className: "text-[#94A3B8] bg-[#111827] border-[#1E293B]" };
-  return { label: "Low", className: "text-[#64748B] bg-[#111827] border-[#1E293B]" };
+  if (score >= 90) return { label: "Hot", className: "text-[#93C5FD] bg-[#3B82F6]/20 border-[#3B82F6]/40" };
+  if (score >= 80) return { label: "High", className: "text-[#3B82F6] bg-[#3B82F6]/15 border-[#3B82F6]/30" };
+  if (score >= 70) return { label: "Medium", className: "text-[#A1A1AA] bg-[#111111] border-white/[0.06]" };
+  return { label: "Low", className: "text-[#71717A] bg-[#111111] border-white/[0.06]" };
 }
 
 export function CrmPreviewSection({
@@ -82,7 +82,7 @@ export function CrmPreviewSection({
               return (
                 <li
                   key={contact.id}
-                  className={`flex items-center justify-between gap-2 p-2.5 rounded-xl ${dashboard.cardBase} hover:border-[#2563EB]/35 transition-colors`}
+                  className={`flex items-center justify-between gap-2 p-2.5 rounded-xl ${dashboard.cardBase} hover:border-[#3B82F6]/35 transition-colors`}
                 >
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{contact.name}</p>

@@ -56,12 +56,12 @@ export function PipelineDealDetailPanel({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 380, damping: 36 }}
-            className="fixed inset-y-0 right-0 z-50 w-full max-w-md flex flex-col border-l border-[#1E293B] bg-[#05070B] shadow-2xl shadow-black/50"
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-md flex flex-col border-l border-white/[0.06] bg-[#0A0A0A] shadow-2xl shadow-black/50"
             role="dialog"
             aria-modal
             aria-labelledby="deal-detail-title"
           >
-            <header className="flex items-start justify-between gap-4 p-5 sm:p-6 border-b border-[#1E293B] shrink-0">
+            <header className="flex items-start justify-between gap-4 p-5 sm:p-6 border-b border-white/[0.06] shrink-0">
               <div className="flex items-start gap-3 min-w-0">
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getAvatarGradient(deal.companyName)} flex items-center justify-center text-sm font-bold text-white shrink-0`}
@@ -69,7 +69,7 @@ export function PipelineDealDetailPanel({
                   {getInitials(deal.companyName)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-wider text-[#64748B]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#71717A]">
                     {deal.companyName}
                   </p>
                   <h2
@@ -83,7 +83,7 @@ export function PipelineDealDetailPanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-xl border border-[#1E293B] text-[#64748B] hover:text-white hover:border-[#2563EB]/40 transition-colors shrink-0"
+                className="p-2 rounded-xl border border-white/[0.06] text-[#71717A] hover:text-white hover:border-[#3B82F6]/40 transition-colors shrink-0"
                 aria-label="Close"
               >
                 <CloseIcon className="w-5 h-5" />
@@ -91,8 +91,8 @@ export function PipelineDealDetailPanel({
             </header>
 
             <div className="flex-1 overflow-y-auto premium-scrollbar p-5 sm:p-6 space-y-6">
-              <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-5">
-                <p className="text-xs uppercase tracking-wider text-[#64748B] mb-1">
+              <div className="rounded-xl border border-white/[0.06] bg-[#111111] p-5">
+                <p className="text-xs uppercase tracking-wider text-[#71717A] mb-1">
                   Deal value
                 </p>
                 <p className="text-3xl font-bold text-white tabular-nums">
@@ -111,10 +111,10 @@ export function PipelineDealDetailPanel({
               </div>
 
               <section>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#71717A] mb-3">
                   AI lead score
                 </h3>
-                <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-4">
+                <div className="rounded-xl border border-white/[0.06] bg-[#111111] p-4">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${getAiScoreTier(deal.aiScore).badge}`}
@@ -125,9 +125,9 @@ export function PipelineDealDetailPanel({
                       {deal.aiScore}
                     </span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-[#0B1220] overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-[#0A0A0A] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[#2563EB] transition-all duration-500"
+                      className="h-full rounded-full bg-[#3B82F6] transition-all duration-500"
                       style={{ width: `${deal.aiScore}%` }}
                     />
                   </div>
@@ -135,7 +135,7 @@ export function PipelineDealDetailPanel({
               </section>
 
               <section>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#71717A] mb-3">
                   People
                 </h3>
                 <div className="space-y-2">
@@ -146,14 +146,14 @@ export function PipelineDealDetailPanel({
 
               {deal.labels.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[#71717A] mb-3">
                     Labels
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {deal.labels.map((label) => (
                       <span
                         key={label}
-                        className="px-2.5 py-1 rounded-lg border border-[#1E293B] bg-[#0B1220] text-xs text-[#94A3B8]"
+                        className="px-2.5 py-1 rounded-lg border border-white/[0.06] bg-[#0A0A0A] text-xs text-[#A1A1AA]"
                       >
                         {label}
                       </span>
@@ -163,17 +163,17 @@ export function PipelineDealDetailPanel({
               )}
             </div>
 
-            <footer className="p-5 sm:p-6 border-t border-[#1E293B] shrink-0 flex flex-col sm:flex-row gap-2">
+            <footer className="p-5 sm:p-6 border-t border-white/[0.06] shrink-0 flex flex-col sm:flex-row gap-2">
               <Link
                 href={`/dashboard/crm/companies/${deal.companyId}`}
-                className="flex-1 text-center py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-semibold transition-colors"
+                className="flex-1 text-center py-2.5 rounded-xl bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm font-semibold transition-colors"
               >
                 View company
               </Link>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#2563EB]/40 text-sm font-medium transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-[#A1A1AA] hover:text-white hover:border-[#3B82F6]/40 text-sm font-medium transition-colors"
               >
                 Close
               </button>
@@ -187,8 +187,8 @@ export function PipelineDealDetailPanel({
 
 function DetailChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#1E293B] bg-[#111827] px-3 py-2.5">
-      <p className="text-[10px] uppercase tracking-wider text-[#64748B]">{label}</p>
+    <div className="rounded-xl border border-white/[0.06] bg-[#111111] px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-wider text-[#71717A]">{label}</p>
       <p className="text-sm font-medium text-white mt-0.5 truncate">{value}</p>
     </div>
   );
@@ -196,8 +196,8 @@ function DetailChip({ label, value }: { label: string; value: string }) {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-[#1E293B] bg-[#111827]">
-      <span className="text-sm text-[#64748B]">{label}</span>
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-white/[0.06] bg-[#111111]">
+      <span className="text-sm text-[#71717A]">{label}</span>
       <span className="text-sm font-medium text-white truncate">{value}</span>
     </div>
   );

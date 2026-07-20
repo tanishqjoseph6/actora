@@ -92,21 +92,21 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
         return (
           <div key={stat.label}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-[#64748B]">{stat.label}</span>
+              <span className="text-sm text-[#71717A]">{stat.label}</span>
               <span className="text-sm font-medium text-white">
                 {stat.used}
-                <span className="text-[#64748B]"> / {limitLabel}</span>
+                <span className="text-[#71717A]"> / {limitLabel}</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-[#0B1220] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#0A0A0A] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isAtLimit ? "bg-[#EF4444]" : "bg-[#2563EB]"
+                  isAtLimit ? "bg-[#EF4444]" : "bg-[#3B82F6]"
                 }`}
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <p className="text-xs text-[#64748B] mt-1.5">{stat.unit}</p>
+            <p className="text-xs text-[#71717A] mt-1.5">{stat.unit}</p>
           </div>
         );
       })}

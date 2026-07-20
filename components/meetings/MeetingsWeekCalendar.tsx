@@ -55,10 +55,10 @@ export function MeetingsWeekCalendar({
                 flex flex-col rounded-xl border p-3 sm:p-4 text-left transition-all duration-200 min-h-[120px] sm:min-h-[140px]
                 ${
                   isSelected
-                    ? "border-[#2563EB]/60 bg-[#2563EB]/10 ring-1 ring-[#2563EB]/25"
-                    : "border-[#1E293B] bg-[#0B1220] hover:border-[#2563EB]/35"
+                    ? "border-[#3B82F6]/60 bg-[#3B82F6]/10 ring-1 ring-[#2563EB]/25"
+                    : "border-white/[0.06] bg-[#0A0A0A] hover:border-[#3B82F6]/35"
                 }
-                ${isToday && !isSelected ? "border-[#2563EB]/30" : ""}
+                ${isToday && !isSelected ? "border-[#3B82F6]/30" : ""}
               `}
             >
               <span className={`text-[10px] uppercase tracking-wider font-medium ${dashboard.subtle}`}>
@@ -82,8 +82,8 @@ export function MeetingsWeekCalendar({
                         key={m.id}
                         className="flex items-center gap-1.5 min-w-0"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB] shrink-0" />
-                        <span className="text-[10px] text-[#94A3B8] truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] shrink-0" />
+                        <span className="text-[10px] text-[#A1A1AA] truncate">
                           {formatMeetingTime(m.startAt)} · {m.title}
                         </span>
                       </div>

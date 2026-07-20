@@ -29,15 +29,15 @@ export function CrmFilterChips({
               transition-all duration-200 interactive-press
               ${
                 active
-                  ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-[#93C5FD]"
-                  : "bg-[#0B1220] border border-[#1E293B] text-[#64748B] hover:border-[#2563EB]/35 hover:text-[#94A3B8]"
+                  ? "bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-[#93C5FD]"
+                  : "bg-[#0A0A0A] border border-white/[0.06] text-[#71717A] hover:border-[#3B82F6]/35 hover:text-[#A1A1AA]"
               }
             `}
           >
             {chip.label}
             {chip.count !== undefined && (
               <span
-                className={`text-xs tabular-nums ${active ? "text-[#3B82F6]" : "text-[#64748B]"}`}
+                className={`text-xs tabular-nums ${active ? "text-[#3B82F6]" : "text-[#71717A]"}`}
               >
                 {chip.count}
               </span>

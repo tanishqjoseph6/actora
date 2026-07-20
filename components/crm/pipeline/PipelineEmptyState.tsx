@@ -18,13 +18,13 @@ export function PipelineColumnEmpty({
       className={`
         flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl
         border border-dashed transition-colors duration-200
-        ${isOver ? "border-[#2563EB]/50 bg-[#2563EB]/5" : "border-[#1E293B] bg-transparent"}
+        ${isOver ? "border-[#3B82F6]/50 bg-[#3B82F6]/5" : "border-white/[0.06] bg-transparent"}
       `}
     >
-      <div className="w-10 h-10 rounded-xl bg-[#111827] border border-[#1E293B] flex items-center justify-center mb-3">
-        <DropIcon className={`w-5 h-5 ${isOver ? "text-[#3B82F6]" : "text-[#64748B]"}`} />
+      <div className="w-10 h-10 rounded-xl bg-[#111111] border border-white/[0.06] flex items-center justify-center mb-3">
+        <DropIcon className={`w-5 h-5 ${isOver ? "text-[#3B82F6]" : "text-[#71717A]"}`} />
       </div>
-      <p className="text-xs text-[#64748B]">
+      <p className="text-xs text-[#71717A]">
         {isOver ? "Drop deal here" : `No deals in ${stageLabel}`}
       </p>
     </motion.div>
@@ -36,13 +36,13 @@ export function PipelineBoardEmpty() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-xl border border-[#1E293B] bg-[#111827]"
+      className="flex flex-col items-center justify-center py-20 px-6 text-center rounded-xl border border-white/[0.06] bg-[#111111]"
     >
-      <div className="w-16 h-16 rounded-xl bg-[#0B1220] border border-[#1E293B] flex items-center justify-center mb-5">
-        <FilterIcon className="w-8 h-8 text-[#64748B]" />
+      <div className="w-16 h-16 rounded-xl bg-[#0A0A0A] border border-white/[0.06] flex items-center justify-center mb-5">
+        <FilterIcon className="w-8 h-8 text-[#71717A]" />
       </div>
       <p className="text-white font-medium mb-1">No deals match your filters</p>
-      <p className="text-sm text-[#64748B] max-w-sm">
+      <p className="text-sm text-[#71717A] max-w-sm">
         Try adjusting your search, owner, priority, or stage filters to see deals
         in the pipeline.
       </p>

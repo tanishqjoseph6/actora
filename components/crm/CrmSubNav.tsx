@@ -30,10 +30,10 @@ export function CrmSubNav() {
             return (
               <div
                 key={tab.href}
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shrink-0 bg-[#111827] border border-[#1E293B] opacity-75"
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap shrink-0 bg-[#111111] border border-white/[0.06] opacity-75"
               >
                 <span aria-hidden>{tab.icon}</span>
-                <span className="text-[#64748B]">{tab.label}</span>
+                <span className="text-[#71717A]">{tab.label}</span>
                 <UpgradeButton plan={getFeatureUpgradePlan(tab.feature!)} />
               </div>
             );
@@ -48,8 +48,8 @@ export function CrmSubNav() {
                 transition-all duration-200 shrink-0
                 ${
                   active
-                    ? "bg-[#2563EB]/15 border border-[#2563EB]/40 text-white"
-                    : "bg-[#111827] border border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/35 hover:text-white"
+                    ? "bg-[#3B82F6]/15 border border-[#3B82F6]/40 text-white"
+                    : "bg-[#111111] border border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/35 hover:text-white"
                 }
               `}
             >

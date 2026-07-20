@@ -34,7 +34,7 @@ export function TasksList({
           title="No tasks match your filters"
           description="Adjust your search, status, or priority filters to find the work you're looking for."
           cta={{ label: "Clear filters", onClick: onClearFilters }}
-          className="border-dashed bg-[#111827]/50"
+          className="border-dashed bg-[#111111]/50"
         />
       );
     }
@@ -45,7 +45,7 @@ export function TasksList({
         title="Stay on top of every deliverable"
         description="Tasks bring due dates, priorities, and assignees into one view — so nothing slips through while your AI agents handle the inbox."
         cta={{ label: "Add your first task", onClick: onAddTask ?? (() => {}) }}
-        className="border-dashed bg-[#111827]/50"
+        className="border-dashed bg-[#111111]/50"
       />
     );
   }
@@ -57,13 +57,13 @@ export function TasksList({
           <div className="flex items-center gap-3 mb-3">
             <h2
               className={`text-xs font-semibold uppercase tracking-wider ${
-                group.id === "overdue" ? "text-red-400" : "text-[#64748B]"
+                group.id === "overdue" ? "text-red-400" : "text-[#71717A]"
               }`}
             >
               {group.label}
             </h2>
             <div className="flex-1 h-px bg-[#1E293B]" />
-            <span className="text-xs text-[#64748B] tabular-nums">
+            <span className="text-xs text-[#71717A] tabular-nums">
               {group.tasks.length}
             </span>
           </div>

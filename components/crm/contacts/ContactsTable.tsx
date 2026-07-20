@@ -7,15 +7,15 @@ import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import type { CrmContact, CrmContactStatus } from "@/lib/crm/live";
 
 const STATUS_STYLES: Record<CrmContactStatus, string> = {
-  active: "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]",
-  lead: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
-  inactive: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
+  active: "bg-[#3B82F6]/15 border-[#3B82F6]/35 text-[#93C5FD]",
+  lead: "bg-[#1E293B] border-[#334155] text-[#A1A1AA]",
+  inactive: "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]",
 };
 
 function aiScoreBadge(score: number): string {
-  if (score >= 80) return "bg-[#2563EB]/20 border-[#3B82F6]/40 text-[#93C5FD]";
-  if (score >= 60) return "bg-[#1E293B] border-[#334155] text-[#94A3B8]";
-  return "bg-[#0B1220] border-[#1E293B] text-[#64748B]";
+  if (score >= 80) return "bg-[#3B82F6]/20 border-[#3B82F6]/40 text-[#93C5FD]";
+  if (score >= 60) return "bg-[#1E293B] border-[#334155] text-[#A1A1AA]";
+  return "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]";
 }
 
 type ContactsTableProps = {
@@ -29,7 +29,7 @@ export function ContactsTable({ contacts, onEdit, onDelete }: ContactsTableProps
     <div className="overflow-x-auto -mx-1 px-1 premium-scrollbar">
       <table className="w-full min-w-[860px] border-collapse">
         <thead>
-          <tr className="border-b border-[#1E293B]">
+          <tr className="border-b border-white/[0.06]">
             <Th>Contact</Th>
             <Th>Company</Th>
             <Th className="hidden md:table-cell">Email</Th>
@@ -64,7 +64,7 @@ function ContactRow({
   onDelete: (contact: CrmContact) => void;
 }) {
   return (
-    <tr className="group border-b border-[#1E293B] last:border-b-0 hover:bg-[#0B1220]/80 transition-colors">
+    <tr className="group border-b border-white/[0.06] last:border-b-0 hover:bg-[#0A0A0A]/80 transition-colors">
       <td className="py-3.5 pr-4">
         <Link href={`/dashboard/crm/contacts/${contact.id}`} className="flex items-center gap-3 min-w-0">
           <div
@@ -78,7 +78,7 @@ function ContactRow({
             <p className="text-sm font-semibold text-white truncate group-hover:text-[#93C5FD] transition-colors">
               {contact.name}
             </p>
-            <p className="text-xs text-[#64748B] truncate">
+            <p className="text-xs text-[#71717A] truncate">
               {contact.email || "No email"}
             </p>
           </div>
@@ -86,13 +86,13 @@ function ContactRow({
       </td>
 
       <td className="py-3.5 pr-4">
-        <span className="text-sm text-[#94A3B8] truncate block max-w-[180px]">
+        <span className="text-sm text-[#A1A1AA] truncate block max-w-[180px]">
           {contact.companyName || "No company"}
         </span>
       </td>
 
       <td className="py-3.5 pr-4 hidden md:table-cell">
-        <span className="text-sm text-[#94A3B8] truncate block max-w-[220px]">
+        <span className="text-sm text-[#A1A1AA] truncate block max-w-[220px]">
           {contact.email || "—"}
         </span>
       </td>
@@ -106,7 +106,7 @@ function ContactRow({
       </td>
 
       <td className="py-3.5 pr-4 hidden sm:table-cell">
-        <span className="text-sm text-[#64748B] tabular-nums">
+        <span className="text-sm text-[#71717A] tabular-nums">
           {new Date(contact.createdAt).toLocaleDateString()}
         </span>
       </td>
@@ -127,7 +127,7 @@ function ContactRow({
           <button
             type="button"
             onClick={() => onEdit(contact)}
-            className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#2563EB]/20"
+            className="px-2 py-1 rounded-md text-xs bg-[#1E293B] text-[#BFDBFE] hover:bg-[#3B82F6]/20"
           >
             Edit
           </button>
@@ -157,7 +157,7 @@ function Th({
     <th
       scope="col"
       className={`
-        py-3 text-[10px] font-semibold uppercase tracking-wider text-[#64748B]
+        py-3 text-[10px] font-semibold uppercase tracking-wider text-[#71717A]
         ${align === "right" ? "text-right" : "text-left"}
         ${className}
       `}
@@ -170,13 +170,13 @@ function Th({
 export function ContactsTableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <div className="overflow-hidden" aria-busy="true" aria-label="Loading contacts">
-      <div className="border-b border-[#1E293B] py-3 flex gap-6 px-1">
+      <div className="border-b border-white/[0.06] py-3 flex gap-6 px-1">
         {["Contact", "Company", "Status", "Score"].map((h) => (
           <Skeleton key={h} className="h-3 w-16" />
         ))}
       </div>
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 py-4 border-b border-[#1E293B]">
+        <div key={i} className="flex items-center gap-4 py-4 border-b border-white/[0.06]">
           <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-36" />

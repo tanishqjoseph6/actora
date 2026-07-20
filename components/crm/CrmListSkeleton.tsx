@@ -6,7 +6,7 @@ export function CrmListSkeleton({ rows = 5 }: { rows?: number }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#111827] border border-[#1E293B]"
+          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#111111] border border-white/[0.06]"
         >
           <Skeleton className="w-11 h-11 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2.5">
@@ -36,14 +36,14 @@ export function CrmPageSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-24 rounded-xl bg-[#111827] border border-[#1E293B] p-4 space-y-2"
+            className="h-24 rounded-xl bg-[#111111] border border-white/[0.06] p-4 space-y-2"
           >
             <Skeleton className="h-3 w-16" />
             <Skeleton className="h-7 w-12" />
           </div>
         ))}
       </div>
-      <div className="h-96 rounded-xl bg-[#111827] border border-[#1E293B] p-4 space-y-3">
+      <div className="h-96 rounded-xl bg-[#111111] border border-white/[0.06] p-4 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}

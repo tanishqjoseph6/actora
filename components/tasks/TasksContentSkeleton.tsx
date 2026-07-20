@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export function TasksContentSkeleton() {
   return (
     <div
-      className="rounded-2xl border border-[#1E293B] bg-[#111827] p-4 sm:p-6 lg:p-8 space-y-4"
+      className="rounded-2xl border border-white/[0.06] bg-[#111111] p-4 sm:p-6 lg:p-8 space-y-4"
       aria-busy="true"
       aria-label="Loading tasks"
     >
@@ -29,7 +29,7 @@ export function TasksContentSkeleton() {
               {Array.from({ length: 2 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex gap-3 p-4 rounded-xl border border-[#1E293B] bg-[#0B1220]/50"
+                  className="flex gap-3 p-4 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/50"
                 >
                   <Skeleton className="w-5 h-5 rounded shrink-0" />
                   <div className="flex-1 space-y-2">

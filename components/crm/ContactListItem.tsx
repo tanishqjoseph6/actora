@@ -5,9 +5,9 @@ import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { CrmContactStatus } from "@/lib/crm/live";
 
 const STATUS_STYLES: Record<CrmContactStatus, string> = {
-  active: "bg-[#2563EB]/15 border-[#2563EB]/35 text-[#93C5FD]",
-  lead: "bg-[#1E293B] border-[#334155] text-[#94A3B8]",
-  inactive: "bg-[#0B1220] border-[#1E293B] text-[#64748B]",
+  active: "bg-[#3B82F6]/15 border-[#3B82F6]/35 text-[#93C5FD]",
+  lead: "bg-[#1E293B] border-[#334155] text-[#A1A1AA]",
+  inactive: "bg-[#0A0A0A] border-white/[0.06] text-[#71717A]",
 };
 
 type ContactListItemProps = {
@@ -56,7 +56,7 @@ export function ContactListItem({
                 {contact.status}
               </span>
             </div>
-            <p className="text-sm text-[#64748B] truncate">
+            <p className="text-sm text-[#71717A] truncate">
               {contact.companyName || "No company"}
             </p>
             <p className="text-xs text-[#3B82F6] truncate mt-0.5">

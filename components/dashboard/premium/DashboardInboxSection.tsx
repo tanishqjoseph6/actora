@@ -174,8 +174,8 @@ function FilterChipButton({
       className={`
         inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200
         ${active
-          ? "bg-[#2563EB] text-white border border-[#2563EB]"
-          : "bg-[#0B1220] border border-[#1E293B] text-[#94A3B8] hover:border-[#2563EB]/40 hover:text-white"
+          ? "bg-[#3B82F6] text-white border border-[#3B82F6]"
+          : "bg-[#0A0A0A] border border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/40 hover:text-white"
         }
       `}
     >
@@ -193,7 +193,7 @@ function EmailSkeletonList() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#0B1220] border border-[#1E293B]"
+          className="flex gap-4 p-4 sm:p-5 rounded-xl bg-[#0A0A0A] border border-white/[0.06]"
         >
           <Skeleton className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2.5">

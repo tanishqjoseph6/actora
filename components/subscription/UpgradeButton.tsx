@@ -21,7 +21,7 @@ export function UpgradeButton({
   return (
     <Link
       href={`/billing?plan=${plan}`}
-      className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wide bg-[#2563EB]/15 border border-[#2563EB]/35 text-[#93C5FD] hover:bg-[#2563EB]/25 hover:border-[#2563EB]/50 transition-colors shrink-0 ${className}`.trim()}
+      className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wide bg-[#3B82F6]/15 border border-[#3B82F6]/35 text-[#93C5FD] hover:bg-[#3B82F6]/25 hover:border-[#3B82F6]/50 transition-colors shrink-0 ${className}`.trim()}
     >
       {label}
     </Link>

@@ -46,9 +46,9 @@ export function LockedFeaturePanel({
       <div
         className={`w-14 h-14 rounded-xl ${dashboard.card} border ${dashboard.border} flex items-center justify-center mb-5`}
       >
-        <LockIcon className="w-6 h-6 text-[#64748B]" />
+        <LockIcon className="w-6 h-6 text-[#71717A]" />
       </div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-[#64748B] mb-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#71717A] mb-2">
         {getPlanDisplayName(subscription?.planId ?? "free")} plan
       </p>
       <h2 className={`${dashboard.pageTitle} mb-2`}>{meta.label}</h2>

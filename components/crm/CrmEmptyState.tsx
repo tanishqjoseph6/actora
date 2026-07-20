@@ -19,7 +19,7 @@ export function CrmEmptyState({ title, description, cta }: CrmEmptyStateProps) {
       title={title}
       description={description}
       cta={cta}
-      className="border-dashed bg-[#111827]/50"
+      className="border-dashed bg-[#111111]/50"
     />
   );
 }

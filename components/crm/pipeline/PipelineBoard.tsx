@@ -166,7 +166,7 @@ function KanbanColumn({
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <span className="text-xs text-[#64748B] tabular-nums">{contacts.length}</span>
+        <span className="text-xs text-[#71717A] tabular-nums">{contacts.length}</span>
       </div>
       <div className="space-y-2 min-h-[140px]">
         {contacts.map((c) => (
@@ -175,7 +175,7 @@ function KanbanColumn({
           </DraggableContact>
         ))}
         {contacts.length === 0 && (
-          <p className="text-xs text-[#64748B] p-3 border border-dashed border-[#1E293B] rounded-lg">
+          <p className="text-xs text-[#71717A] p-3 border border-dashed border-white/[0.06] rounded-lg">
             Drag contacts here
           </p>
         )}

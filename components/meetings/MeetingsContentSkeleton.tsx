@@ -4,7 +4,7 @@ import { SkeletonListRows } from "@/components/ui/Skeleton";
 export function MeetingsContentSkeleton() {
   return (
     <div className="space-y-6 lg:space-y-8" aria-busy="true" aria-label="Loading meetings">
-      <div className="rounded-2xl border border-[#1E293B] bg-[#111827] p-4 sm:p-5 space-y-4">
+      <div className="rounded-2xl border border-white/[0.06] bg-[#111111] p-4 sm:p-5 space-y-4">
         <div className="space-y-2">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-3 w-32" />
@@ -13,7 +13,7 @@ export function MeetingsContentSkeleton() {
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl border border-[#1E293B] bg-[#0B1220] p-3 sm:p-4 min-h-[120px] sm:min-h-[140px] space-y-3"
+              className="rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-3 sm:p-4 min-h-[120px] sm:min-h-[140px] space-y-3"
             >
               <Skeleton className="h-3 w-8" />
               <Skeleton className="h-6 w-6 rounded-full" />
@@ -29,7 +29,7 @@ export function MeetingsContentSkeleton() {
           <Skeleton className="h-6 w-44" />
           <Skeleton className="h-4 w-32" />
         </div>
-        <div className="rounded-2xl border border-[#1E293B] bg-[#111827] p-6 space-y-4">
+        <div className="rounded-2xl border border-white/[0.06] bg-[#111111] p-6 space-y-4">
           <SkeletonListRows rows={4} />
         </div>
       </div>
