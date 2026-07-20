@@ -22,6 +22,7 @@ export const AI_ACTION_BLOCKS: BlockDefinition[] = [
   { id: "generate-reply", category: "ai", label: "Generate Reply", description: "Draft a contextual reply", icon: "✨" },
   { id: "extract-contact", category: "ai", label: "Extract Contact", description: "Pull contact details from text", icon: "👤" },
   { id: "create-crm-lead", category: "ai", label: "Create CRM Lead", description: "Enrich and create a lead", icon: "🏢" },
+  { id: "create-deal", category: "ai", label: "Create Deal", description: "Open a pipeline deal from a lead", icon: "💼" },
   { id: "classify-email", category: "ai", label: "Classify Email", description: "Categorize by intent", icon: "🏷️" },
   { id: "detect-priority", category: "ai", label: "Detect Priority", description: "Score urgency with AI", icon: "🔥" },
   { id: "generate-followup", category: "ai", label: "Generate Follow-up", description: "Schedule smart follow-ups", icon: "🔄" },

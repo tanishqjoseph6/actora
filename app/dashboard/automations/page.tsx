@@ -65,6 +65,8 @@ export default function AutomationsPage() {
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [selectedHistoryRun, setSelectedHistoryRun] = useState<AutomationRun | null>(null);
   const [historyLogs, setHistoryLogs] = useState<ExecutionLog[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionBusy, setActionBusy] = useState(false);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -312,6 +314,70 @@ export default function AutomationsPage() {
     }
   }, []);
 
+  const handleToggleAutomation = useCallback(
+    async (automation: Automation) => {
+      try {
+        setActionBusy(true);
+        if (automation.status === "active") {
+          await pauseWorkflow(automation.id);
+          showToast(`“${automation.name}” disabled`);
+          if (selectedWorkflow?.id === automation.id) {
+            setSelectedWorkflow({ ...automation, status: "paused" });
+          }
+        } else {
+          await publishWorkflow(automation.id);
+          showToast(`“${automation.name}” enabled`);
+          if (selectedWorkflow?.id === automation.id) {
+            setSelectedWorkflow({ ...automation, status: "active" });
+          }
+        }
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Toggle failed");
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [pauseWorkflow, publishWorkflow, selectedWorkflow, showToast]
+  );
+
+  const handleDuplicateFromList = useCallback(
+    async (automation: Automation) => {
+      try {
+        setActionBusy(true);
+        const copy = await duplicateWorkflow(automation.id);
+        setActiveView("drafts");
+        openWorkflow(copy);
+        showToast("Workflow duplicated");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Duplicate failed");
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [duplicateWorkflow, openWorkflow, showToast]
+  );
+
+  const handleDeleteFromList = useCallback(
+    async (automation: Automation) => {
+      if (!confirm(`Delete “${automation.name}”?`)) return;
+      try {
+        setActionBusy(true);
+        await deleteWorkflow(automation.id);
+        if (selectedWorkflow?.id === automation.id) {
+          setSelectedWorkflow(null);
+          setEditorOpen(false);
+          setCanvasNodes([]);
+        }
+        showToast("Workflow deleted");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Delete failed");
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [deleteWorkflow, selectedWorkflow, showToast]
+  );
+
   const automationsForView = activeView === "drafts" ? drafts : automations;
   const displayMetrics = metrics ?? {
     activeAutomations: 0,
@@ -358,7 +424,10 @@ export default function AutomationsPage() {
                   <AnimatePresence mode="wait">
                     {activeView === "templates" && (
                       <motion.div key="templates" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                        <h2 className="text-lg font-semibold text-white mb-4">Premium Templates</h2>
+                        <h2 className="text-lg font-semibold text-white mb-1">Production Recipes</h2>
+                        <p className="text-sm text-[#71717A] mb-4">
+                          Gmail → CRM, Tasks, Calendar, AI Reply · Lead → Deal · Meeting → Follow-up
+                        </p>
                         <TemplateGrid templates={MOCK_TEMPLATES} onUseTemplate={handleUseTemplate} />
                       </motion.div>
                     )}
@@ -405,6 +474,12 @@ export default function AutomationsPage() {
                               workflows={automationsForView}
                               selectedId={selectedWorkflow?.id ?? null}
                               onSelect={openWorkflow}
+                              searchQuery={searchQuery}
+                              onSearchChange={setSearchQuery}
+                              onToggle={handleToggleAutomation}
+                              onDuplicate={handleDuplicateFromList}
+                              onDelete={handleDeleteFromList}
+                              busy={actionBusy}
                             />
 
                             {editorOpen && selectedWorkflow && (

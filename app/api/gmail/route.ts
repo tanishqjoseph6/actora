@@ -5,6 +5,7 @@ import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { fetchInboxEmails } from "@/lib/gmail";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
 import { linkInboxEmailsToCrm } from "@/lib/crm/email-link";
+import { dispatchAutomationTrigger } from "@/lib/automations/dispatcher";
 
 export async function GET(request: NextRequest) {
   const auth = await getGmailAuthClient(request);
@@ -52,6 +53,23 @@ export async function GET(request: NextRequest) {
         preview: e.preview,
       }))
     ).catch((err) => console.error("[crm] email link failed:", err));
+
+    // Fire Gmail → automations for unread emails (rate-limited to first 3)
+    const unread = emails.filter((e) => e.unread).slice(0, 3);
+    for (const email of unread) {
+      void dispatchAutomationTrigger(auth.userId, "new-email", {
+        from: email.sender,
+        sender: email.sender,
+        subject: email.subject,
+        body: email.preview,
+        preview: email.preview,
+        gmailMessageId: email.id,
+        messageId: email.id,
+        unread: true,
+      }).catch((err) =>
+        console.error("[automations] new-email dispatch failed:", err)
+      );
+    }
 
     return NextResponse.json({
       emails,

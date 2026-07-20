@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { AutomationTemplate } from "@/lib/automations/types";
 
 type TemplateGridProps = {
@@ -10,43 +11,63 @@ type TemplateGridProps = {
 
 export function TemplateGrid({ templates, onUseTemplate }: TemplateGridProps) {
   return (
-    <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {templates.map((template, i) => (
         <motion.article
           key={template.id}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.05 }}
-          whileHover={{ y: -4 }}
-          className="group rounded-xl bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl p-5 hover:border-[#2563EB]/40 transition-all duration-300"
+          transition={{ delay: i * 0.04 }}
+          whileHover={{ y: -3 }}
+          className={`${dashboard.cardInteractive} group p-5`}
         >
-          <div className="flex items-start gap-3 mb-3">
-            <div className="w-12 h-12 rounded-[14px] bg-[#111827] border border-[#1E293B] flex items-center justify-center text-2xl">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/[0.06] bg-[#0A0A0A] text-2xl">
               {template.icon}
             </div>
             <div className="min-w-0 flex-1">
               <span className="text-[10px] uppercase tracking-wider text-[#3B82F6]">
                 {template.category}
               </span>
-              <h3 className="text-base font-semibold text-white mt-0.5">{template.name}</h3>
+              <h3 className="mt-0.5 text-base font-semibold text-white">
+                {template.name}
+              </h3>
             </div>
           </div>
 
-          <p className="text-sm text-gray-500 mb-4 line-clamp-2">{template.description}</p>
+          <p className={`mb-4 line-clamp-2 text-sm ${dashboard.muted}`}>
+            {template.description}
+          </p>
+
+          <div className="mb-4 flex flex-wrap gap-1">
+            {template.nodes.slice(0, 4).map((n) => (
+              <span
+                key={n.id}
+                className="rounded-md border border-white/[0.06] bg-[#0A0A0A] px-1.5 py-0.5 text-[10px] text-[#A1A1AA]"
+              >
+                {n.icon} {n.label}
+              </span>
+            ))}
+            {template.nodes.length > 4 && (
+              <span className="text-[10px] text-[#71717A]">
+                +{template.nodes.length - 4}
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <span className="text-[#2563EB]">{template.popularity}%</span>
+            <div className={`flex items-center gap-1.5 text-xs ${dashboard.subtle}`}>
+              <span className="text-[#3B82F6]">{template.popularity}%</span>
               <span>adoption</span>
-              <span className="text-gray-600">·</span>
+              <span>·</span>
               <span>{template.nodes.length} steps</span>
             </div>
             <button
               type="button"
               onClick={() => onUseTemplate(template)}
-              className="px-3 py-1.5 rounded-[10px] text-xs font-semibold bg-[#2563EB] text-white hover:from-[#3B82F6]/35 hover:to-[#2563EB]/25 transition-all"
+              className={`${dashboard.btnPrimary} px-3 py-1.5 text-xs`}
             >
-              Use Template
+              Use Recipe
             </button>
           </div>
         </motion.article>

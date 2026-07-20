@@ -6,6 +6,7 @@ import {
   normalizeCrmContact,
   type CrmContactInput,
 } from "@/lib/crm/live";
+import { dispatchAutomationTrigger } from "@/lib/automations/dispatcher";
 
 export async function GET() {
   const userId = await getCrmUserId();
@@ -82,5 +83,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ contact: normalizeCrmContact(data) }, { status: 201 });
+  const contact = normalizeCrmContact(data);
+  if (contact.status === "lead") {
+    void dispatchAutomationTrigger(userId, "new-lead", {
+      name: contact.name,
+      email: contact.email,
+      company: contact.companyName,
+      companyName: contact.companyName,
+      contactId: contact.id,
+      score: contact.aiLeadScore,
+      source: "crm",
+    }).catch((err) =>
+      console.error("[automations] new-lead dispatch failed:", err)
+    );
+  }
+
+  return NextResponse.json({ contact }, { status: 201 });
 }

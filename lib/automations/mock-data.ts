@@ -9,59 +9,95 @@ function nodes(...blockIds: string[]): WorkflowNode[] {
   });
 }
 
+/** Production recipe templates — shown in Templates gallery */
 export const MOCK_TEMPLATES: AutomationTemplate[] = [
   {
-    id: "tpl-lead-followup",
-    name: "Lead Follow-up",
-    description: "Instantly engage new leads with AI replies and CRM sync",
-    icon: "🎯",
-    category: "Sales",
-    popularity: 98,
-    nodes: nodes("new-email", "classify-email", "generate-reply", "send-email", "update-crm"),
+    id: "tpl-gmail-crm",
+    name: "Gmail → CRM",
+    description:
+      "When a new email arrives, extract the contact and create or update a CRM lead.",
+    icon: "📧",
+    category: "CRM",
+    popularity: 99,
+    nodes: nodes(
+      "new-email",
+      "extract-contact",
+      "create-crm-lead",
+      "update-crm",
+      "notify-user"
+    ),
   },
   {
-    id: "tpl-customer-support",
-    name: "Customer Support",
-    description: "Triage tickets, summarize issues, and assign tasks",
-    icon: "🛟",
-    category: "Support",
-    popularity: 94,
-    nodes: nodes("new-email", "summarize-email", "detect-priority", "create-task", "notify-user"),
-  },
-  {
-    id: "tpl-invoice-reminder",
-    name: "Invoice Reminder",
-    description: "Follow up on unpaid invoices and log outcomes",
-    icon: "💳",
-    category: "Finance",
-    popularity: 87,
-    nodes: nodes("invoice-paid", "notify-user", "update-crm", "log-activity"),
-  },
-  {
-    id: "tpl-meeting-scheduler",
-    name: "Meeting Scheduler",
-    description: "Prep meetings with AI summaries and calendar blocks",
-    icon: "📅",
+    id: "tpl-gmail-tasks",
+    name: "Gmail → Tasks",
+    description:
+      "Classify and prioritize inbox mail, then create a follow-up task automatically.",
+    icon: "✅",
     category: "Productivity",
-    popularity: 91,
-    nodes: nodes("meeting-created", "summarize-email", "generate-followup", "create-meeting"),
+    popularity: 97,
+    nodes: nodes(
+      "new-email",
+      "classify-email",
+      "detect-priority",
+      "create-task",
+      "notify-user"
+    ),
   },
   {
-    id: "tpl-email-triage",
-    name: "Email Triage",
-    description: "Classify inbox, detect priority, and route automatically",
-    icon: "📥",
+    id: "tpl-gmail-calendar",
+    name: "Gmail → Calendar",
+    description:
+      "Summarize an email thread and book a Google Meet meeting with the sender.",
+    icon: "📅",
+    category: "Calendar",
+    popularity: 95,
+    nodes: nodes(
+      "new-email",
+      "summarize-email",
+      "create-meeting",
+      "notify-user"
+    ),
+  },
+  {
+    id: "tpl-gmail-ai-reply",
+    name: "Gmail → AI Reply",
+    description:
+      "Draft a contextual AI reply for new emails and send when published.",
+    icon: "✨",
     category: "Inbox",
-    popularity: 96,
-    nodes: nodes("new-email", "classify-email", "detect-priority", "condition", "create-task"),
+    popularity: 98,
+    nodes: nodes("new-email", "generate-reply", "send-email", "log-activity"),
   },
   {
-    id: "tpl-sales-outreach",
-    name: "Sales Outreach",
-    description: "Personalized outreach sequences powered by AI",
-    icon: "🚀",
+    id: "tpl-lead-deal",
+    name: "Lead → Deal",
+    description:
+      "When a CRM lead is created, open a pipeline deal and log the activity.",
+    icon: "💼",
     category: "Sales",
-    popularity: 89,
-    nodes: nodes("new-lead", "extract-contact", "generate-reply", "send-email", "log-activity"),
+    popularity: 96,
+    nodes: nodes(
+      "new-lead",
+      "extract-contact",
+      "create-deal",
+      "update-crm",
+      "notify-user"
+    ),
+  },
+  {
+    id: "tpl-meeting-followup",
+    name: "Meeting → Follow-up",
+    description:
+      "After a meeting is created, generate a follow-up and create a task.",
+    icon: "🔄",
+    category: "Productivity",
+    popularity: 94,
+    nodes: nodes(
+      "meeting-created",
+      "generate-followup",
+      "create-task",
+      "notify-user",
+      "log-activity"
+    ),
   },
 ];

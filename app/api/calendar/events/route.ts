@@ -14,6 +14,7 @@ import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import type { CreateCalendarEventInput } from "@/lib/calendar/types";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { logApiError } from "@/lib/api/log-error";
+import { dispatchAutomationTrigger } from "@/lib/automations/dispatcher";
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -90,6 +91,19 @@ export async function POST(request: NextRequest) {
       const created =
         events.find((e) => e.externalId === remote.externalId) ?? remote;
 
+      void dispatchAutomationTrigger(userId, "meeting-created", {
+        title: created.title,
+        startTime: created.startAt,
+        startAt: created.startAt,
+        endAt: created.endAt,
+        attendees: created.attendees.map((a) => a.email),
+        eventId: created.id,
+        meetingLink: created.meetingLink,
+        contactEmail: created.contactEmail,
+      }).catch((err) =>
+        console.error("[automations] meeting-created dispatch failed:", err)
+      );
+
       return NextResponse.json({ event: created }, { status: 201 });
     }
 
@@ -162,10 +176,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { event: mapMeetingRowToEvent(data) },
-      { status: 201 }
+    const event = mapMeetingRowToEvent(data);
+    void dispatchAutomationTrigger(userId, "meeting-created", {
+      title: event.title,
+      startTime: event.startAt,
+      startAt: event.startAt,
+      endAt: event.endAt,
+      attendees: event.attendees.map((a) => a.email),
+      eventId: event.id,
+      contactEmail: event.contactEmail,
+    }).catch((err) =>
+      console.error("[automations] meeting-created dispatch failed:", err)
     );
+
+    return NextResponse.json({ event }, { status: 201 });
   } catch (error) {
     logApiError("calendar/events", error);
     return NextResponse.json(

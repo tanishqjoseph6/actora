@@ -12,7 +12,7 @@ import type {
   WorkflowVersion,
 } from "./types";
 import { syncWorkflowGraph } from "./connections";
-import { executeWorkflowSimulation } from "./executor";
+import { executeWorkflow } from "./executor";
 
 type MemoryState = {
   workflows: Map<string, WorkflowRecord>;
@@ -270,7 +270,12 @@ export class MemoryAutomationRepository {
   async runTest(userId: string, workflowId: string, payload?: Record<string, unknown>): Promise<TestRunResult | null> {
     const workflow = await this.getWorkflow(userId, workflowId);
     if (!workflow) return null;
-    const result = await executeWorkflowSimulation(workflow, { isTest: true, payload });
+    const result = await executeWorkflow(workflow, {
+      isTest: true,
+      live: true,
+      userId,
+      payload,
+    });
     await this.recordRun(userId, result);
     return result;
   }

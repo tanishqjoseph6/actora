@@ -110,38 +110,42 @@ export function WorkflowCanvas({
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[20px] bg-[#111827]/70 border border-[#1E293B] backdrop-blur-xl overflow-hidden"
+        className="overflow-hidden rounded-[20px] border border-white/[0.06] bg-[#111111]/80 backdrop-blur-xl"
       >
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#1E293B]">
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-4">
           <div>
             <h2 className="text-lg font-semibold text-white">{workflowName}</h2>
-            <p className="text-xs text-gray-500">{nodes.length} steps · Drag to reorder</p>
+            <p className="text-xs text-[#71717A]">
+              {nodes.length} steps · Visual builder · Drag to reorder
+            </p>
           </div>
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-[10px] text-xs font-medium border border-[#1E293B] text-gray-400 hover:text-white hover:border-[#1E293B] transition-colors"
+              className="rounded-[10px] border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/40 hover:text-white"
             >
               Close Editor
             </button>
           )}
         </div>
 
-        <div className="flex flex-col lg:flex-row min-h-[480px]">
-          <NodePalette className="lg:w-64 xl:w-72 lg:max-h-[600px] lg:border-r border-[#1E293B] border-b lg:border-b-0" />
+        <div className="flex min-h-[480px] flex-col lg:flex-row">
+          <NodePalette className="border-b border-white/[0.06] lg:w-64 lg:max-h-[600px] lg:border-b-0 lg:border-r xl:w-72" />
 
           <div
             ref={setNodeRef}
             className={`
-              flex-1 p-6 lg:p-8 overflow-y-auto premium-scrollbar
-              ${isOver ? "bg-[#2563EB]/5" : ""}
+              flex-1 overflow-y-auto p-6 premium-scrollbar lg:p-8
+              ${isOver ? "bg-[#3B82F6]/5" : ""}
             `}
           >
             {nodes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full min-h-[320px] text-center border-2 border-dashed border-[#1E293B] rounded-[16px]">
-                <p className="text-gray-400 mb-1">Drop blocks here</p>
-                <p className="text-xs text-gray-600">Start with a trigger from the library</p>
+              <div className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-white/[0.08] text-center">
+                <p className="mb-1 text-[#A1A1AA]">Drop blocks here</p>
+                <p className="text-xs text-[#52525B]">
+                  Start with a trigger from the library
+                </p>
               </div>
             ) : (
               <SortableContext items={nodes.map((n) => n.id)} strategy={verticalListSortingStrategy}>
@@ -163,7 +167,7 @@ export function WorkflowCanvas({
             )}
 
             <div className="mt-6 flex justify-center">
-              <div className="px-4 py-2 rounded-full text-xs text-gray-500 border border-[#1E293B] bg-[#111827]/40">
+              <div className="rounded-full border border-white/[0.06] bg-[#0A0A0A]/60 px-4 py-2 text-xs text-[#71717A]">
                 Drop more blocks to extend workflow
               </div>
             </div>
@@ -179,7 +183,7 @@ export function WorkflowCanvas({
             isOverlay
           />
         ) : activePaletteBlock ? (
-          <div className="px-4 py-3 rounded-[12px] bg-[#111827] border border-[#1E293B] shadow-xl">
+          <div className="rounded-[12px] border border-[#3B82F6]/40 bg-[#111111] px-4 py-3 shadow-xl">
             <span className="text-sm text-white">
               {activePaletteBlock.icon} {activePaletteBlock.label}
             </span>
