@@ -27,7 +27,6 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useScrollRestoration<HTMLElement>();
 
   useRoutePrefetch();
@@ -47,10 +46,6 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
     setMobileNavOpen(false);
   }, []);
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-  }, []);
-
   return (
     <main className={`min-h-screen ${dashboard.bg} text-white`}>
       <div className="relative flex min-h-screen min-w-0">
@@ -64,8 +59,6 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <DashboardTopNav
             onMenuClick={handleOpenMobileNav}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
             title={mobileTitle}
           />
 

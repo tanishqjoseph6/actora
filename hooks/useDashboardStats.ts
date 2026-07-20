@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  fetchCached,
   getCachedData,
-  setCachedData,
 } from "@/lib/client-data/query-cache";
 import {
   EMPTY_DASHBOARD_DATA,
@@ -25,26 +25,36 @@ export function useDashboardStats() {
   );
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     const cached = getCachedData<DashboardData>(CACHE_KEY, CACHE_TTL_MS);
-    if (!cached) setLoading(true);
+    if (cached) {
+      setData(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError(null);
 
     try {
-      const res = await fetch("/api/dashboard/stats");
-      const json = (await res.json()) as DashboardData & { error?: string };
-
-      if (!res.ok) {
-        setData(EMPTY_DASHBOARD_DATA);
-        setError(json.error ?? "Could not load dashboard stats.");
-        return;
-      }
+      const json = await fetchCached(
+        CACHE_KEY,
+        async () => {
+          const res = await fetch("/api/dashboard/stats");
+          const body = (await res.json()) as DashboardData & { error?: string };
+          if (!res.ok) {
+            throw new Error(body.error ?? "Could not load dashboard stats.");
+          }
+          return body;
+        },
+        { ttlMs: CACHE_TTL_MS, force: force || Boolean(cached) }
+      );
 
       setData(json);
-      setCachedData(CACHE_KEY, json);
-    } catch {
-      setData(EMPTY_DASHBOARD_DATA);
-      setError("Could not load dashboard stats.");
+    } catch (err) {
+      if (!cached) setData(EMPTY_DASHBOARD_DATA);
+      setError(
+        err instanceof Error ? err.message : "Could not load dashboard stats."
+      );
     } finally {
       setLoading(false);
     }
@@ -52,7 +62,7 @@ export function useDashboardStats() {
 
   useEffect(() => {
     queueMicrotask(() => {
-      void refresh();
+      void refresh(false);
     });
   }, [refresh]);
 
@@ -63,6 +73,6 @@ export function useDashboardStats() {
     topContacts: data.topContacts,
     loading,
     error,
-    refresh,
+    refresh: () => refresh(true),
   };
 }

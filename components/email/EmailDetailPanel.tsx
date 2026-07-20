@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EmailDetail, InboxEmail } from "@/lib/gmail";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
-import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { usePlanGateActions } from "@/components/subscription/PlanGateProvider";
 import { isPlanLimitError } from "@/lib/subscription";
 import {
   ReplyComposer,
@@ -62,7 +62,8 @@ export function EmailDetailPanel({
   onStar,
   onSnooze,
 }: EmailDetailPanelProps) {
-  const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
+  const { checkAiAction, showLimitModal, refreshSubscription } =
+    usePlanGateActions();
   const composerRef = useRef<ReplyComposerHandle>(null);
 
   const [detail, setDetail] = useState<EmailDetail | null>(null);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { dashboard } from "./dashboard-tokens";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -31,7 +31,7 @@ function useAnimatedNumber(value: string | number) {
     const start = performance.now();
     const from =
       typeof display === "number" ? display : 0;
-    const duration = 650;
+      const duration = 220;
     let raf = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
@@ -47,7 +47,7 @@ function useAnimatedNumber(value: string | number) {
   return display;
 }
 
-export function PremiumMetricCard({
+export const PremiumMetricCard = memo(function PremiumMetricCard({
   title,
   value,
   trend,
@@ -73,7 +73,7 @@ export function PremiumMetricCard({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3 }}
+      transition={{ delay, duration: 0.2 }}
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.99 }}
       className={`group relative ${dashboard.cardInteractive} p-4 sm:p-5 overflow-hidden`}
@@ -112,7 +112,7 @@ export function PremiumMetricCard({
       </div>
     </motion.div>
   );
-}
+});
 
 function Sparkline({ title, values }: { title: string; values: number[] }) {
   const max = Math.max(...values, 1);

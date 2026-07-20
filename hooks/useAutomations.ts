@@ -9,6 +9,7 @@ import type {
   WorkflowNode,
   WorkflowVersion,
 } from "@/lib/automations/types";
+import { fetchCached, invalidateCachedPrefix } from "@/lib/client-data/query-cache";
 
 type UseAutomationsState = {
   automations: Automation[];
@@ -19,6 +20,10 @@ type UseAutomationsState = {
   error: string | null;
   store: string | null;
 };
+
+const LIST_CACHE_KEY = "automations_list";
+const RUNS_CACHE_KEY = "automations_runs";
+const CACHE_TTL_MS = 60_000;
 
 export function useAutomations() {
   const [state, setState] = useState<UseAutomationsState>({
@@ -31,25 +36,43 @@ export function useAutomations() {
     store: null,
   });
 
-  const refresh = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  const refresh = useCallback(async (force = false) => {
+    setState((s) => ({ ...s, loading: !force ? s.loading : true, error: null }));
     try {
-      const [listRes, runsRes] = await Promise.all([
-        fetch("/api/automations"),
-        fetch("/api/automations/runs"),
+      const [listData, runsData] = await Promise.all([
+        fetchCached(
+          LIST_CACHE_KEY,
+          async () => {
+            const listRes = await fetch("/api/automations");
+            const data = await listRes.json();
+            if (!listRes.ok) throw new Error(data.error ?? "Failed to load automations");
+            return data as {
+              automations?: Automation[];
+              metrics?: AutomationMetrics | null;
+              store?: string | null;
+            };
+          },
+          { ttlMs: CACHE_TTL_MS, force }
+        ),
+        fetchCached(
+          RUNS_CACHE_KEY,
+          async () => {
+            const runsRes = await fetch("/api/automations/runs");
+            const data = await runsRes.json();
+            return runsRes.ok
+              ? (data as { runs?: AutomationRun[] })
+              : { runs: [] as AutomationRun[] };
+          },
+          { ttlMs: CACHE_TTL_MS, force }
+        ),
       ]);
-
-      const listData = await listRes.json();
-      const runsData = await runsRes.json();
-
-      if (!listRes.ok) throw new Error(listData.error ?? "Failed to load automations");
 
       const all: Automation[] = listData.automations ?? [];
       setState({
         automations: all.filter((a) => a.status !== "draft"),
         drafts: all.filter((a) => a.status === "draft"),
         metrics: listData.metrics ?? null,
-        runs: runsRes.ok ? (runsData.runs ?? []) : [],
+        runs: runsData.runs ?? [],
         loading: false,
         error: null,
         store: listData.store ?? null,
@@ -64,7 +87,12 @@ export function useAutomations() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh(false);
+  }, [refresh]);
+
+  const invalidateAndRefresh = useCallback(async () => {
+    invalidateCachedPrefix("automations_");
+    await refresh(true);
   }, [refresh]);
 
   const createWorkflow = useCallback(
@@ -81,10 +109,10 @@ export function useAutomations() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create workflow");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const saveDraft = useCallback(
@@ -104,10 +132,10 @@ export function useAutomations() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save draft");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const publishWorkflow = useCallback(
@@ -115,10 +143,10 @@ export function useAutomations() {
       const res = await fetch(`/api/automations/${id}/publish`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to publish");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const pauseWorkflow = useCallback(
@@ -126,10 +154,10 @@ export function useAutomations() {
       const res = await fetch(`/api/automations/${id}/pause`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to pause");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const duplicateWorkflow = useCallback(
@@ -137,10 +165,10 @@ export function useAutomations() {
       const res = await fetch(`/api/automations/${id}/duplicate`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to duplicate");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const deleteWorkflow = useCallback(
@@ -148,9 +176,9 @@ export function useAutomations() {
       const res = await fetch(`/api/automations/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to delete");
-      await refresh();
+      await invalidateAndRefresh();
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const runTest = useCallback(
@@ -171,13 +199,13 @@ export function useAutomations() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Test run failed");
-      await refresh();
+      await invalidateAndRefresh();
       return {
         run: data.run as AutomationRun,
         logs: data.logs as ExecutionLog[],
       };
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   const fetchVersions = useCallback(async (id: string) => {
@@ -196,15 +224,15 @@ export function useAutomations() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to restore version");
-      await refresh();
+      await invalidateAndRefresh();
       return data.workflow as Automation;
     },
-    [refresh]
+    [invalidateAndRefresh]
   );
 
   return {
     ...state,
-    refresh,
+    refresh: () => refresh(true),
     createWorkflow,
     saveDraft,
     publishWorkflow,

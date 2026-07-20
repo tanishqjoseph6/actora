@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -29,9 +30,12 @@ type LimitModalState = {
   recommendedPlan: PlanId;
 } | null;
 
-type PlanGateContextValue = {
+type PlanGateState = {
   subscription: SubscriptionSnapshot | null;
   loading: boolean;
+};
+
+type PlanGateActions = {
   refreshSubscription: () => Promise<void>;
   checkAiAction: () => boolean;
   checkInbox: () => boolean;
@@ -44,7 +48,10 @@ type PlanGateContextValue = {
   ) => void;
 };
 
-const PlanGateContext = createContext<PlanGateContextValue | null>(null);
+type PlanGateContextValue = PlanGateState & PlanGateActions;
+
+const PlanGateStateContext = createContext<PlanGateState | null>(null);
+const PlanGateActionsContext = createContext<PlanGateActions | null>(null);
 
 function resolveEffectivePlanId(
   subscriptionPlan: PlanId | undefined,
@@ -76,6 +83,13 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
     sessionPlanId
   );
 
+  const gateRef = useRef({
+    subscription,
+    loading,
+    effectivePlanId,
+  });
+  gateRef.current = { subscription, loading, effectivePlanId };
+
   const showLimitModal = useCallback(
     (reason: string, limitType: LimitType, recommendedPlan?: PlanId) => {
       setLimitModal({
@@ -83,56 +97,66 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
         limitType,
         recommendedPlan:
           recommendedPlan ??
-          getUpgradeRecommendation(subscription?.planId ?? "free"),
+          getUpgradeRecommendation(
+            gateRef.current.subscription?.planId ?? "free"
+          ),
       });
     },
-    [subscription?.planId]
+    []
   );
 
   const canAccessFeatureFn = useCallback(
     (feature: PlanFeature, planId?: PlanId) => {
-      return hasPlanFeature(planId ?? effectivePlanId, feature);
+      return hasPlanFeature(
+        planId ?? gateRef.current.effectivePlanId,
+        feature
+      );
     },
-    [effectivePlanId]
+    []
   );
 
   const checkAiAction = useCallback(() => {
-    if (loading && effectivePlanId === "free") return false;
+    const { loading: isLoading, effectivePlanId: planId, subscription: sub } =
+      gateRef.current;
+    if (isLoading && planId === "free") return false;
 
-    const usage = subscription?.usage ?? {
+    const usage = sub?.usage ?? {
       aiActionsUsed: 0,
       inboxesConnected: 0,
     };
-    const gate = canUseAiAction(effectivePlanId, usage);
+    const gate = canUseAiAction(planId, usage);
     if (!gate.allowed) {
       showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
     return true;
-  }, [loading, effectivePlanId, subscription?.usage, showLimitModal]);
+  }, [showLimitModal]);
 
   const checkInbox = useCallback(() => {
-    if (loading && effectivePlanId === "free") return false;
+    const { loading: isLoading, effectivePlanId: planId, subscription: sub } =
+      gateRef.current;
+    if (isLoading && planId === "free") return false;
 
-    const usage = subscription?.usage ?? {
+    const usage = sub?.usage ?? {
       aiActionsUsed: 0,
       inboxesConnected: 0,
     };
-    const gate = canConnectInbox(effectivePlanId, usage);
+    const gate = canConnectInbox(planId, usage);
     if (!gate.allowed) {
       showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
       return false;
     }
 
     return true;
-  }, [loading, effectivePlanId, subscription?.usage, showLimitModal]);
+  }, [showLimitModal]);
 
   const checkFeature = useCallback(
     (feature: PlanFeature) => {
-      if (loading && effectivePlanId === "free") return false;
+      const { loading: isLoading, effectivePlanId: planId } = gateRef.current;
+      if (isLoading && planId === "free") return false;
 
-      const gate = checkFeatureAccess(effectivePlanId, feature);
+      const gate = checkFeatureAccess(planId, feature);
       if (!gate.allowed) {
         showLimitModal(gate.reason, gate.limitType, gate.recommendedPlan);
         return false;
@@ -140,13 +164,16 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
 
       return true;
     },
-    [loading, effectivePlanId, showLimitModal]
+    [showLimitModal]
   );
 
-  const value = useMemo(
+  const state = useMemo(
+    () => ({ subscription, loading }),
+    [subscription, loading]
+  );
+
+  const actions = useMemo(
     () => ({
-      subscription,
-      loading,
       refreshSubscription: refresh,
       checkAiAction,
       checkInbox,
@@ -155,8 +182,6 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
       showLimitModal,
     }),
     [
-      subscription,
-      loading,
       refresh,
       checkAiAction,
       checkInbox,
@@ -167,29 +192,41 @@ export function PlanGateProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PlanGateContext.Provider value={value}>
-      {children}
-      <PlanLimitModal
-        isOpen={limitModal !== null}
-        reason={limitModal?.reason ?? ""}
-        limitType={limitModal?.limitType ?? "ai_actions"}
-        currentPlanId={subscription?.planId ?? "free"}
-        recommendedPlanId={
-          limitModal?.recommendedPlan ??
-          getUpgradeRecommendation(subscription?.planId ?? "free")
-        }
-        onClose={() => setLimitModal(null)}
-      />
-    </PlanGateContext.Provider>
+    <PlanGateActionsContext.Provider value={actions}>
+      <PlanGateStateContext.Provider value={state}>
+        {children}
+        <PlanLimitModal
+          isOpen={limitModal !== null}
+          reason={limitModal?.reason ?? ""}
+          limitType={limitModal?.limitType ?? "ai_actions"}
+          currentPlanId={subscription?.planId ?? "free"}
+          recommendedPlanId={
+            limitModal?.recommendedPlan ??
+            getUpgradeRecommendation(subscription?.planId ?? "free")
+          }
+          onClose={() => setLimitModal(null)}
+        />
+      </PlanGateStateContext.Provider>
+    </PlanGateActionsContext.Provider>
   );
 }
 
-export function usePlanGate() {
-  const context = useContext(PlanGateContext);
+export function usePlanGate(): PlanGateContextValue {
+  const state = useContext(PlanGateStateContext);
+  const actions = useContext(PlanGateActionsContext);
 
-  if (!context) {
+  if (!state || !actions) {
     throw new Error("usePlanGate must be used within a PlanGateProvider");
   }
 
-  return context;
+  return { ...state, ...actions };
+}
+
+/** Stable actions-only hook — avoids re-renders from subscription polling. */
+export function usePlanGateActions(): PlanGateActions {
+  const actions = useContext(PlanGateActionsContext);
+  if (!actions) {
+    throw new Error("usePlanGateActions must be used within a PlanGateProvider");
+  }
+  return actions;
 }

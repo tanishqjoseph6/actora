@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { AutomationNavSidebar, AutomationMetricsBar } from "@/components/automations/AutomationNavSidebar";
 import { AutomationHeader } from "@/components/automations/AutomationHeader";
@@ -10,14 +11,12 @@ import { TemplateGrid } from "@/components/automations/TemplateGrid";
 import { AutomationEmptyState } from "@/components/automations/AutomationEmptyState";
 import { AutomationCardSkeleton } from "@/components/automations/AutomationCardSkeleton";
 import { AutomationHistoryList, MarketplaceComingSoon } from "@/components/automations/AutomationHistory";
-import { WorkflowCanvas } from "@/components/automations/WorkflowCanvas";
 import { WorkflowEditorToolbar } from "@/components/automations/WorkflowEditorToolbar";
-import { ExecutionLogPanel } from "@/components/automations/ExecutionLogPanel";
-import { VersionHistoryPanel } from "@/components/automations/VersionHistoryPanel";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useAutomations } from "@/hooks/useAutomations";
 import { MOCK_TEMPLATES } from "@/lib/automations/mock-data";
 import { blockToNode, getBlockById } from "@/lib/automations/constants";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type {
   Automation,
   AutomationRun,
@@ -28,6 +27,33 @@ import type {
   WorkflowNode,
   WorkflowVersion,
 } from "@/lib/automations/types";
+
+const WorkflowCanvas = dynamic(
+  () =>
+    import("@/components/automations/WorkflowCanvas").then(
+      (m) => m.WorkflowCanvas
+    ),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[480px] w-full rounded-2xl" />,
+  }
+);
+
+const ExecutionLogPanel = dynamic(
+  () =>
+    import("@/components/automations/ExecutionLogPanel").then(
+      (m) => m.ExecutionLogPanel
+    ),
+  { ssr: false }
+);
+
+const VersionHistoryPanel = dynamic(
+  () =>
+    import("@/components/automations/VersionHistoryPanel").then(
+      (m) => m.VersionHistoryPanel
+    ),
+  { ssr: false }
+);
 
 export default function AutomationsPage() {
   const {

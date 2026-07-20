@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { dashboard } from "./dashboard-tokens";
-import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { usePlanGateActions } from "@/components/subscription/PlanGateProvider";
 
 const STORAGE_KEY = "actora-assistant-conversations-v1";
 
@@ -121,7 +121,8 @@ function renderMarkdownLite(text: string) {
 }
 
 export function AiAssistantPanel() {
-  const { checkAiAction, showLimitModal, refreshSubscription } = usePlanGate();
+  const { checkAiAction, showLimitModal, refreshSubscription } =
+    usePlanGateActions();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");

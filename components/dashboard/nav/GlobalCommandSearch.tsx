@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -197,26 +197,14 @@ function toSearchItem(result: GlobalSearchResult): SearchItem {
   };
 }
 
-type GlobalCommandSearchProps = {
-  searchQuery?: string;
-  onSearchChange?: (value: string) => void;
-};
-
-export function GlobalCommandSearch({
-  searchQuery = "",
-  onSearchChange,
-}: GlobalCommandSearchProps) {
+export const GlobalCommandSearch = memo(function GlobalCommandSearch() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(searchQuery);
+  const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [remoteResults, setRemoteResults] = useState<SearchItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-
-  useEffect(() => {
-    setQuery(searchQuery);
-  }, [searchQuery]);
 
   useEffect(() => {
     if (open) setRecentSearches(loadRecentSearches());
@@ -367,7 +355,6 @@ export function GlobalCommandSearch({
                   value={query}
                   onChange={(e) => {
                     setQuery(e.target.value);
-                    onSearchChange?.(e.target.value);
                   }}
                   placeholder="Search emails, contacts, deals, tasks…"
                   className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-[#71717A]"
@@ -456,4 +443,4 @@ export function GlobalCommandSearch({
       </AnimatePresence>
     </>
   );
-}
+});

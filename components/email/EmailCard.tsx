@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { InboxEmail } from "@/lib/gmail";
 import { scoreEmailPriority } from "@/lib/gmail/priority";
 import { motion } from "framer-motion";
@@ -29,7 +30,7 @@ function getPriority(email: InboxEmail): "high" | "medium" | null {
   return null;
 }
 
-export function EmailCard({
+function EmailCardInner({
   email,
   selected,
   focused,
@@ -49,8 +50,8 @@ export function EmailCard({
 
   return (
     <motion.article
-      layout
       whileTap={{ scale: 0.995 }}
+      transition={{ duration: 0.15 }}
       onClick={() => {
         if (bulkMode && onToggleBulk) {
           onToggleBulk(email.id);
@@ -60,7 +61,7 @@ export function EmailCard({
       }}
       className={`
         group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-[16px]
-        bg-[#111111] border transition-all duration-300 ease-out cursor-pointer
+        bg-[#111111] border transition-all duration-200 ease-out cursor-pointer
         hover:-translate-y-0.5 hover:border-[#3B82F6]/50
         ${email.unread ? "border-l-2 border-l-[#3B82F6]" : "border-white/[0.06]"}
         ${selected || focused ? "border-[#3B82F6]/50 bg-[#141414]" : ""}
@@ -213,6 +214,8 @@ export function EmailCard({
     </motion.article>
   );
 }
+
+export const EmailCard = memo(EmailCardInner);
 
 function StarIcon({ className, filled }: { className?: string; filled?: boolean }) {
   return (

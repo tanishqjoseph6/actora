@@ -11,9 +11,17 @@ import {
   type SnoozeEntry,
 } from "@/lib/email/snooze-store";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
+import { fetchCached } from "@/lib/client-data/query-cache";
 
 type FetchState = "loading" | "error" | "success";
 export type InboxFilter = "all" | "unread" | "starred" | "priority" | "snoozed";
+
+type InboxPayload = {
+  emails: InboxEmail[];
+  unreadCount: number;
+};
+
+const INBOX_TTL_MS = 45_000;
 
 export function useInbox() {
   const { selectedEmail: activeAccountEmail, connected } = useGmailAccounts();
@@ -89,22 +97,29 @@ export function useInbox() {
         params.set("filter", activeFilter);
       }
       const fetchUrl = `/api/gmail?${params.toString()}`;
+      const cacheKey = `inbox:${activeAccountEmail ?? "default"}:${activeFilter}:${debouncedSearch.trim()}`;
 
       try {
-        const res = await fetch(fetchUrl);
-        const data = await res.json();
-
-        if (!res.ok) {
-          if (!silent) {
-            setFetchState("error");
-            setError(data.error ?? "Failed to load emails");
-            setEmails([]);
-            setUnreadCount(0);
+        const data = await fetchCached(
+          cacheKey,
+          async () => {
+            const res = await fetch(fetchUrl);
+            const body = await res.json();
+            if (!res.ok) {
+              throw new Error(body.error ?? "Failed to load emails");
+            }
+            return {
+              emails: (body.emails ?? []) as InboxEmail[],
+              unreadCount: body.unreadCount ?? 0,
+            } satisfies InboxPayload;
+          },
+          {
+            ttlMs: INBOX_TTL_MS,
+            force: silent || Boolean(debouncedSearch.trim()),
           }
-          return;
-        }
+        );
 
-        let nextEmails = (data.emails ?? []) as InboxEmail[];
+        let nextEmails = data.emails;
         const snoozedIds = new Set(
           listSnoozedEmails(activeAccountEmail).map((e) => e.emailId)
         );
@@ -115,12 +130,16 @@ export function useInbox() {
         }
 
         setEmails(nextEmails);
-        setUnreadCount(data.unreadCount ?? 0);
+        setUnreadCount(data.unreadCount);
         setFetchState("success");
-      } catch {
+      } catch (err) {
         if (!silent) {
           setFetchState("error");
-          setError("Failed to load emails. Check your connection and try again.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load emails. Check your connection and try again."
+          );
           setEmails([]);
           setUnreadCount(0);
         }

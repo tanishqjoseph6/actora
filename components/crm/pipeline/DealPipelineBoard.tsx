@@ -27,6 +27,7 @@ import {
   sortPipelineDeals,
   type PipelineDeal,
 } from "@/lib/crm/pipeline";
+import { fetchCached, invalidateCachedData } from "@/lib/client-data/query-cache";
 
 const DEFAULT_FILTERS: PipelineFilters = {
   search: "",
@@ -38,7 +39,14 @@ const DEFAULT_FILTERS: PipelineFilters = {
   sort: "value-desc",
 };
 
-export function DealPipelineBoard() {
+const DEALS_CACHE_KEY = "crm_pipeline_deals";
+const DEALS_TTL_MS = 60_000;
+
+type DealPipelineBoardProps = {
+  onDealsChange?: (deals: PipelineDeal[]) => void;
+};
+
+export function DealPipelineBoard({ onDealsChange }: DealPipelineBoardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
@@ -49,19 +57,27 @@ export function DealPipelineBoard() {
   const [selectedDeal, setSelectedDeal] = useState<PipelineDeal | null>(null);
   const [activeDealId, setActiveDealId] = useState<string | null>(null);
 
-  const loadDeals = useCallback(async () => {
+  const loadDeals = useCallback(async (force = false) => {
     setLoading(true);
     try {
-      const res = await fetch("/api/crm/deals");
-      const json = (await res.json()) as { pipelineDeals?: PipelineDeal[] };
-      setDeals(json.pipelineDeals ?? []);
+      const pipelineDeals = await fetchCached(
+        DEALS_CACHE_KEY,
+        async () => {
+          const res = await fetch("/api/crm/deals");
+          const json = (await res.json()) as { pipelineDeals?: PipelineDeal[] };
+          return json.pipelineDeals ?? [];
+        },
+        { ttlMs: DEALS_TTL_MS, force }
+      );
+      setDeals(pipelineDeals);
+      onDealsChange?.(pipelineDeals);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onDealsChange]);
 
   useEffect(() => {
-    void loadDeals();
+    void loadDeals(false);
   }, [loadDeals]);
 
   const companies = useMemo(() => {
@@ -114,8 +130,9 @@ export function DealPipelineBoard() {
     };
     if (!json.deal) return;
 
-    setDeals((prev) =>
-      prev.map((d) =>
+    invalidateCachedData(DEALS_CACHE_KEY);
+    setDeals((prev) => {
+      const next = prev.map((d) =>
         d.id === dealId
           ? {
               ...d,
@@ -123,8 +140,10 @@ export function DealPipelineBoard() {
               lastActivity: "Just now",
             }
           : d
-      )
-    );
+      );
+      onDealsChange?.(next);
+      return next;
+    });
     setSelectedDeal((prev) =>
       prev?.id === dealId ? { ...prev, stage: json.deal!.stage } : prev
     );

@@ -12,15 +12,11 @@ import { TrialUpgradeModal } from "@/components/dashboard/nav/TrialUpgradeModal"
 
 type DashboardTopNavProps = {
   onMenuClick: () => void;
-  searchQuery?: string;
-  onSearchChange?: (value: string) => void;
   title?: string;
 };
 
 export const DashboardTopNav = memo(function DashboardTopNav({
   onMenuClick,
-  searchQuery = "",
-  onSearchChange,
   title,
 }: DashboardTopNavProps) {
   const { subscription, loading } = usePlanGate();
@@ -44,10 +40,7 @@ export const DashboardTopNav = memo(function DashboardTopNav({
           </p>
         )}
 
-        <GlobalCommandSearch
-          searchQuery={searchQuery}
-          onSearchChange={onSearchChange}
-        />
+        <GlobalCommandSearch />
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <GmailAccountSwitcher />

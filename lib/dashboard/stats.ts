@@ -196,10 +196,10 @@ async function countActiveWorkflows(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-async function getEmailCount(userId: string): Promise<number> {
-  const accounts = await gmailAccountRepository.listAccounts(userId);
+async function getEmailCountFromAccounts(
+  accounts: { lastSyncCount?: number | null }[]
+): Promise<number> {
   if (accounts.length === 0) return 0;
-
   return accounts.reduce(
     (sum, account) => sum + (account.lastSyncCount ?? 0),
     0
@@ -210,7 +210,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   try {
     const [
       gmailAccounts,
-      emailCount,
       automations,
       activeWorkflows,
       meetings,
@@ -220,7 +219,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       topContacts,
     ] = await Promise.all([
       gmailAccountRepository.listAccounts(userId),
-      getEmailCount(userId),
       countAutomations(userId),
       countActiveWorkflows(userId),
       countMeetings(userId),
@@ -229,6 +227,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       listAutomationPreviews(userId),
       listTopContacts(userId),
     ]);
+
+    const emailCount = await getEmailCountFromAccounts(gmailAccounts);
 
     return {
       stats: {

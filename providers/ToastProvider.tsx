@@ -20,13 +20,13 @@ type ToastInput = {
   message: string;
 };
 
-type ToastContextValue = {
-  toast: PaymentToastState;
+type ToastActionsValue = {
   showToast: (toast: ToastInput) => void;
   dismissToast: () => void;
 };
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+const ToastStateContext = createContext<PaymentToastState>(null);
+const ToastActionsContext = createContext<ToastActionsValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<PaymentToastState>(null);
@@ -37,28 +37,34 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToast(next);
   }, []);
 
-  const value = useMemo(
-    () => ({ toast, showToast, dismissToast }),
-    [toast, showToast, dismissToast]
+  const actions = useMemo(
+    () => ({ showToast, dismissToast }),
+    [showToast, dismissToast]
   );
 
   return (
-    <ToastContext.Provider value={value}>
-      {children}
-      <PaymentToast toast={toast} onDismiss={dismissToast} />
-    </ToastContext.Provider>
+    <ToastActionsContext.Provider value={actions}>
+      <ToastStateContext.Provider value={toast}>
+        {children}
+        <PaymentToast toast={toast} onDismiss={dismissToast} />
+      </ToastStateContext.Provider>
+    </ToastActionsContext.Provider>
   );
 }
 
 export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) {
+  const toast = useContext(ToastStateContext);
+  const actions = useContext(ToastActionsContext);
+  if (!actions) {
     throw new Error("useToast must be used within ToastProvider");
   }
-  return ctx;
+  return { toast, ...actions };
 }
 
 /** Safe optional toast when provider may be absent (e.g. outside dashboard). */
 export function useOptionalToast() {
-  return useContext(ToastContext);
+  const toast = useContext(ToastStateContext);
+  const actions = useContext(ToastActionsContext);
+  if (!actions) return null;
+  return { toast, ...actions };
 }

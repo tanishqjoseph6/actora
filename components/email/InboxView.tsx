@@ -243,13 +243,8 @@ export function InboxView({ compact = false }: InboxViewProps) {
               }`}
             >
               {inbox.filteredEmails.map((email, i) => (
-                <motion.div
-                  key={email.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                >
                   <EmailCard
+                    key={email.id}
                     email={email}
                     selected={inbox.selectedEmail?.id === email.id}
                     focused={inbox.listFocusIndex === i && !inbox.selectedEmail}
@@ -275,7 +270,6 @@ export function InboxView({ compact = false }: InboxViewProps) {
                     }
                     onToggleBulk={inbox.toggleSelect}
                   />
-                </motion.div>
               ))}
             </div>
           )}

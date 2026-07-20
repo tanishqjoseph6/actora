@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
@@ -15,13 +15,8 @@ import { formatCurrency } from "@/lib/crm/mock-data";
 
 export default function PipelinePage() {
   const [deals, setDeals] = useState<PipelineDeal[]>([]);
-
-  useEffect(() => {
-    void (async () => {
-      const res = await fetch("/api/crm/deals");
-      const json = (await res.json()) as { pipelineDeals?: PipelineDeal[] };
-      setDeals(json.pipelineDeals ?? []);
-    })();
+  const handleDealsChange = useCallback((next: PipelineDeal[]) => {
+    setDeals(next);
   }, []);
 
   const stats = useMemo(() => computePipelineMetrics(deals), [deals]);
@@ -51,7 +46,7 @@ export default function PipelinePage() {
         </div>
 
         <div className={`${dashboard.panelLg}`}>
-          <DealPipelineBoard />
+          <DealPipelineBoard onDealsChange={handleDealsChange} />
         </div>
       </>
     </FeatureGate>

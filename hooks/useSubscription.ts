@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
+  fetchCached,
   getCachedData,
   setCachedData,
 } from "@/lib/client-data/query-cache";
@@ -37,16 +38,13 @@ export function useSubscription(): UseSubscriptionResult {
   const sessionPlanId = (session as { planId?: PlanId } | null)?.planId;
 
   const applySubscription = useCallback((snapshot: SubscriptionSnapshot) => {
-    console.log("[useSubscription] applySubscription", {
-      planId: snapshot.planId,
-    });
     setSubscription(snapshot);
     setCachedData(CACHE_KEY, snapshot);
     setLoading(false);
     setError(null);
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     if (status === "loading") {
       return;
     }
@@ -60,30 +58,36 @@ export function useSubscription(): UseSubscriptionResult {
     setError(null);
 
     const cached = getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS);
-    if (!cached) setLoading(true);
+    if (cached) {
+      setSubscription(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
 
     try {
-      const res = await fetch("/api/subscription");
-      const data = await res.json();
+      const snapshot = await fetchCached(
+        CACHE_KEY,
+        async () => {
+          const res = await fetch("/api/subscription");
+          const body = await res.json();
+          if (!res.ok) {
+            throw new Error(body.error ?? "Failed to load subscription");
+          }
+          return body.subscription as SubscriptionSnapshot;
+        },
+        { ttlMs: CACHE_TTL_MS, force: force || Boolean(cached) }
+      );
 
-      if (!res.ok) {
-        console.error("[useSubscription] refresh failed", data.error);
-        setError(data.error ?? "Failed to load subscription");
-        return;
+      setSubscription(snapshot);
+
+      if (snapshot.planId !== sessionPlanId) {
+        await updateSession({ planId: snapshot.planId });
       }
-
-      console.log("[useSubscription] refresh ok", {
-        planId: data.subscription?.planId,
-      });
-
-      setSubscription(data.subscription);
-      setCachedData(CACHE_KEY, data.subscription);
-
-      if (data.subscription.planId !== sessionPlanId) {
-        await updateSession({ planId: data.subscription.planId });
-      }
-    } catch {
-      setError("Failed to load subscription");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load subscription"
+      );
     } finally {
       setLoading(false);
     }
@@ -91,7 +95,7 @@ export function useSubscription(): UseSubscriptionResult {
 
   useEffect(() => {
     queueMicrotask(() => {
-      void refresh();
+      void refresh(false);
     });
   }, [refresh]);
 
@@ -123,5 +127,12 @@ export function useSubscription(): UseSubscriptionResult {
     [updateSession]
   );
 
-  return { subscription, loading, error, refresh, applySubscription, upgradePlan };
+  return {
+    subscription,
+    loading,
+    error,
+    refresh: () => refresh(true),
+    applySubscription,
+    upgradePlan,
+  };
 }

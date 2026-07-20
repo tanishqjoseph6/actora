@@ -25,6 +25,7 @@ export function ActoraLogo({
         alt="Actora"
         width={size}
         height={size}
+        sizes={`${size}px`}
         className="shrink-0"
         priority={priority}
       />
