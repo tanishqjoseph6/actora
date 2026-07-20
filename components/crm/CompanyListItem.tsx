@@ -33,8 +33,15 @@ const STATUS_STYLES: Record<CompanyStatus, string> = {
   churned: "bg-gray-500/15 border-gray-400/25 text-gray-400",
 };
 
-export function CompanyListItem({ company }: { company: Company }) {
-  const contactsCount = getContactCountForCompany(company.id);
+export function CompanyListItem({
+  company,
+  contactsCount,
+}: {
+  company: Company;
+  contactsCount?: number;
+}) {
+  const count =
+    contactsCount ?? getContactCountForCompany(company.id);
   const aiGradient = getAiScoreStyle(company.aiScore);
   const addressLine = company.address.split(",")[0];
 
@@ -71,7 +78,7 @@ export function CompanyListItem({ company }: { company: Company }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:gap-4 lg:min-w-[360px] shrink-0">
           <Metric label="Revenue" value={formatRevenue(company.revenue)} />
           <Metric label="Employees" value={formatEmployeeCount(company.employeeCount)} />
-          <Metric label="Contacts" value={contactsCount} />
+          <Metric label="Contacts" value={count} />
           <Metric
             label="Pipeline"
             value={formatCurrency(company.totalPipeline)}

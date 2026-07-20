@@ -4,6 +4,7 @@ import { gmailErrorResponse } from "@/lib/gmail/errors";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { fetchInboxEmails } from "@/lib/gmail";
 import { toPublicGmailAccount } from "@/lib/gmail/types";
+import { linkInboxEmailsToCrm } from "@/lib/crm/email-link";
 
 export async function GET(request: NextRequest) {
   const auth = await getGmailAuthClient(request);
@@ -41,6 +42,16 @@ export async function GET(request: NextRequest) {
       auth.accountEmail,
       emails.length
     );
+
+    void linkInboxEmailsToCrm(
+      auth.userId,
+      emails.map((e) => ({
+        id: e.id,
+        sender: e.sender,
+        subject: e.subject,
+        preview: e.preview,
+      }))
+    ).catch((err) => console.error("[crm] email link failed:", err));
 
     return NextResponse.json({
       emails,

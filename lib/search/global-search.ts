@@ -3,7 +3,7 @@ import { getGmailAuthClient } from "@/lib/gmail-auth";
 import { searchInboxEmails } from "@/lib/gmail";
 import { automationRepository } from "@/lib/automations/repository";
 import { listStoredCalendarEvents } from "@/lib/calendar/meetings-store";
-import { MOCK_COMPANIES, MOCK_DEALS } from "@/lib/crm/mock-data";
+import { fetchCompaniesWithStats, fetchDealsEnriched } from "@/lib/crm/repository";
 import { mapTaskRow, TASK_SELECT } from "@/lib/tasks/live";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
@@ -155,53 +155,63 @@ export async function runGlobalSearch(
     // Calendar optional
   }
 
-  // Companies (mock catalog)
-  for (const company of MOCK_COMPANIES) {
-    if (
-      !matchesSearchQuery(q, [
-        company.name,
-        company.industry,
-        company.website,
-        company.owner,
-      ])
-    ) {
-      continue;
+  // Companies (live CRM)
+  try {
+    const companies = await fetchCompaniesWithStats(userId);
+    for (const company of companies) {
+      if (
+        !matchesSearchQuery(q, [
+          company.name,
+          company.industry,
+          company.website,
+          company.owner,
+        ])
+      ) {
+        continue;
+      }
+      push({
+        id: `company-${company.id}`,
+        label: company.name,
+        description: [company.industry, company.status].filter(Boolean).join(" · "),
+        href: `/dashboard/crm/companies/${company.id}`,
+        category: "Companies",
+      });
+      if (countCategory("Companies") >= PER_CATEGORY_LIMIT) {
+        break;
+      }
     }
-    push({
-      id: `company-${company.id}`,
-      label: company.name,
-      description: [company.industry, company.status].filter(Boolean).join(" · "),
-      href: `/dashboard/crm/companies/${company.id}`,
-      category: "Companies",
-    });
-    if (countCategory("Companies") >= PER_CATEGORY_LIMIT) {
-      break;
-    }
+  } catch {
+    // CRM optional
   }
 
-  // Deals (mock catalog)
-  for (const deal of MOCK_DEALS) {
-    if (
-      !matchesSearchQuery(q, [
-        deal.title,
-        deal.companyName,
-        deal.contactName,
-        deal.stage,
-        deal.owner,
-      ])
-    ) {
-      continue;
+  // Deals (live CRM)
+  try {
+    const deals = await fetchDealsEnriched(userId);
+    for (const deal of deals) {
+      if (
+        !matchesSearchQuery(q, [
+          deal.title,
+          deal.companyName,
+          deal.contactName,
+          deal.stage,
+          deal.owner,
+        ])
+      ) {
+        continue;
+      }
+      push({
+        id: `deal-${deal.id}`,
+        label: deal.title,
+        description: `${deal.companyName} · ${deal.stage} · $${deal.value.toLocaleString()}`,
+        href: "/dashboard/crm/deals",
+        category: "Deals",
+      });
+      if (countCategory("Deals") >= PER_CATEGORY_LIMIT) {
+        break;
+      }
     }
-    push({
-      id: `deal-${deal.id}`,
-      label: deal.title,
-      description: `${deal.companyName} · ${deal.stage} · $${deal.value.toLocaleString()}`,
-      href: "/dashboard/crm/deals",
-      category: "Deals",
-    });
-    if (countCategory("Deals") >= PER_CATEGORY_LIMIT) {
-      break;
-    }
+  } catch {
+    // CRM optional
   }
 
   // Automations

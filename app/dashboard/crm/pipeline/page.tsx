@@ -4,41 +4,36 @@ import { useEffect, useMemo, useState } from "react";
 import { CrmPageHeader } from "@/components/crm/CrmPageHeader";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
-import { PipelineBoard } from "@/components/crm/pipeline/PipelineBoard";
+import { DealPipelineBoard } from "@/components/crm/pipeline/DealPipelineBoard";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
-import type { CrmContact } from "@/lib/crm/live";
+import {
+  computePipelineMetrics,
+  type PipelineDeal,
+} from "@/lib/crm/pipeline";
+import { formatCurrency } from "@/lib/crm/mock-data";
 
 export default function PipelinePage() {
-  const [contacts, setContacts] = useState<CrmContact[]>([]);
+  const [deals, setDeals] = useState<PipelineDeal[]>([]);
 
   useEffect(() => {
     void (async () => {
-      const res = await fetch("/api/crm/contacts");
-      const json = (await res.json()) as { contacts?: CrmContact[] };
-      setContacts(json.contacts ?? []);
+      const res = await fetch("/api/crm/deals");
+      const json = (await res.json()) as { pipelineDeals?: PipelineDeal[] };
+      setDeals(json.pipelineDeals ?? []);
     })();
   }, []);
 
-  const stats = useMemo(() => {
-    const leads = contacts.filter((c) => c.status === "lead").length;
-    const active = contacts.filter((c) => c.status === "active").length;
-    const inactive = contacts.filter((c) => c.status === "inactive").length;
-    const avgScore =
-      contacts.length > 0
-        ? Math.round(contacts.reduce((sum, c) => sum + c.aiLeadScore, 0) / contacts.length)
-        : 0;
-    return { leads, active, inactive, avgScore };
-  }, [contacts]);
+  const stats = useMemo(() => computePipelineMetrics(deals), [deals]);
 
   return (
     <FeatureGate feature="full_crm" fullPage>
       <>
         <CrmPageHeader
           badge="CRM · Pipeline"
-          title="Lead"
+          title="Deal"
           titleAccent="Pipeline"
-          description="Drag contacts across stages and keep your pipeline current."
+          description="Drag deals across stages and keep your revenue forecast current."
         />
 
         <div className="mb-6">
@@ -46,14 +41,17 @@ export default function PipelinePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 lg:mb-8">
-          <CrmStatCard title="Total contacts" value={contacts.length} />
-          <CrmStatCard title="Leads" value={stats.leads} />
-          <CrmStatCard title="Active" value={stats.active} />
-          <CrmStatCard title="Avg. AI score" value={stats.avgScore} />
+          <CrmStatCard title="Active deals" value={stats.activeDeals} />
+          <CrmStatCard
+            title="Open pipeline"
+            value={formatCurrency(stats.totalPipelineValue)}
+          />
+          <CrmStatCard title="Won" value={stats.dealsWon} />
+          <CrmStatCard title="Avg. AI score" value={stats.avgAiScore} />
         </div>
 
         <div className={`${dashboard.panelLg}`}>
-          <PipelineBoard />
+          <DealPipelineBoard />
         </div>
       </>
     </FeatureGate>

@@ -306,3 +306,85 @@ export async function generateEmailInsightsWithRetry(
     }
   }
 }
+
+export type CrmContactInsights = {
+  summary: string;
+  nextSteps: string[];
+  riskLevel: "low" | "medium" | "high";
+  engagementScore: number;
+};
+
+function parseCrmInsightsJson(raw: string): CrmContactInsights {
+  const parsed = JSON.parse(raw) as Partial<CrmContactInsights>;
+  return {
+    summary:
+      typeof parsed.summary === "string"
+        ? parsed.summary
+        : "No summary available.",
+    nextSteps: Array.isArray(parsed.nextSteps)
+      ? parsed.nextSteps.filter((s) => typeof s === "string").slice(0, 5)
+      : [],
+    riskLevel:
+      parsed.riskLevel === "high" || parsed.riskLevel === "medium"
+        ? parsed.riskLevel
+        : "low",
+    engagementScore:
+      typeof parsed.engagementScore === "number"
+        ? Math.max(0, Math.min(100, Math.round(parsed.engagementScore)))
+        : 50,
+  };
+}
+
+export async function generateCrmContactInsights(input: {
+  name: string;
+  email: string;
+  company: string;
+  title: string;
+  status: string;
+  aiLeadScore: number;
+  recentNotes: string[];
+  recentActivities: string[];
+  recentEmails: string[];
+  openDeals: string[];
+}): Promise<CrmContactInsights> {
+  const openai = getOpenAIClient();
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: `You are Actora CRM AI. Analyze contact context and return JSON only:
+- summary: 2-3 sentence overview of relationship health and deal potential
+- nextSteps: array of up to 4 specific actionable next steps
+- riskLevel: "low" | "medium" | "high" based on churn/disengagement risk
+- engagementScore: 0-100 based on recent activity and email engagement`,
+      },
+      {
+        role: "user",
+        content: `Contact: ${input.name} (${input.title || "no title"})
+Email: ${input.email}
+Company: ${input.company || "Unknown"}
+Status: ${input.status}
+AI Lead Score: ${input.aiLeadScore}
+
+Open deals: ${input.openDeals.join("; ") || "None"}
+
+Recent notes:
+${input.recentNotes.join("\n") || "None"}
+
+Recent activity:
+${input.recentActivities.join("\n") || "None"}
+
+Recent emails:
+${input.recentEmails.join("\n") || "None"}`,
+      },
+    ],
+  });
+
+  const raw = response.choices[0]?.message?.content?.trim();
+  if (!raw) throw new Error("OpenAI returned empty CRM insights.");
+  return parseCrmInsightsJson(raw);
+}

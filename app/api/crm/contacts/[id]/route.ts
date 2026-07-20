@@ -1,23 +1,16 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
+import { getCrmUserId, clampScore } from "@/lib/crm/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { normalizeCrmContact, type CrmContactInput } from "@/lib/crm/live";
+import {
+  CONTACT_SELECT,
+  normalizeCrmContact,
+  type CrmContactInput,
+} from "@/lib/crm/live";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-function clampScore(score: number | undefined): number {
-  if (typeof score !== "number" || Number.isNaN(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-async function getUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
-}
-
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await getUserId();
+  const userId = await getCrmUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
@@ -29,7 +22,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const body = (await request.json()) as CrmContactInput;
-  const updates: Record<string, unknown> = {};
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
 
   if (body.name !== undefined) {
     const name = body.name.trim();
@@ -39,8 +34,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     updates.name = name;
   }
   if (body.email !== undefined) updates.email = body.email.trim() || null;
+  if (body.phone !== undefined) updates.phone = body.phone.trim();
+  if (body.title !== undefined) updates.title = body.title.trim();
+  if (body.owner !== undefined) updates.owner = body.owner.trim();
   if (body.companyName !== undefined) {
     updates.company_name = body.companyName.trim() || null;
+  }
+  if (body.companyId !== undefined) {
+    updates.company_id = body.companyId;
+    if (body.companyId) {
+      const { data: company } = await db
+        .from("crm_companies")
+        .select("name")
+        .eq("id", body.companyId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (company?.name) updates.company_name = company.name;
+    }
   }
   if (body.status !== undefined) updates.status = body.status;
   if (body.aiLeadScore !== undefined) {
@@ -52,7 +62,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .update(updates)
     .eq("id", id)
     .eq("user_id", userId)
-    .select("id, user_id, name, email, company_name, status, ai_lead_score, created_at")
+    .select(CONTACT_SELECT)
     .maybeSingle();
 
   if (error) {
@@ -66,7 +76,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const userId = await getUserId();
+  const userId = await getCrmUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }

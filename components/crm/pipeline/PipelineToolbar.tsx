@@ -25,6 +25,8 @@ type PipelineToolbarProps = {
   onChange: (filters: PipelineFilters) => void;
   totalDeals: number;
   filteredCount: number;
+  companies?: { id: string; name: string }[];
+  owners?: string[];
 };
 
 export function PipelineToolbar({
@@ -32,6 +34,8 @@ export function PipelineToolbar({
   onChange,
   totalDeals,
   filteredCount,
+  companies = PIPELINE_COMPANIES,
+  owners = [...PIPELINE_OWNERS],
 }: PipelineToolbarProps) {
   const update = (patch: Partial<PipelineFilters>) =>
     onChange({ ...filters, ...patch });
@@ -58,7 +62,7 @@ export function PipelineToolbar({
           onChange={(owner) => update({ owner })}
           options={[
             { value: "all", label: "All owners" },
-            ...PIPELINE_OWNERS.map((o) => ({ value: o, label: o })),
+            ...owners.map((o) => ({ value: o, label: o })),
           ]}
         />
         <SelectFilter
@@ -67,7 +71,7 @@ export function PipelineToolbar({
           onChange={(companyId) => update({ companyId })}
           options={[
             { value: "all", label: "All companies" },
-            ...PIPELINE_COMPANIES.map((c) => ({ value: c.id, label: c.name })),
+            ...companies.map((c) => ({ value: c.id, label: c.name })),
           ]}
         />
         <SelectFilter

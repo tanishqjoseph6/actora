@@ -1,21 +1,14 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
+import { getCrmUserId, clampScore } from "@/lib/crm/auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { normalizeCrmContact, type CrmContactInput } from "@/lib/crm/live";
-
-function clampScore(score: number | undefined): number {
-  if (typeof score !== "number" || Number.isNaN(score)) return 0;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-async function getUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
-}
+import {
+  CONTACT_SELECT,
+  normalizeCrmContact,
+  type CrmContactInput,
+} from "@/lib/crm/live";
 
 export async function GET() {
-  const userId = await getUserId();
+  const userId = await getCrmUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
@@ -27,7 +20,7 @@ export async function GET() {
 
   const { data, error } = await db
     .from("crm_contacts")
-    .select("id, user_id, name, email, company_name, status, ai_lead_score, created_at")
+    .select(CONTACT_SELECT)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
@@ -41,7 +34,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getUserId();
+  const userId = await getCrmUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
@@ -57,17 +50,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name is required." }, { status: 400 });
   }
 
+  let companyName = body.companyName?.trim() || null;
+  if (body.companyId) {
+    const { data: company } = await db
+      .from("crm_companies")
+      .select("name")
+      .eq("id", body.companyId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (company?.name) companyName = company.name;
+  }
+
   const { data, error } = await db
     .from("crm_contacts")
     .insert({
       user_id: userId,
       name,
       email: body.email?.trim() || null,
-      company_name: body.companyName?.trim() || null,
+      phone: body.phone?.trim() ?? "",
+      title: body.title?.trim() ?? "",
+      company_id: body.companyId ?? null,
+      company_name: companyName,
+      owner: body.owner?.trim() ?? "",
       status: body.status ?? "lead",
       ai_lead_score: clampScore(body.aiLeadScore),
     })
-    .select("id, user_id, name, email, company_name, status, ai_lead_score, created_at")
+    .select(CONTACT_SELECT)
     .single();
 
   if (error) {
