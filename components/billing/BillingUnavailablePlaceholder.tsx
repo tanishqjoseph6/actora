@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { Bell } from "lucide-react";
 import { ComingSoonBadge } from "@/components/billing/BillingPauseProvider";
+import { BillingWaitlistModal } from "@/components/billing/BillingWaitlistModal";
 
 export function BillingUnavailablePlaceholder() {
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0A0A0A] text-white">
       <div className="pointer-events-none fixed left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-[#3B82F6]/10 blur-[200px]" />
@@ -29,12 +34,11 @@ export function BillingUnavailablePlaceholder() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <button
               type="button"
-              disabled
-              aria-disabled="true"
-              className="inline-flex h-11 min-w-[160px] cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[#3B82F6]/40 px-5 text-sm font-medium text-white/80 opacity-70"
+              onClick={() => setWaitlistOpen(true)}
+              className="inline-flex h-11 min-w-[160px] items-center justify-center gap-2 rounded-xl bg-[#3B82F6] px-5 text-sm font-medium text-white transition-colors hover:bg-[#2563EB]"
             >
+              <Bell className="h-4 w-4" />
               Notify Me
-              <ComingSoonBadge />
             </button>
             <Link
               href="/dashboard"
@@ -45,6 +49,11 @@ export function BillingUnavailablePlaceholder() {
           </div>
         </motion.div>
       </div>
+
+      <BillingWaitlistModal
+        open={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
+      />
     </main>
   );
 }

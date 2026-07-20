@@ -44,3 +44,11 @@ export type TrialEmailLogRow = {
   email_type: "day_0" | "day_7" | "day_12" | "day_14";
   sent_at: string;
 };
+
+export type WaitlistNotificationRow = {
+  id: string;
+  email: string;
+  user_id: string | null;
+  feature: string;
+  created_at: string;
+};
