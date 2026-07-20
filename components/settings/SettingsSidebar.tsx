@@ -7,6 +7,7 @@ const SECTIONS = [
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
   { id: "preferences", label: "Preferences" },
+  { id: "shortcuts", label: "Shortcuts" },
   { id: "billing", label: "Billing" },
   { id: "account", label: "Account" },
 ] as const;

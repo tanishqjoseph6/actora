@@ -7,6 +7,7 @@ import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricC
 import { DashboardWidgets } from "@/components/dashboard/premium/DashboardWidgets";
 import { InboxView } from "@/components/email/InboxView";
 import { CrmPreviewSection } from "@/components/dashboard/premium/CrmPreviewSection";
+import { RetryErrorState } from "@/components/ui/RetryErrorState";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
@@ -16,6 +17,8 @@ export default function Dashboard() {
     automations,
     topContacts,
     loading: statsLoading,
+    error: statsError,
+    refresh,
   } = useDashboardStats();
 
   const emailCountDisplay = useMemo(() => {
@@ -27,6 +30,16 @@ export default function Dashboard() {
     <>
       <DashboardHero />
       <AiAssistantPanel />
+
+      {statsError && !statsLoading && (
+        <div className="mb-6">
+          <RetryErrorState
+            title="Could not load dashboard stats"
+            error={statsError}
+            onRetry={() => void refresh()}
+          />
+        </div>
+      )}
 
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:mb-10 xl:grid-cols-6 lg:gap-4">
         <PremiumMetricCard

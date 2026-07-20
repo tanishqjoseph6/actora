@@ -29,6 +29,7 @@ import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { formatLimit } from "@/lib/subscription";
 import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/openai";
+import { DASHBOARD_SHORTCUTS } from "@/hooks/useDashboardKeyboardShortcuts";
 
 export default function SettingsPage() {
   const { subscription, loading } = usePlanGate();
@@ -59,7 +60,15 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    const ids = ["profile", "notifications", "integrations", "preferences", "billing", "account"];
+    const ids = [
+      "profile",
+      "notifications",
+      "integrations",
+      "preferences",
+      "shortcuts",
+      "billing",
+      "account",
+    ];
     const sections = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
@@ -270,6 +279,29 @@ export default function SettingsPage() {
                 />
               </SettingsField>
             </div>
+          </SettingsSection>
+
+          {/* Shortcuts */}
+          <SettingsSection
+            id="shortcuts"
+            title="Keyboard shortcuts"
+            description="Navigate Actora without leaving the keyboard."
+          >
+            <ul className="space-y-1.5">
+              {DASHBOARD_SHORTCUTS.map((item) => (
+                <li
+                  key={item.keys}
+                  className={`flex items-center justify-between gap-4 rounded-xl border ${dashboard.border} ${dashboard.surface} px-3 py-2.5`}
+                >
+                  <span className={`text-sm ${dashboard.muted}`}>
+                    {item.description}
+                  </span>
+                  <kbd className="shrink-0 rounded-md border border-white/[0.08] bg-[#0A0A0A] px-2 py-1 text-[11px] font-medium text-[#93C5FD]">
+                    {item.keys}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
           </SettingsSection>
 
           {/* Billing */}

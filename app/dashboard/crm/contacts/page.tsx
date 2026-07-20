@@ -12,6 +12,7 @@ import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RetryErrorState } from "@/components/ui/RetryErrorState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
   filterAndSortContacts,
@@ -27,6 +28,7 @@ const PAGE_SIZE_DEFAULT = 10;
 
 export default function ContactsPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -51,10 +53,22 @@ export default function ContactsPage() {
 
   async function loadContacts() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/crm/contacts");
-      const json = (await res.json()) as { contacts?: CrmContact[] };
+      const json = (await res.json()) as {
+        contacts?: CrmContact[];
+        error?: string;
+      };
+      if (!res.ok) {
+        setContacts([]);
+        setError(json.error ?? "Could not load contacts.");
+        return;
+      }
       setContacts(json.contacts ?? []);
+    } catch {
+      setContacts([]);
+      setError("Could not load contacts.");
     } finally {
       setLoading(false);
     }
@@ -197,6 +211,27 @@ export default function ContactsPage() {
         <div className="rounded-xl border border-[#1E293B] bg-[#111827] p-5 sm:p-6">
           <ContactsTableSkeleton />
         </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <CrmPageHeader
+          badge="CRM · Contacts"
+          title="Your"
+          titleAccent="Contacts"
+          description="Create, edit, filter, and manage customer contacts."
+        />
+        <div className="mb-6">
+          <CrmSubNav />
+        </div>
+        <RetryErrorState
+          title="Could not load contacts"
+          error={error}
+          onRetry={() => void loadContacts()}
+        />
       </>
     );
   }

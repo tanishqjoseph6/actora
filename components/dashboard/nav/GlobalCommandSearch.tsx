@@ -5,18 +5,26 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Bot,
+  Building2,
   Calendar,
-  CreditCard,
+  Clock,
+  Handshake,
   Inbox,
   Kanban,
   ListTodo,
+  Loader2,
   Search,
   Settings,
   Sparkles,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
+import { fetchJson } from "@/lib/api/fetch-json";
+import type { GlobalSearchCategory, GlobalSearchResult } from "@/lib/search/types";
 import { cn } from "@/lib/utils";
+
+const RECENT_SEARCHES_KEY = "actora_recent_searches_v1";
+const MAX_RECENT = 8;
 
 type SearchItem = {
   id: string;
@@ -28,7 +36,22 @@ type SearchItem = {
   keywords: string[];
 };
 
-const SEARCH_INDEX: SearchItem[] = [
+type RecentSearch = {
+  query: string;
+  at: string;
+};
+
+const CATEGORY_ICONS: Record<GlobalSearchCategory, LucideIcon> = {
+  Emails: Inbox,
+  Contacts: Kanban,
+  Companies: Building2,
+  Deals: Handshake,
+  Tasks: ListTodo,
+  Meetings: Calendar,
+  Automations: Workflow,
+};
+
+const NAV_INDEX: SearchItem[] = [
   {
     id: "inbox",
     label: "AI Inbox",
@@ -39,22 +62,22 @@ const SEARCH_INDEX: SearchItem[] = [
     keywords: ["email", "gmail", "mail", "reply"],
   },
   {
-    id: "crm",
-    label: "CRM Overview",
-    description: "Contacts, companies, and pipeline",
-    href: "/dashboard/crm",
-    category: "Contacts",
-    icon: Kanban,
-    keywords: ["crm", "contact", "deal", "pipeline"],
-  },
-  {
     id: "contacts",
     label: "Contacts",
     description: "Browse and manage CRM contacts",
     href: "/dashboard/crm/contacts",
     category: "Contacts",
     icon: Kanban,
-    keywords: ["people", "leads"],
+    keywords: ["people", "leads", "crm"],
+  },
+  {
+    id: "companies",
+    label: "Companies",
+    description: "Accounts and organizations",
+    href: "/dashboard/crm/companies",
+    category: "Companies",
+    icon: Building2,
+    keywords: ["company", "account", "organization"],
   },
   {
     id: "deals",
@@ -62,17 +85,8 @@ const SEARCH_INDEX: SearchItem[] = [
     description: "Track opportunities and revenue",
     href: "/dashboard/crm/deals",
     category: "Deals",
-    icon: Kanban,
+    icon: Handshake,
     keywords: ["deal", "opportunity", "pipeline"],
-  },
-  {
-    id: "pipeline",
-    label: "Pipeline",
-    description: "Kanban board for deals",
-    href: "/dashboard/crm/pipeline",
-    category: "Deals",
-    icon: Kanban,
-    keywords: ["board", "kanban"],
   },
   {
     id: "tasks",
@@ -86,11 +100,11 @@ const SEARCH_INDEX: SearchItem[] = [
   {
     id: "calendar",
     label: "Calendar",
-    description: "Day, week, month, and agenda views",
+    description: "Meetings and schedule",
     href: "/dashboard/calendar",
     category: "Meetings",
     icon: Calendar,
-    keywords: ["calendar", "schedule", "meetings", "google"],
+    keywords: ["calendar", "schedule", "meetings"],
   },
   {
     id: "automations",
@@ -102,24 +116,6 @@ const SEARCH_INDEX: SearchItem[] = [
     keywords: ["workflow", "automation"],
   },
   {
-    id: "analytics",
-    label: "Analytics",
-    description: "KPIs and performance metrics",
-    href: "/dashboard/summary",
-    category: "Settings",
-    icon: Sparkles,
-    keywords: ["metrics", "charts", "summary"],
-  },
-  {
-    id: "assistant",
-    label: "AI Assistant",
-    description: "Conversation-first workspace home",
-    href: "/dashboard",
-    category: "Settings",
-    icon: Bot,
-    keywords: ["assistant", "ai", "home"],
-  },
-  {
     id: "settings",
     label: "Settings",
     description: "Workspace, profile, and integrations",
@@ -129,15 +125,77 @@ const SEARCH_INDEX: SearchItem[] = [
     keywords: ["profile", "security", "preferences"],
   },
   {
-    id: "billing",
-    label: "Billing",
-    description: "Plans, invoices, and upgrades",
-    href: "/billing",
+    id: "assistant",
+    label: "AI Assistant",
+    description: "Conversation-first workspace home",
+    href: "/dashboard",
+    category: "AI Assistant",
+    icon: Bot,
+    keywords: ["assistant", "ai", "home"],
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    description: "KPIs and performance metrics",
+    href: "/dashboard/summary",
     category: "Settings",
-    icon: CreditCard,
-    keywords: ["plan", "invoice", "upgrade"],
+    icon: Sparkles,
+    keywords: ["metrics", "charts", "summary"],
   },
 ];
+
+function loadRecentSearches(): RecentSearch[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as RecentSearch[];
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_RECENT) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return;
+  const existing = loadRecentSearches().filter(
+    (item) => item.query.toLowerCase() !== trimmed.toLowerCase()
+  );
+  const next = [{ query: trimmed, at: new Date().toISOString() }, ...existing].slice(
+    0,
+    MAX_RECENT
+  );
+  window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+}
+
+function filterNavItems(query: string): SearchItem[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return NAV_INDEX.slice(0, 6);
+  return NAV_INDEX.filter((item) => {
+    const haystack = [
+      item.label,
+      item.description,
+      item.category,
+      ...item.keywords,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  }).slice(0, 6);
+}
+
+function toSearchItem(result: GlobalSearchResult): SearchItem {
+  return {
+    id: result.id,
+    label: result.label,
+    description: result.description,
+    href: result.href,
+    category: result.category,
+    icon: CATEGORY_ICONS[result.category] ?? Search,
+    keywords: [],
+  };
+}
 
 type GlobalCommandSearchProps = {
   searchQuery?: string;
@@ -152,35 +210,64 @@ export function GlobalCommandSearch({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(searchQuery);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [remoteResults, setRemoteResults] = useState<SearchItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
   useEffect(() => {
     setQuery(searchQuery);
   }, [searchQuery]);
 
+  useEffect(() => {
+    if (open) setRecentSearches(loadRecentSearches());
+  }, [open]);
+
+  const trimmedQuery = query.trim();
+
+  useEffect(() => {
+    if (!trimmedQuery) {
+      setRemoteResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const result = await fetchJson<{ results: GlobalSearchResult[] }>(
+          `/api/search?q=${encodeURIComponent(trimmedQuery)}`
+        );
+        setSearching(false);
+        if (result.ok) {
+          setRemoteResults(result.data.results.map(toSearchItem));
+        } else {
+          setRemoteResults([]);
+        }
+      })();
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [trimmedQuery]);
+
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return SEARCH_INDEX.slice(0, 8);
-    return SEARCH_INDEX.filter((item) => {
-      const haystack = [
-        item.label,
-        item.description,
-        item.category,
-        ...item.keywords,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    }).slice(0, 10);
-  }, [query]);
+    if (trimmedQuery) {
+      if (remoteResults.length > 0) return remoteResults;
+      return filterNavItems(trimmedQuery);
+    }
+    return filterNavItems("");
+  }, [trimmedQuery, remoteResults]);
+
+  const showRecent = !trimmedQuery && recentSearches.length > 0;
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query, open]);
+  }, [query, open, results.length]);
 
   const close = useCallback(() => setOpen(false), []);
 
   const goTo = useCallback(
-    (href: string) => {
+    (href: string, searchTerm?: string) => {
+      if (searchTerm) saveRecentSearch(searchTerm);
       close();
       router.push(href);
     },
@@ -216,12 +303,12 @@ export function GlobalCommandSearch({
       }
       if (event.key === "Enter" && results[activeIndex]) {
         event.preventDefault();
-        goTo(results[activeIndex].href);
+        goTo(results[activeIndex].href, trimmedQuery || undefined);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, results, activeIndex, close, goTo]);
+  }, [open, results, activeIndex, close, goTo, trimmedQuery]);
 
   return (
     <>
@@ -259,6 +346,7 @@ export function GlobalCommandSearch({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
               onClick={close}
             />
@@ -273,7 +361,7 @@ export function GlobalCommandSearch({
               className="relative mx-auto mt-[12vh] w-[min(100%-1.5rem,560px)] overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111] shadow-[0_32px_100px_rgba(0,0,0,0.55)]"
             >
               <div className="flex items-center gap-3 border-b border-white/[0.06] px-4">
-                <Search className="h-4 w-4 text-[#71717A]" />
+                <Search className="h-4 w-4 shrink-0 text-[#71717A]" />
                 <input
                   autoFocus
                   value={query}
@@ -284,44 +372,83 @@ export function GlobalCommandSearch({
                   placeholder="Search emails, contacts, deals, tasks…"
                   className="h-12 w-full bg-transparent text-sm text-white outline-none placeholder:text-[#71717A]"
                 />
+                {searching && (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#3B82F6]" />
+                )}
               </div>
 
               <div className="max-h-[360px] overflow-y-auto p-2">
-                {results.length === 0 ? (
-                  <p className="px-3 py-8 text-center text-sm text-[#71717A]">
-                    No matches for “{query}”
-                  </p>
-                ) : (
-                  results.map((item, index) => {
-                    const Icon = item.icon;
-                    return (
+                {showRecent && (
+                  <div className="mb-2 px-1">
+                    <p className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
+                      Recent searches
+                    </p>
+                    {recentSearches.map((item) => (
                       <button
-                        key={item.id}
+                        key={item.at + item.query}
                         type="button"
-                        onMouseEnter={() => setActiveIndex(index)}
-                        onClick={() => goTo(item.href)}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
-                          index === activeIndex
-                            ? "bg-[#3B82F6]/15 text-white"
-                            : "text-[#A1A1AA] hover:bg-white/[0.03]"
-                        )}
+                        onClick={() => setQuery(item.query)}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.03] hover:text-white"
                       >
-                        <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-[#0A0A0A]">
-                          <Icon className="h-4 w-4 text-[#3B82F6]" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium text-white">
-                            {item.label}
-                          </span>
-                          <span className="block truncate text-xs text-[#71717A]">
-                            {item.category} · {item.description}
-                          </span>
-                        </span>
+                        <Clock className="h-3.5 w-3.5 text-[#52525B]" />
+                        {item.query}
                       </button>
-                    );
-                  })
+                    ))}
+                  </div>
                 )}
+
+                {!showRecent && !trimmedQuery && (
+                  <p className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
+                    Quick navigation
+                  </p>
+                )}
+
+                {trimmedQuery && searching && results.length === 0 && (
+                  <p className="px-3 py-8 text-center text-sm text-[#71717A]">
+                    Searching…
+                  </p>
+                )}
+
+                {!searching && results.length === 0 && trimmedQuery && (
+                  <p className="px-3 py-8 text-center text-sm text-[#71717A]">
+                    No matches for “{trimmedQuery}”
+                  </p>
+                )}
+
+                {results.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onClick={() => goTo(item.href, trimmedQuery || undefined)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                        index === activeIndex
+                          ? "bg-[#3B82F6]/15 text-white"
+                          : "text-[#A1A1AA] hover:bg-white/[0.03]"
+                      )}
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-[#0A0A0A]">
+                        <Icon className="h-4 w-4 text-[#3B82F6]" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-white">
+                          {item.label}
+                        </span>
+                        <span className="block truncate text-xs text-[#71717A]">
+                          {item.category} · {item.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2 text-[11px] text-[#52525B]">
+                <span>↑↓ navigate</span>
+                <span>↵ open · esc close</span>
               </div>
             </motion.div>
           </div>

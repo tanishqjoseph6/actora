@@ -1,11 +1,13 @@
 "use client";
 
+import { memo } from "react";
 import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
 import { motion } from "framer-motion";
 import type { DashboardContactPreview } from "@/lib/dashboard/types";
 import { CrmPreviewSkeleton } from "./CrmPreviewSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { dashboard } from "./dashboard-tokens";
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 
 type CrmPreviewSectionProps = {
   contacts: DashboardContactPreview[];
@@ -20,7 +22,7 @@ function getAiTier(score: number): { label: string; className: string } {
   return { label: "Low", className: "text-[#71717A] bg-[#111111] border-white/[0.06]" };
 }
 
-export function CrmPreviewSection({
+function CrmPreviewSectionInner({
   contacts,
   contactCount,
   loading = false,
@@ -74,7 +76,13 @@ export function CrmPreviewSection({
         {loading ? (
           <CrmPreviewSkeleton />
         ) : contacts.length === 0 ? (
-          <p className={`text-sm ${dashboard.subtle}`}>No contacts yet. Add contacts in CRM.</p>
+          <PremiumEmptyState
+            illustration="crm"
+            title="No contacts yet"
+            description="Add contacts in CRM to see your top relationships here."
+            cta={{ label: "Open CRM", href: "/dashboard/crm/contacts" }}
+            className="border-dashed bg-[#111111]/40 py-10 sm:py-12"
+          />
         ) : (
           <ul className="space-y-2">
             {contacts.map((contact) => {
@@ -102,3 +110,5 @@ export function CrmPreviewSection({
     </motion.section>
   );
 }
+
+export const CrmPreviewSection = memo(CrmPreviewSectionInner);

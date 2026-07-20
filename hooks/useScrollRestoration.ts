@@ -35,9 +35,15 @@ export function useScrollRestoration<T extends HTMLElement>() {
       saved = 0;
     }
 
+    const restore = () => {
+      if (ref.current) ref.current.scrollTop = saved;
+    };
+
     if (saved > 0) {
       requestAnimationFrame(() => {
-        if (ref.current) ref.current.scrollTop = saved;
+        restore();
+        // Second frame covers late content growth (skeletons → data).
+        requestAnimationFrame(restore);
       });
     } else {
       el.scrollTop = 0;

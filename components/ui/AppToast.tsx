@@ -13,3 +13,8 @@ export function AppToast({ toast, onDismiss }: AppToastProps) {
 }
 
 export type { PaymentToastState as AppToastState } from "@/components/billing/PaymentToast";
+export {
+  useToast,
+  useOptionalToast,
+  ToastProvider,
+} from "@/providers/ToastProvider";

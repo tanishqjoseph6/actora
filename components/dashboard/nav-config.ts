@@ -130,10 +130,12 @@ export const DASHBOARD_PREFETCH_ROUTES = [
   "/dashboard/crm/deals",
   "/dashboard/tasks",
   "/dashboard/calendar",
+  "/dashboard/meetings",
   "/dashboard/automations",
   "/dashboard/summary",
   "/dashboard/settings",
   "/dashboard/connect-gmail",
+  "/dashboard/actions",
   "/billing",
 ] as const;
 
