@@ -50,9 +50,10 @@ export const MAIN_NAV: NavItem[] = [
   },
   { href: "/dashboard/tasks", label: "Tasks", icon: "tasks" },
   {
-    href: "/dashboard/meetings",
-    label: "Meetings",
+    href: "/dashboard/calendar",
+    label: "Calendar",
     icon: "meetings",
+    matchPrefix: "/dashboard/calendar",
     feature: "meetings",
   },
   {

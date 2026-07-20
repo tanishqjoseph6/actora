@@ -1,5 +1,7 @@
 "use client";
 
+import { BILLING_TEMPORARILY_DISABLED } from "@/lib/billing/billing-pause";
+import { BillingUnavailablePlaceholder } from "@/components/billing/BillingUnavailablePlaceholder";
 import { useCallback, useState } from "react";
 import { motion } from "framer-motion";
 import { BillingPageSkeleton } from "@/components/billing/BillingPageSkeleton";
@@ -20,6 +22,14 @@ import { TrialBillingCard } from "@/components/billing/TrialBillingCard";
 import { useSubscription } from "@/hooks/useSubscription";
 
 export default function Billing() {
+  if (BILLING_TEMPORARILY_DISABLED) {
+    return <BillingUnavailablePlaceholder />;
+  }
+
+  return <BillingPageActive />;
+}
+
+function BillingPageActive() {
   const { subscription, loading, refresh } = useSubscription();
   const [toast, setToast] = useState<PaymentToastState>(null);
   const [proUpgradeRequest, setProUpgradeRequest] = useState(0);

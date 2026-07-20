@@ -11,6 +11,10 @@ import {
   PlanUsageDisplay,
 } from "@/components/subscription/CurrentPlanBadge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 
 type CurrentPlanSectionProps = {
   subscription: SubscriptionSnapshot | null;
@@ -31,6 +35,7 @@ export function CurrentPlanSection({
   onUpgradePlan,
   onRefresh,
 }: CurrentPlanSectionProps) {
+  const { paused, showComingSoon } = useBillingPause();
   const [canceling, setCanceling] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -125,18 +130,38 @@ export function CurrentPlanSection({
             <div className="flex flex-wrap gap-3 mt-6">
               <button
                 type="button"
-                onClick={onUpgradePlan}
-                className={`${dashboard.btnPrimary} px-5 py-2.5 text-sm`}
+                onClick={() => {
+                  if (paused) {
+                    showComingSoon();
+                    return;
+                  }
+                  onUpgradePlan?.();
+                }}
+                aria-disabled={paused}
+                className={`${dashboard.btnPrimary} inline-flex items-center gap-2 px-5 py-2.5 text-sm ${
+                  paused ? "opacity-80" : ""
+                }`}
               >
                 {isPaid ? "Change Plan" : "Upgrade Plan"}
+                {paused ? <ComingSoonBadge /> : null}
               </button>
               {isPaid && !isCanceled && (
                 <button
                   type="button"
-                  onClick={() => setShowCancelConfirm(true)}
-                  className={`${dashboard.btnSecondary} px-5 py-2.5 text-sm text-[#FCA5A5] hover:border-red-500/40`}
+                  onClick={() => {
+                    if (paused) {
+                      showComingSoon();
+                      return;
+                    }
+                    setShowCancelConfirm(true);
+                  }}
+                  aria-disabled={paused}
+                  className={`${dashboard.btnSecondary} inline-flex items-center gap-2 px-5 py-2.5 text-sm text-[#FCA5A5] hover:border-red-500/40 ${
+                    paused ? "opacity-80" : ""
+                  }`}
                 >
                   Cancel Subscription
+                  {paused ? <ComingSoonBadge /> : null}
                 </button>
               )}
             </div>

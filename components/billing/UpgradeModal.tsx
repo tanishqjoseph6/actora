@@ -10,6 +10,11 @@ import {
 } from "@/lib/billing/providers";
 import { isDevBillingEnabled } from "@/lib/billing/config";
 import type { PlanId } from "@/lib/subscription";
+import { BILLING_TEMPORARILY_DISABLED } from "@/lib/billing/billing-pause";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 
 type UpgradeModalProps = {
   selection: UpgradeSelection | null;
@@ -37,6 +42,7 @@ export function UpgradeModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const devBilling = isDevBillingEnabled();
+  const { showComingSoon } = useBillingPause();
 
   useEffect(() => {
     if (!isOpen) {
@@ -64,6 +70,12 @@ export function UpgradeModal({
 
   const handlePrimaryAction = async () => {
     if (isCurrentPlan) return;
+
+    if (BILLING_TEMPORARILY_DISABLED) {
+      onClose();
+      showComingSoon();
+      return;
+    }
 
     setIsProcessing(true);
     setActionError(null);
@@ -185,9 +197,15 @@ export function UpgradeModal({
               <button
                 onClick={handlePrimaryAction}
                 disabled={isCurrentPlan || isProcessing}
-                className="flex-1 py-3 rounded-xl bg-[#2563EB] text-white hover:bg-[#1D4ED8] text-sm font-semibold shadow-lg shadow-blue-500/20 hover:bg-[#1D4ED8] transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-disabled={isCurrentPlan || BILLING_TEMPORARILY_DISABLED}
+                className={`flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
+                  BILLING_TEMPORARILY_DISABLED
+                    ? "bg-[#3B82F6]/40 text-white/90 opacity-80"
+                    : "bg-[#2563EB] text-white hover:bg-[#1D4ED8] shadow-lg shadow-blue-500/20"
+                }`}
               >
                 {primaryLabel}
+                {BILLING_TEMPORARILY_DISABLED ? <ComingSoonBadge /> : null}
               </button>
               <button
                 onClick={onClose}

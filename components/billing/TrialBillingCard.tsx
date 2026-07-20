@@ -1,15 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 
 type TrialBillingCardProps = {
   subscription: SubscriptionSnapshot;
 };
 
 export function TrialBillingCard({ subscription }: TrialBillingCardProps) {
+  const { paused, showComingSoon } = useBillingPause();
   const days = subscription.remainingTrialDays;
   const progress = subscription.trialProgressPercent;
   const expired = subscription.trialExpired && !subscription.trialActive;
@@ -68,12 +72,24 @@ export function TrialBillingCard({ subscription }: TrialBillingCardProps) {
 
       {expired && (
         <div className="mt-6">
-          <Link
-            href="#pricing"
-            className={`${dashboard.btnPrimary} inline-flex px-5 py-3 text-sm`}
-          >
-            Choose a plan
-          </Link>
+          {paused ? (
+            <button
+              type="button"
+              onClick={showComingSoon}
+              aria-disabled="true"
+              className={`${dashboard.btnPrimary} inline-flex items-center gap-2 px-5 py-3 text-sm opacity-80`}
+            >
+              Choose a plan
+              <ComingSoonBadge />
+            </button>
+          ) : (
+            <a
+              href="#pricing"
+              className={`${dashboard.btnPrimary} inline-flex px-5 py-3 text-sm`}
+            >
+              Choose a plan
+            </a>
+          )}
         </div>
       )}
     </motion.div>

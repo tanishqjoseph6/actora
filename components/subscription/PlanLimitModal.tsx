@@ -3,6 +3,10 @@
 import Link from "next/link";
 import type { LimitType, PlanId } from "@/lib/subscription";
 import { getPlanDisplayName } from "@/lib/subscription";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 
 type PlanLimitModalProps = {
   isOpen: boolean;
@@ -45,6 +49,7 @@ export function PlanLimitModal({
   recommendedPlanId,
   onClose,
 }: PlanLimitModalProps) {
+  const { paused, showComingSoon } = useBillingPause();
   if (!isOpen) return null;
 
   const recommendedName = getPlanDisplayName(recommendedPlanId);
@@ -112,12 +117,27 @@ export function PlanLimitModal({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href={`/billing?plan=${recommendedPlanId}`}
-                className="flex-1 py-3 rounded-xl bg-[#3B82F6] text-white hover:bg-[#3B82F6] text-sm font-semibold text-center shadow-lg shadow-blue-500/20 hover:bg-[#3B82F6] transition-all duration-300 active:scale-[0.98]"
-              >
-                Upgrade to {recommendedName}
-              </Link>
+              {paused ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    showComingSoon();
+                  }}
+                  aria-disabled="true"
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-[#3B82F6]/40 text-white/90 text-sm font-semibold opacity-80"
+                >
+                  Upgrade to {recommendedName}
+                  <ComingSoonBadge />
+                </button>
+              ) : (
+                <Link
+                  href={`/billing?plan=${recommendedPlanId}`}
+                  className="flex-1 py-3 rounded-xl bg-[#3B82F6] text-white hover:bg-[#3B82F6] text-sm font-semibold text-center shadow-lg shadow-blue-500/20 hover:bg-[#3B82F6] transition-all duration-300 active:scale-[0.98]"
+                >
+                  Upgrade to {recommendedName}
+                </Link>
+              )}
               <button
                 onClick={onClose}
                 className="flex-1 py-3 rounded-xl border border-[rgba(37, 99, 235,0.15)] text-gray-300 text-sm font-medium hover:border-[#3B82F6]/30 hover:text-white transition-all duration-300 active:scale-[0.98]"

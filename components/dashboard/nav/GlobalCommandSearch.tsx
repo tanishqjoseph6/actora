@@ -84,13 +84,13 @@ const SEARCH_INDEX: SearchItem[] = [
     keywords: ["todo", "action"],
   },
   {
-    id: "meetings",
-    label: "Meetings",
-    description: "Calendar and upcoming events",
-    href: "/dashboard/meetings",
+    id: "calendar",
+    label: "Calendar",
+    description: "Day, week, month, and agenda views",
+    href: "/dashboard/calendar",
     category: "Meetings",
     icon: Calendar,
-    keywords: ["calendar", "schedule"],
+    keywords: ["calendar", "schedule", "meetings", "google"],
   },
   {
     id: "automations",

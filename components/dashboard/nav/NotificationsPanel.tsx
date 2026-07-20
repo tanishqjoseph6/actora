@@ -13,7 +13,8 @@ type NotificationCategory =
   | "Tasks"
   | "Meetings"
   | "Automations"
-  | "Billing";
+  | "Billing"
+  | "Calendar";
 
 type NotificationItem = {
   id: string;
@@ -24,7 +25,7 @@ type NotificationItem = {
   read: boolean;
 };
 
-const STORAGE_KEY = "actora_dashboard_notifications_v1";
+const STORAGE_KEY = "actora_dashboard_notifications_v2";
 
 const SEED: NotificationItem[] = [
   {
@@ -62,17 +63,41 @@ const SEED: NotificationItem[] = [
   {
     id: "n5",
     category: "Meetings",
-    title: "Meeting in 1 hour",
-    body: "Demo with Meridian Labs starts soon.",
+    title: "Meeting reminder",
+    body: "Demo with Meridian Labs starts in 1 hour.",
     createdAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
     read: true,
   },
   {
     id: "n6",
+    category: "Calendar",
+    title: "Upcoming event",
+    body: "Product sync is on your calendar for tomorrow morning.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
+    read: false,
+  },
+  {
+    id: "n7",
+    category: "Calendar",
+    title: "Calendar sync complete",
+    body: "Google Calendar finished syncing your upcoming meetings.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+    read: true,
+  },
+  {
+    id: "n8",
+    category: "Calendar",
+    title: "Invitation update",
+    body: "You were invited to a follow-up call from Actora scheduling.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+    read: false,
+  },
+  {
+    id: "n9",
     category: "Billing",
     title: "Trial reminder",
     body: "Your free trial ends soon. Upgrade to keep Pro features.",
-    createdAt: new Date(Date.now() - 1000 * 60 * 400).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 480).toISOString(),
     read: true,
   },
 ];

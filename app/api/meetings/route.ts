@@ -1,8 +1,10 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
+import { listStoredCalendarEvents } from "@/lib/calendar/meetings-store";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapMeetingRow, type MeetingInput } from "@/lib/meetings/live";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 async function getUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
@@ -15,18 +17,25 @@ export async function GET() {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const db = getSupabaseAdmin();
-  if (!db) return NextResponse.json({ meetings: [] });
+  const events = await listStoredCalendarEvents(
+    normalizeSubscriptionUserId(userId)
+  );
 
-  const { data, error } = await db
-    .from("meetings")
-    .select("id, title, starts_at, ends_at, status")
-    .eq("user_id", userId)
-    .order("starts_at", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ meetings: (data ?? []).map((row) => mapMeetingRow(row)) });
+  return NextResponse.json({
+    meetings: events.map((event) =>
+      mapMeetingRow({
+        id: event.id,
+        title: event.title,
+        starts_at: event.startAt,
+        ends_at: event.endAt,
+        status: event.status,
+        description: event.description,
+        location: event.location,
+        meeting_link: event.meetingLink,
+        attendees: event.attendees.map((a) => a.email),
+      })
+    ),
+  });
 }
 
 export async function POST(request: NextRequest) {

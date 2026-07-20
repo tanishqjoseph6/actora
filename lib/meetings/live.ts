@@ -28,15 +28,21 @@ export function mapMeetingRow(row: {
   starts_at: string;
   ends_at: string | null;
   status: string;
+  description?: string | null;
+  location?: string | null;
+  meeting_link?: string | null;
+  attendees?: string[] | null;
 }): Meeting {
   return {
     id: row.id,
     title: row.title,
-    description: "",
+    description: row.description ?? "",
     startAt: row.starts_at,
     endAt: row.ends_at ?? row.starts_at,
-    attendees: [],
-    type: "video",
+    attendees: row.attendees ?? [],
+    location: row.location ?? undefined,
+    meetingLink: row.meeting_link ?? undefined,
+    type: row.meeting_link ? "video" : "video",
     status: (row.status as MeetingStatus) ?? "scheduled",
     organizer: "You",
   };

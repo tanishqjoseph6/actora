@@ -6,6 +6,8 @@ import type {
   DashboardMeetingPreview,
 } from "@/lib/dashboard/types";
 import { SkeletonListRows } from "@/components/ui/Skeleton";
+import { useCalendarAccount } from "@/hooks/useCalendarAccount";
+import { TodaysScheduleWidget } from "./TodaysScheduleWidget";
 import { dashboard } from "./dashboard-tokens";
 
 type DashboardWidgetsProps = {
@@ -15,14 +17,6 @@ type DashboardWidgetsProps = {
   loading?: boolean;
 };
 
-function formatMeetingTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
 export function DashboardWidgets({
   todaysMeetings,
   automations,
@@ -30,33 +24,15 @@ export function DashboardWidgets({
   loading = false,
 }: DashboardWidgetsProps) {
   const gmailHealthy = connectedGmailAccounts > 0;
+  const { connected: calendarConnected } = useCalendarAccount();
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8 lg:mb-10">
       <WidgetCard title="Today's Schedule" delay={0}>
-        {loading ? (
-          <SkeletonListRows rows={3} />
-        ) : todaysMeetings.length === 0 ? (
-          <EmptyState message="No meetings scheduled today." />
-        ) : (
-          <ul className="space-y-3">
-            {todaysMeetings.map((item) => (
-              <li key={item.id} className="flex items-start gap-3 group">
-                <span className="text-xs font-mono text-[#2563EB] tabular-nums shrink-0 pt-0.5">
-                  {formatMeetingTime(item.startsAt)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white truncate group-hover:text-[#93C5FD] transition-colors">
-                    {item.title}
-                  </p>
-                  <span className={`text-[10px] uppercase tracking-wide ${dashboard.subtle}`}>
-                    {item.status}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <TodaysScheduleWidget
+          todaysMeetings={todaysMeetings}
+          loading={loading}
+        />
       </WidgetCard>
 
       <WidgetCard title="Recent AI Activity" delay={0.05}>
@@ -96,6 +72,13 @@ export function DashboardWidgets({
                   ? `${connectedGmailAccounts} connected`
                   : "Not connected"
               }
+            />
+          </li>
+          <li className="flex items-center justify-between gap-2">
+            <span className={`text-sm ${dashboard.muted}`}>Calendar</span>
+            <HealthDot
+              status={calendarConnected ? "healthy" : "degraded"}
+              label={calendarConnected ? "Synced" : "Not connected"}
             />
           </li>
           <li className="flex items-center justify-between gap-2">

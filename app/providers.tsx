@@ -2,6 +2,7 @@
 
 import { SessionProvider, signOut, useSession } from "next-auth/react";
 import { useEffect } from "react";
+import { BillingPauseProvider } from "@/components/billing/BillingPauseProvider";
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -22,7 +23,9 @@ export default function Providers({
 }) {
   return (
     <SessionProvider basePath="/api/auth" refetchOnWindowFocus refetchInterval={5 * 60}>
-      <SessionGuard>{children}</SessionGuard>
+      <SessionGuard>
+        <BillingPauseProvider>{children}</BillingPauseProvider>
+      </SessionGuard>
     </SessionProvider>
   );
 }

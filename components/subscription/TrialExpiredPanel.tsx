@@ -1,15 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { UpgradeButton } from "@/components/subscription/UpgradeButton";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 
 type TrialExpiredPanelProps = {
   compact?: boolean;
 };
 
 export function TrialExpiredPanel({ compact = false }: TrialExpiredPanelProps) {
+  const { paused, showComingSoon } = useBillingPause();
+
   if (compact) {
     return (
       <div
@@ -32,7 +37,7 @@ export function TrialExpiredPanel({ compact = false }: TrialExpiredPanelProps) {
       animate={{ opacity: 1, y: 0 }}
       className="mx-auto flex max-w-lg flex-col items-center justify-center px-6 py-16 text-center sm:py-24"
     >
-          <div
+      <div
         className={`mb-5 flex h-14 w-14 items-center justify-center rounded-xl border ${dashboard.border} ${dashboard.card}`}
       >
         <svg
@@ -56,12 +61,24 @@ export function TrialExpiredPanel({ compact = false }: TrialExpiredPanelProps) {
         Inbox, CRM, Automations, and Analytics. Your data is preserved.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
-          href="/billing"
-          className={`${dashboard.btnPrimary} px-5 py-3 text-sm`}
-        >
-          Upgrade now
-        </Link>
+        {paused ? (
+          <button
+            type="button"
+            onClick={showComingSoon}
+            aria-disabled="true"
+            className={`${dashboard.btnPrimary} inline-flex items-center gap-2 px-5 py-3 text-sm opacity-80`}
+          >
+            Upgrade now
+            <ComingSoonBadge />
+          </button>
+        ) : (
+          <a
+            href="/billing"
+            className={`${dashboard.btnPrimary} px-5 py-3 text-sm`}
+          >
+            Upgrade now
+          </a>
+        )}
         <UpgradeButton plan="pro" showPlan />
       </div>
     </motion.div>

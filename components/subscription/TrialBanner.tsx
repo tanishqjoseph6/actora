@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 const DISMISS_KEY = "actora_trial_banner_dismissed";
 
 export function TrialBanner() {
   const { subscription, loading } = usePlanGate();
+  const { paused, showComingSoon } = useBillingPause();
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -71,12 +75,24 @@ export function TrialBanner() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/billing"
-              className={`${dashboard.btnPrimary} px-4 py-2 text-sm`}
-            >
-              Upgrade
-            </Link>
+            {paused ? (
+              <button
+                type="button"
+                onClick={showComingSoon}
+                aria-disabled="true"
+                className={`${dashboard.btnPrimary} inline-flex items-center gap-2 px-4 py-2 text-sm opacity-80`}
+              >
+                Upgrade
+                <ComingSoonBadge />
+              </button>
+            ) : (
+              <a
+                href="/billing"
+                className={`${dashboard.btnPrimary} px-4 py-2 text-sm`}
+              >
+                Upgrade
+              </a>
+            )}
             <button
               type="button"
               onClick={dismiss}

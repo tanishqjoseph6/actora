@@ -28,6 +28,8 @@ import type { BillingCurrency } from "@/lib/billing/currency";
 import { getPlanDisplayName, type PlanId } from "@/lib/subscription";
 import { queuePlanActivationToast } from "@/components/billing/PlanActivationToastListener";
 import { isDevBillingEnabled } from "@/lib/billing/config";
+import { BILLING_TEMPORARILY_DISABLED } from "@/lib/billing/billing-pause";
+import { useBillingPause } from "@/components/billing/BillingPauseProvider";
 
 const ENTERPRISE_MAILTO =
   "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
@@ -60,6 +62,7 @@ export function PricingSection({
   proUpgradeRequest = 0,
 }: PricingSectionProps) {
   const router = useRouter();
+  const { showComingSoon } = useBillingPause();
   const { data: session, update: updateSession } = useSession();
   const {
     upgradePlan,
@@ -114,6 +117,19 @@ export function PricingSection({
 
   const handleSelect = useCallback(
     async (plan: PricingPlan) => {
+      // Paid checkout / upgrades paused — free marketing CTAs still navigate to signup.
+      if (
+        BILLING_TEMPORARILY_DISABLED &&
+        !(mode === "marketing" && plan.id === "free")
+      ) {
+        if (plan.id === "enterprise") {
+          window.location.href = ENTERPRISE_MAILTO;
+          return;
+        }
+        showComingSoon();
+        return;
+      }
+
       if (plan.id === "enterprise") {
         window.location.href = ENTERPRISE_MAILTO;
         return;
@@ -185,11 +201,17 @@ export function PricingSection({
       router,
       refreshSubscription,
       updateSession,
+      showComingSoon,
     ]
   );
 
   const handleDevUpgrade = useCallback(
     async (planId: PlanId): Promise<boolean> => {
+      if (BILLING_TEMPORARILY_DISABLED) {
+        showComingSoon();
+        return false;
+      }
+
       const success = onDevUpgrade
         ? await onDevUpgrade(planId)
         : await upgradePlan(planId, period);
@@ -225,6 +247,7 @@ export function PricingSection({
       onPaymentSuccess,
       devUpgradeRedirectTo,
       router,
+      showComingSoon,
     ]
   );
 
@@ -235,6 +258,11 @@ export function PricingSection({
       billingCurrency: BillingCurrency,
       razorpayPlanId?: string
     ) => {
+      if (BILLING_TEMPORARILY_DISABLED) {
+        showComingSoon();
+        return;
+      }
+
       if (!session) {
         setToast({
           type: "error",
@@ -246,7 +274,7 @@ export function PricingSection({
 
       await openCheckout(planId, billingPeriod, billingCurrency, razorpayPlanId);
     },
-    [session, openCheckout]
+    [session, openCheckout, showComingSoon]
   );
 
   useEffect(() => {
@@ -275,7 +303,11 @@ export function PricingSection({
           billingPeriod
         );
         if (plan) {
-          openUpgrade(plan, billingPeriod, currencyParam ?? currency);
+          if (BILLING_TEMPORARILY_DISABLED) {
+            showComingSoon();
+          } else {
+            openUpgrade(plan, billingPeriod, currencyParam ?? currency);
+          }
         }
       }
 
@@ -283,15 +315,19 @@ export function PricingSection({
         window.history.replaceState({}, "", window.location.pathname);
       }
     });
-  }, [syncFromUrl, openUpgrade, setCurrency, currency]);
+  }, [syncFromUrl, openUpgrade, setCurrency, currency, showComingSoon]);
 
   useEffect(() => {
     if (!proUpgradeRequest) return;
+    if (BILLING_TEMPORARILY_DISABLED) {
+      showComingSoon();
+      return;
+    }
     const plan = getPlanById("pro", currency, period);
     if (plan) {
       openUpgrade(plan, period, currency);
     }
-  }, [proUpgradeRequest, currency, period, openUpgrade]);
+  }, [proUpgradeRequest, currency, period, openUpgrade, showComingSoon]);
 
   const isMarketing = mode === "marketing";
 

@@ -26,6 +26,7 @@ import {
 } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton";
+import { EmailSchedulingActions } from "@/components/calendar/EmailSchedulingActions";
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
@@ -557,6 +558,15 @@ export function EmailDetailPanel({
                   </ActionButton>
                 )}
               </div>
+
+              <EmailSchedulingActions
+                subject={detail.subject}
+                participantEmail={
+                  detail.senderEmail ||
+                  (email.sender.includes("@") ? email.sender : undefined)
+                }
+                disabled={isGenerating || isSending || isArchiving}
+              />
 
               {showTonePicker && (
                 <div className="mt-3 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06] backdrop-blur-sm animate-fade-in">

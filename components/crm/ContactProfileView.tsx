@@ -1,5 +1,6 @@
 import { CrmBackLink } from "@/components/crm/CrmBackLink";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
+import { ContactMeetingsSection } from "@/components/crm/ContactMeetingsSection";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { CrmContact, CrmContactStatus } from "@/lib/crm/live";
@@ -52,6 +53,8 @@ export function ContactProfileView({ contact }: { contact: CrmContact }) {
           />
         </dl>
       </section>
+
+      <ContactMeetingsSection contactEmail={contact.email} />
     </>
   );
 }

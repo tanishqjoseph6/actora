@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
+import {
+  ComingSoonBadge,
+  useBillingPause,
+} from "@/components/billing/BillingPauseProvider";
+import { useEffect } from "react";
 
 type TrialUpgradeModalProps = {
   open: boolean;
@@ -55,6 +59,7 @@ export function TrialUpgradeModal({
   onClose,
   subscription,
 }: TrialUpgradeModalProps) {
+  const { paused, showComingSoon } = useBillingPause();
   const current =
     subscription?.trialActive
       ? "Free Trial"
@@ -154,20 +159,50 @@ export function TrialUpgradeModal({
             </div>
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Link
-                href="/billing?plan=pro"
-                onClick={onClose}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-[#3B82F6] text-sm font-medium text-white transition-colors hover:bg-[#2563EB]"
-              >
-                Upgrade to Pro
-              </Link>
-              <Link
-                href="/billing#pricing"
-                onClick={onClose}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] text-sm font-medium text-white transition-colors hover:bg-white/[0.04]"
-              >
-                Compare Plans
-              </Link>
+              {paused ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    showComingSoon();
+                  }}
+                  aria-disabled="true"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#3B82F6]/40 text-sm font-medium text-white/90 opacity-80"
+                >
+                  Upgrade to Pro
+                  <ComingSoonBadge />
+                </button>
+              ) : (
+                <Link
+                  href="/billing?plan=pro"
+                  onClick={onClose}
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-[#3B82F6] text-sm font-medium text-white transition-colors hover:bg-[#2563EB]"
+                >
+                  Upgrade to Pro
+                </Link>
+              )}
+              {paused ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    showComingSoon();
+                  }}
+                  aria-disabled="true"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.02] text-sm font-medium text-white/80 opacity-80"
+                >
+                  Compare Plans
+                  <ComingSoonBadge />
+                </button>
+              ) : (
+                <Link
+                  href="/billing#pricing"
+                  onClick={onClose}
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] text-sm font-medium text-white transition-colors hover:bg-white/[0.04]"
+                >
+                  Compare Plans
+                </Link>
+              )}
             </div>
           </motion.div>
         </div>

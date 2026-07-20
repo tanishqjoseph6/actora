@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import type { PricingPlan } from "../pricing-data";
 import type { PlanId } from "@/lib/subscription";
+import { BILLING_TEMPORARILY_DISABLED } from "@/lib/billing/billing-pause";
+import { ComingSoonBadge } from "@/components/billing/BillingPauseProvider";
 
 type PremiumPricingCardProps = {
   plan: PricingPlan;
@@ -28,6 +30,12 @@ export function PremiumPricingCard({
     (plan.id === "free" && marketingMode) ||
     (plan.id !== "free" && !isCurrent);
 
+  const pausePaidCta =
+    BILLING_TEMPORARILY_DISABLED &&
+    !(marketingMode && plan.id === "free") &&
+    plan.id !== "enterprise" &&
+    (plan.id !== "free" || !marketingMode);
+
   const ctaLabel = isFreeCurrent
     ? "Current Plan"
     : plan.id === "free"
@@ -41,7 +49,7 @@ export function PremiumPricingCard({
       onSelect(plan);
       return;
     }
-    if (isActionable) {
+    if (pausePaidCta || isActionable) {
       onSelect(plan);
     }
   };
@@ -151,8 +159,11 @@ export function PremiumPricingCard({
         label={ctaLabel}
         variant={plan.ctaVariant}
         disabled={
-          !marketingMode && (isFreeCurrent || (plan.id === "free" && !isCurrent))
+          !pausePaidCta &&
+          !marketingMode &&
+          (isFreeCurrent || (plan.id === "free" && !isCurrent))
         }
+        comingSoon={pausePaidCta && !isFreeCurrent}
         onClick={handleClick}
       />
     </>
@@ -191,25 +202,39 @@ function PlanButton({
   label,
   variant,
   disabled,
+  comingSoon,
   onClick,
 }: {
   label: string;
   variant: PricingPlan["ctaVariant"];
   disabled?: boolean;
+  comingSoon?: boolean;
   onClick: () => void;
 }) {
   const base =
     "w-full rounded-2xl py-3.5 text-sm font-semibold transition-all duration-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+
+  const content = (
+    <span className="inline-flex items-center justify-center gap-2">
+      {label}
+      {comingSoon ? <ComingSoonBadge /> : null}
+    </span>
+  );
 
   if (variant === "gradient" || variant === "primary") {
     return (
       <button
         type="button"
         onClick={onClick}
-        disabled={disabled}
-        className={`${base} bg-[#3B82F6] text-white hover:bg-[#2563EB] disabled:hover:bg-[#3B82F6]`}
+        disabled={disabled && !comingSoon}
+        aria-disabled={comingSoon || disabled}
+        className={`${base} ${
+          comingSoon
+            ? "cursor-pointer bg-[#3B82F6]/40 text-white/90 opacity-80 hover:opacity-100"
+            : "bg-[#3B82F6] text-white hover:bg-[#2563EB] disabled:hover:bg-[#3B82F6]"
+        }`}
       >
-        {label}
+        {content}
       </button>
     );
   }
@@ -222,7 +247,7 @@ function PlanButton({
         disabled={disabled}
         className={`${base} border border-white/[0.1] bg-[#0A0A0A] text-white hover:border-[#3B82F6]/40 hover:bg-[#111111]`}
       >
-        {label}
+        {content}
       </button>
     );
   }
@@ -231,10 +256,15 @@ function PlanButton({
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      className={`${base} border border-white/[0.1] bg-transparent text-[#3B82F6] hover:bg-[#3B82F6]/10`}
+      disabled={disabled && !comingSoon}
+      aria-disabled={comingSoon || disabled}
+      className={`${base} ${
+        comingSoon
+          ? "cursor-pointer border border-white/[0.1] bg-white/[0.03] text-white/80 opacity-80 hover:opacity-100"
+          : "border border-white/[0.1] bg-transparent text-[#3B82F6] hover:bg-[#3B82F6]/10"
+      }`}
     >
-      {label}
+      {content}
     </button>
   );
 }
