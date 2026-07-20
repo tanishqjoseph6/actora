@@ -393,3 +393,50 @@ export async function archiveEmail(
     },
   });
 }
+
+export async function searchInboxEmails(
+  auth: GmailAuth,
+  query: string,
+  maxResults = 6
+): Promise<InboxEmail[]> {
+  const gmail = google.gmail({ version: "v1", auth });
+  const q = query.trim();
+  if (!q) return [];
+
+  const listResponse = await gmail.users.messages.list({
+    userId: "me",
+    q,
+    maxResults,
+  });
+
+  const messageIds = listResponse.data.messages ?? [];
+  if (messageIds.length === 0) return [];
+
+  const emails = await Promise.all(
+    messageIds.map(async (message) => {
+      if (!message.id) return null;
+
+      const detail = await gmail.users.messages.get({
+        userId: "me",
+        id: message.id,
+        format: "metadata",
+        metadataHeaders: ["From", "Subject", "Date"],
+      });
+
+      const headers = detail.data.payload?.headers ?? [];
+      const dateHeader = getHeader(headers, "Date");
+
+      return {
+        id: detail.data.id!,
+        sender: parseSender(getHeader(headers, "From")),
+        subject: getHeader(headers, "Subject") || "(No subject)",
+        preview: detail.data.snippet ?? "",
+        date: formatEmailDate(dateHeader),
+        unread: detail.data.labelIds?.includes("UNREAD") ?? false,
+        starred: detail.data.labelIds?.includes("STARRED") ?? false,
+      } satisfies InboxEmail;
+    })
+  );
+
+  return emails.filter((email): email is InboxEmail => email !== null);
+}

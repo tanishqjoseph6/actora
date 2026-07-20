@@ -52,3 +52,14 @@ export type WaitlistNotificationRow = {
   feature: string;
   created_at: string;
 };
+
+export type UserNotificationRow = {
+  id: string;
+  user_id: string;
+  category: string;
+  title: string;
+  body: string;
+  href: string;
+  read: boolean;
+  created_at: string;
+};
