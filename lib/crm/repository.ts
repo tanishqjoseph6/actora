@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { logApiError } from "@/lib/api/log-error";
 import {
   normalizeCrmCompany,
   normalizeCrmDeal,
@@ -23,7 +24,12 @@ export async function fetchCompaniesWithStats(
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error || !companies) return [];
+  if (error || !companies) {
+    if (error) {
+      logApiError("crm/repository.fetchCompaniesWithStats", error, { userId });
+    }
+    return [];
+  }
 
   const [{ data: deals }, { data: contacts }] = await Promise.all([
     db.from("crm_deals").select("company_id, value, stage").eq("user_id", userId),
@@ -61,9 +67,9 @@ export async function fetchCompaniesWithStats(
     statsByCompany.set(contact.company_id, current);
   }
 
-  return companies.map((row) =>
-    normalizeCrmCompany(row, statsByCompany.get(row.id))
-  );
+  return companies
+    .map((row) => normalizeCrmCompany(row, statsByCompany.get(row.id)))
+    .filter((company): company is CrmCompany => company !== null);
 }
 
 export async function fetchDealsEnriched(userId: string): Promise<CrmDeal[]> {
@@ -76,7 +82,11 @@ export async function fetchDealsEnriched(userId: string): Promise<CrmDeal[]> {
     .eq("user_id", userId)
     .order("last_activity_at", { ascending: false });
 
-  if (error || !deals?.length) return [];
+  if (error) {
+    logApiError("crm/repository.fetchDealsEnriched", error, { userId });
+    return [];
+  }
+  if (!deals?.length) return [];
 
   const companyIds = [
     ...new Set(deals.map((d) => d.company_id).filter(Boolean)),
@@ -121,20 +131,22 @@ export async function fetchDealsEnriched(userId: string): Promise<CrmDeal[]> {
     if (c.company_id) companyNames.set(c.company_id, companyNames.get(c.company_id) ?? "");
   }
 
-  return deals.map((row) => {
-    let companyName = row.company_id
-      ? (companyNames.get(row.company_id) ?? "")
-      : "";
-    if (!companyName && row.contact_id) {
-      companyName = contactCompanyName.get(row.contact_id) ?? "";
-    }
-    return normalizeCrmDeal(row, {
-      companyName,
-      contactName: row.contact_id
-        ? (contactNames.get(row.contact_id) ?? "")
-        : "",
-    });
-  });
+  return deals
+    .map((row) => {
+      let companyName = row.company_id
+        ? (companyNames.get(row.company_id) ?? "")
+        : "";
+      if (!companyName && row.contact_id) {
+        companyName = contactCompanyName.get(row.contact_id) ?? "";
+      }
+      return normalizeCrmDeal(row, {
+        companyName,
+        contactName: row.contact_id
+          ? (contactNames.get(row.contact_id) ?? "")
+          : "",
+      });
+    })
+    .filter((deal): deal is CrmDeal => deal !== null);
 }
 
 export async function countContactsByCompany(

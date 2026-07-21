@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { CompanyProfileView } from "@/components/crm/CompanyProfileView";
-import { normalizeCrmContact, type CrmContact } from "@/lib/crm/live";
+import type { CrmContact } from "@/lib/crm/live";
 import type { Company } from "@/lib/crm/types";
 
 export default function CompanyProfilePage({
@@ -32,14 +32,12 @@ export default function CompanyProfilePage({
       }
       const json = (await res.json()) as {
         company?: Company;
-        contacts?: Parameters<typeof normalizeCrmContact>[0][];
+        contacts?: CrmContact[];
       };
       if (json.company) {
         setCompany(json.company);
       }
-      setContacts(
-        (json.contacts ?? []).map((row) => normalizeCrmContact(row))
-      );
+      setContacts(json.contacts ?? []);
       setLoading(false);
     })();
   }, [id]);

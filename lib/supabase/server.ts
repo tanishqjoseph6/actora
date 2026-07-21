@@ -148,6 +148,34 @@ export function isMissingUserNotificationsSchemaError(message: string): boolean 
   return isMissingTableSchemaError(message, "user_notifications");
 }
 
+/** True when PostgREST reports CRM tables or columns are missing. */
+export function isMissingCrmSchemaError(message: string): boolean {
+  const lower = message.toLowerCase();
+  const crmTables = [
+    "crm_contacts",
+    "crm_companies",
+    "crm_deals",
+    "crm_notes",
+    "crm_activities",
+    "crm_email_links",
+  ];
+
+  if (
+    crmTables.some((table) => lower.includes(table)) &&
+    (lower.includes("does not exist") ||
+      lower.includes("could not find the table") ||
+      lower.includes("schema cache") ||
+      lower.includes("pgrst205"))
+  ) {
+    return true;
+  }
+
+  return (
+    lower.includes("does not exist") &&
+    crmTables.some((table) => lower.includes(table))
+  );
+}
+
 function isMissingTableSchemaError(message: string, table: string): boolean {
   const lower = message.toLowerCase();
   return (

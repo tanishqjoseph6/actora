@@ -133,12 +133,28 @@ export type CrmEmailLink = {
 
 export type CrmContactSort = "name-asc" | "name-desc" | "score-desc" | "newest";
 
+const CONTACT_SELECT_BASE =
+  "id, user_id, name, email, company_name, status, ai_lead_score, created_at";
+
 const CONTACT_SELECT =
-  "id, user_id, name, email, phone, title, company_id, company_name, owner, status, ai_lead_score, created_at, updated_at";
+  `${CONTACT_SELECT_BASE}, phone, title, company_id, owner, updated_at`;
 
-export { CONTACT_SELECT };
+export { CONTACT_SELECT, CONTACT_SELECT_BASE };
 
-export function normalizeCrmContact(row: {
+export function isMissingCrmColumnError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("does not exist") &&
+    (lower.includes("crm_contacts") ||
+      lower.includes("crm_companies") ||
+      lower.includes("crm_deals") ||
+      lower.includes("crm_notes") ||
+      lower.includes("crm_activities") ||
+      lower.includes("crm_email_links"))
+  );
+}
+
+type CrmContactRow = {
   id: string;
   user_id: string;
   name: string;
@@ -152,7 +168,20 @@ export function normalizeCrmContact(row: {
   ai_lead_score: number | null;
   created_at: string;
   updated_at?: string | null;
-}): CrmContact {
+};
+
+function normalizeContactStatus(status: string | null | undefined): CrmContactStatus {
+  if (status === "active" || status === "lead" || status === "inactive") {
+    return status;
+  }
+  return "lead";
+}
+
+export function normalizeCrmContact(
+  row: CrmContactRow | null | undefined
+): CrmContact | null {
+  if (!row?.id || !row.user_id || !row.name) return null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -163,10 +192,10 @@ export function normalizeCrmContact(row: {
     companyId: row.company_id ?? null,
     companyName: row.company_name ?? "",
     owner: row.owner ?? "",
-    status: (row.status as CrmContactStatus) ?? "lead",
+    status: normalizeContactStatus(row.status),
     aiLeadScore: row.ai_lead_score ?? 0,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at ?? row.created_at,
+    createdAt: row.created_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? row.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -186,9 +215,11 @@ export function normalizeCrmCompany(
     owner: string | null;
     ai_score: number | null;
     created_at: string;
-  },
+  } | null | undefined,
   stats?: { openDeals: number; totalPipeline: number; contactCount?: number }
-): CrmCompany {
+): CrmCompany | null {
+  if (!row?.id || !row.user_id || !row.name) return null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -227,9 +258,11 @@ export function normalizeCrmDeal(
     labels: string[] | null;
     last_activity_at: string;
     created_at: string;
-  },
+  } | null | undefined,
   joins?: { companyName?: string; contactName?: string }
-): CrmDeal {
+): CrmDeal | null {
+  if (!row?.id || !row.user_id || !row.title) return null;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -251,7 +284,9 @@ export function normalizeCrmDeal(
   };
 }
 
-export function toPipelineDeal(deal: CrmDeal): PipelineDeal {
+export function toPipelineDeal(deal: CrmDeal | null): PipelineDeal | null {
+  if (!deal) return null;
+
   return {
     id: deal.id,
     title: deal.title,

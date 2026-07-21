@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCrmUserId, clampScore } from "@/lib/crm/auth";
 import {
+  crmErrorResponse,
+  crmSupabaseErrorResponse,
+  runCrmRoute,
+} from "@/lib/crm/api-response";
+import { mapCrmContacts } from "@/lib/crm/contacts-query";
+import {
+  CONTACT_SELECT,
   normalizeCrmCompany,
   type CrmCompanyInput,
 } from "@/lib/crm/entities-live";
@@ -25,40 +32,65 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
 
-  const { data, error } = await db
-    .from("crm_companies")
-    .select(COMPANY_SELECT)
-    .eq("id", id)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const result = await runCrmRoute(
+    "crm/companies/[id] GET",
+    async () => {
+      const { data, error } = await db
+        .from("crm_companies")
+        .select(COMPANY_SELECT)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  if (!data) {
-    return NextResponse.json({ error: "Company not found." }, { status: 404 });
-  }
+      if (error) {
+        return crmSupabaseErrorResponse("crm/companies/[id] GET", error, {
+          userId,
+          companyId: id,
+        });
+      }
+      if (!data) {
+        return NextResponse.json({ error: "Company not found." }, { status: 404 });
+      }
 
-  const all = await fetchCompaniesWithStats(userId);
-  const stats = all.find((c) => c.id === id);
+      const all = await fetchCompaniesWithStats(userId);
+      const stats = all.find((c) => c.id === id);
+      const company = normalizeCrmCompany(data, {
+        openDeals: stats?.openDeals ?? 0,
+        totalPipeline: stats?.totalPipeline ?? 0,
+      });
 
-  const { data: contacts } = await db
-    .from("crm_contacts")
-    .select(
-      "id, user_id, name, email, phone, title, company_id, company_name, owner, status, ai_lead_score, created_at, updated_at"
-    )
-    .eq("user_id", userId)
-    .eq("company_id", id)
-    .order("name");
+      if (!company) {
+        return crmErrorResponse(
+          "crm/companies/[id] GET",
+          new Error("Company could not be normalized."),
+          { userId, companyId: id }
+        );
+      }
 
-  return NextResponse.json({
-    company: normalizeCrmCompany(data, {
-      openDeals: stats?.openDeals ?? 0,
-      totalPipeline: stats?.totalPipeline ?? 0,
-    }),
-    contacts: contacts ?? [],
-    contactsCount: await countContactsByCompany(userId, id),
-  });
+      const { data: contacts, error: contactsError } = await db
+        .from("crm_contacts")
+        .select(CONTACT_SELECT)
+        .eq("user_id", userId)
+        .eq("company_id", id)
+        .order("name");
+
+      if (contactsError) {
+        return crmSupabaseErrorResponse("crm/companies/[id] GET contacts", contactsError, {
+          userId,
+          companyId: id,
+        });
+      }
+
+      return NextResponse.json({
+        company,
+        contacts: mapCrmContacts(contacts),
+        contactsCount: await countContactsByCompany(userId, id),
+      });
+    },
+    { userId, companyId: id }
+  );
+
+  return result instanceof NextResponse ? result : result;
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
@@ -73,43 +105,64 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const body = (await request.json()) as CrmCompanyInput;
-  const updates: Record<string, unknown> = {};
 
-  if (body.name !== undefined) {
-    const name = body.name.trim();
-    if (!name) {
-      return NextResponse.json({ error: "Name cannot be empty." }, { status: 400 });
-    }
-    updates.name = name;
-  }
-  if (body.industry !== undefined) updates.industry = body.industry.trim();
-  if (body.size !== undefined) updates.size = body.size;
-  if (body.status !== undefined) updates.status = body.status;
-  if (body.website !== undefined) updates.website = body.website.trim();
-  if (body.address !== undefined) updates.address = body.address.trim();
-  if (body.notes !== undefined) updates.notes = body.notes.trim();
-  if (body.revenue !== undefined) updates.revenue = body.revenue;
-  if (body.employeeCount !== undefined) updates.employee_count = body.employeeCount;
-  if (body.owner !== undefined) updates.owner = body.owner.trim();
-  if (body.aiScore !== undefined) updates.ai_score = clampScore(body.aiScore);
+  const result = await runCrmRoute(
+    "crm/companies/[id] PATCH",
+    async () => {
+      const body = (await request.json()) as CrmCompanyInput;
+      const updates: Record<string, unknown> = {};
 
-  const { data, error } = await db
-    .from("crm_companies")
-    .update(updates)
-    .eq("id", id)
-    .eq("user_id", userId)
-    .select(COMPANY_SELECT)
-    .maybeSingle();
+      if (body.name !== undefined) {
+        const name = body.name.trim();
+        if (!name) {
+          return NextResponse.json({ error: "Name cannot be empty." }, { status: 400 });
+        }
+        updates.name = name;
+      }
+      if (body.industry !== undefined) updates.industry = body.industry.trim();
+      if (body.size !== undefined) updates.size = body.size;
+      if (body.status !== undefined) updates.status = body.status;
+      if (body.website !== undefined) updates.website = body.website.trim();
+      if (body.address !== undefined) updates.address = body.address.trim();
+      if (body.notes !== undefined) updates.notes = body.notes.trim();
+      if (body.revenue !== undefined) updates.revenue = body.revenue;
+      if (body.employeeCount !== undefined) updates.employee_count = body.employeeCount;
+      if (body.owner !== undefined) updates.owner = body.owner.trim();
+      if (body.aiScore !== undefined) updates.ai_score = clampScore(body.aiScore);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  if (!data) {
-    return NextResponse.json({ error: "Company not found." }, { status: 404 });
-  }
+      const { data, error } = await db
+        .from("crm_companies")
+        .update(updates)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select(COMPANY_SELECT)
+        .maybeSingle();
 
-  return NextResponse.json({ company: normalizeCrmCompany(data) });
+      if (error) {
+        return crmSupabaseErrorResponse("crm/companies/[id] PATCH", error, {
+          userId,
+          companyId: id,
+        });
+      }
+      if (!data) {
+        return NextResponse.json({ error: "Company not found." }, { status: 404 });
+      }
+
+      const company = normalizeCrmCompany(data);
+      if (!company) {
+        return crmErrorResponse(
+          "crm/companies/[id] PATCH",
+          new Error("Company was updated but could not be normalized."),
+          { userId, companyId: id }
+        );
+      }
+
+      return NextResponse.json({ company });
+    },
+    { userId, companyId: id }
+  );
+
+  return result instanceof NextResponse ? result : result;
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
@@ -124,15 +177,27 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const { error } = await db
-    .from("crm_companies")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const result = await runCrmRoute(
+    "crm/companies/[id] DELETE",
+    async () => {
+      const { error } = await db
+        .from("crm_companies")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId);
 
-  return NextResponse.json({ deleted: true });
+      if (error) {
+        return crmSupabaseErrorResponse("crm/companies/[id] DELETE", error, {
+          userId,
+          companyId: id,
+        });
+      }
+
+      return NextResponse.json({ deleted: true });
+    },
+    { userId, companyId: id }
+  );
+
+  return result instanceof NextResponse ? result : result;
 }

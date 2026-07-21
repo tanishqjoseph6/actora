@@ -1,9 +1,11 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export async function getCrmUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
+  const email = session?.user?.email;
+  return email ? normalizeSubscriptionUserId(email) : null;
 }
 
 export function clampScore(score: number | undefined): number {
