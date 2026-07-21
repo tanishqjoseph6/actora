@@ -213,6 +213,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, trigger, session, user }) {
       const email = (user?.email ?? token.email) as string | undefined;
 
+      if (email) {
+        token.email = email;
+      }
+      if (user?.name) {
+        token.name = user.name;
+      }
+
       const applySubscriptionToToken = async () => {
         if (!email) return;
         try {
@@ -291,6 +298,15 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
+      if (session.user) {
+        if (typeof token.email === "string") {
+          session.user.email = token.email;
+        }
+        if (typeof token.name === "string") {
+          session.user.name = token.name;
+        }
+      }
+
       session.accessToken = token.accessToken;
       session.planId = token.planId ?? "free";
       session.isTrial = Boolean(token.isTrial);

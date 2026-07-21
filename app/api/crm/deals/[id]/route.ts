@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCrmUserId, clampScore } from "@/lib/crm/auth";
+import { clampScore } from "@/lib/crm/auth";
+import { requireCrmUserId } from "@/lib/crm/session";
 import {
   crmSupabaseErrorResponse,
   runCrmRoute,
@@ -15,10 +16,8 @@ type RouteContext = { params: Promise<{ id: string }> };
 const VALID_STAGES = new Set(PIPELINE_STAGES.map((s) => s.id));
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {
@@ -116,11 +115,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   return result instanceof NextResponse ? result : result;
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

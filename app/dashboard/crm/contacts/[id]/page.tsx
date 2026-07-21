@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import { getServerSession } from "next-auth";
 import { ContactProfileView } from "@/components/crm/ContactProfileView";
-import { authOptions } from "@/lib/auth/auth-options";
+import { getApiUserEmail } from "@/lib/auth/get-api-user";
 import { fetchContactForUser } from "@/lib/crm/contacts-query";
-import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export default async function ContactProfilePage({
@@ -11,10 +9,7 @@ export default async function ContactProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.email
-    ? normalizeSubscriptionUserId(session.user.email)
-    : null;
+  const userId = await getApiUserEmail();
   if (!userId) notFound();
 
   const { id } = await params;

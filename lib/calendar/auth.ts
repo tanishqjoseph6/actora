@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
+import { shouldUseSecureCookies } from "@/lib/auth/nextauth-url";
 import {
   applyOAuthCredentials,
   createOAuth2Client,
@@ -40,6 +41,7 @@ export async function getConnectableCalendarTokens(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: shouldUseSecureCookies(),
   });
 
   if (token?.accessToken) {

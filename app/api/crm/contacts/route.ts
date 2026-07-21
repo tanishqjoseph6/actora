@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCrmUserId, clampScore } from "@/lib/crm/auth";
+import { clampScore } from "@/lib/crm/auth";
+import { requireCrmUserId } from "@/lib/crm/session";
 import {
   crmErrorResponse,
   crmSupabaseErrorResponse,
@@ -14,11 +15,9 @@ import {
 import { dispatchAutomationTrigger } from "@/lib/automations/dispatcher";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-export async function GET() {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+export async function GET(request: NextRequest) {
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {
@@ -37,10 +36,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

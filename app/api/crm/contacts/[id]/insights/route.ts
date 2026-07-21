@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCrmUserId } from "@/lib/crm/auth";
+import type { NextRequest } from "next/server";
+import { requireCrmUserId } from "@/lib/crm/session";
 import {
   crmSupabaseErrorResponse,
   runCrmRoute,
@@ -11,11 +12,9 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+export async function GET(request: NextRequest, context: RouteContext) {
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

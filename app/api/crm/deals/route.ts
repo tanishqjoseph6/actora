@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCrmUserId, clampScore } from "@/lib/crm/auth";
+import { clampScore } from "@/lib/crm/auth";
+import { requireCrmUserId } from "@/lib/crm/session";
 import {
   crmSupabaseErrorResponse,
   runCrmRoute,
@@ -9,11 +10,9 @@ import { fetchDealsEnriched } from "@/lib/crm/repository";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { toPipelineDeal } from "@/lib/crm/entities-live";
 
-export async function GET() {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+export async function GET(request: NextRequest) {
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const result = await runCrmRoute(
     "crm/deals GET",
@@ -33,10 +32,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getCrmUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireCrmUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

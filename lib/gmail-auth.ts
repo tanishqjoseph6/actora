@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
+import { shouldUseSecureCookies } from "@/lib/auth/nextauth-url";
 import { logApiError } from "@/lib/api/log-error";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
@@ -39,6 +40,7 @@ async function resolveSessionTokens(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: shouldUseSecureCookies(),
   });
 
   if (token?.accessToken) {
@@ -219,6 +221,7 @@ export async function getConnectableTokens(request: NextRequest): Promise<
     const jwt = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: shouldUseSecureCookies(),
     });
 
     logApiError("gmail-auth", new Error("No OAuth access token in session"), {
