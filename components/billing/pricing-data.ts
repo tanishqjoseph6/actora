@@ -153,7 +153,7 @@ const PRICING_PLAN_TEMPLATES: Omit<
       "Meetings",
       "Tasks",
       "Automations",
-      "AI Assistant",
+      "Roxx",
       "Analytics",
       "Priority Support",
     ],

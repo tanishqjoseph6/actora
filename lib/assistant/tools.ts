@@ -325,7 +325,7 @@ export async function executeAssistantTool(
         .single();
       if (error || !data) return { ok: false, error: error?.message };
       await createUserNotification(userId, {
-        category: "AI Assistant",
+        category: "Roxx",
         title: "Task created",
         body: data.title,
         href: "/dashboard/tasks",
@@ -507,7 +507,7 @@ export async function executeAssistantTool(
           name: String(args.name ?? `Automation · ${recipe}`),
           description:
             String(args.description ?? "") ||
-            `Created by Actora AI Assistant (${recipe})`,
+            `Created by Roxx (${recipe})`,
           nodes,
           metadata: { createdByAssistant: true, recipe },
           status: "draft",

@@ -65,7 +65,7 @@ export const MAIN_NAV: NavItem[] = [
   },
   {
     href: "/dashboard",
-    label: "AI Assistant",
+    label: "Roxx",
     icon: "assistant",
     exact: true,
   },

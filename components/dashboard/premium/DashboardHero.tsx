@@ -54,7 +54,7 @@ export function DashboardHero() {
         {getGreeting()}, {firstName}
       </p>
       <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white leading-tight">
-        AI Workspace
+        Roxx
       </h1>
       <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>
         Turn conversations into tasks, CRM updates, and workflows — automatically.

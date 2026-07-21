@@ -144,6 +144,14 @@ export function AiAssistantPanel() {
   }, []);
 
   useEffect(() => {
+    const previous = document.title;
+    document.title = "Roxx | Actora";
+    return () => {
+      document.title = previous;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!bootstrapped) return;
     saveConversations(conversations);
   }, [conversations, bootstrapped]);
@@ -305,7 +313,7 @@ export function AiAssistantPanel() {
           content:
             error instanceof Error
               ? error.message
-              : "Failed to reach the assistant.",
+              : "Failed to reach Roxx.",
           toolStatus: null,
         });
       } finally {
@@ -389,14 +397,14 @@ export function AiAssistantPanel() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-white">AI Assistant</h2>
+            <h2 className="text-lg font-semibold text-white">Roxx</h2>
             <span className="inline-flex items-center gap-1 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-2 py-0.5 text-[10px] font-medium text-[#93C5FD]">
               <Sparkles className="h-3 w-3" />
-              {streaming ? "Thinking…" : "Online"}
+              {streaming ? "Roxx is thinking…" : "Online"}
             </span>
           </div>
           <p className="mt-1 text-sm text-[#A1A1AA]">
-            Ask about inbox, CRM, calendar, tasks, and automations.
+            Your AI teammate for Inbox, CRM, Calendar, Tasks, and Automations.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -489,7 +497,7 @@ export function AiAssistantPanel() {
           {messages.length === 0 && (
             <div className="flex h-full flex-col justify-center py-6">
               <p className="mb-4 text-center text-sm text-[#A1A1AA]">
-                Where conversations become execution. Ask Actora to triage
+                Where conversations become execution. Ask Roxx to triage
                 inbox, update CRM, schedule meetings, or create tasks.
               </p>
               <div className="flex flex-wrap justify-center gap-2">
@@ -541,7 +549,7 @@ export function AiAssistantPanel() {
                   !m.toolStatus && (
                     <span className="inline-flex items-center gap-2 text-xs text-[#71717A]">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Thinking…
+                      Roxx is thinking…
                     </span>
                   )
                 )}
@@ -587,7 +595,7 @@ export function AiAssistantPanel() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               rows={1}
-              placeholder="Message Actora AI…"
+              placeholder="Ask Roxx anything…"
               disabled={streaming}
               className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-white placeholder:text-[#71717A] focus:outline-none disabled:opacity-60"
             />

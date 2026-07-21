@@ -3,7 +3,7 @@ export type NotificationCategory =
   | "CRM"
   | "Calendar"
   | "Automations"
-  | "AI Assistant"
+  | "Roxx"
   | "Product Updates"
   | "Billing Updates";
 
@@ -33,7 +33,7 @@ export const NOTIFICATION_CATEGORY_HREF: Record<NotificationCategory, string> = 
   CRM: "/dashboard/crm",
   Calendar: "/dashboard/calendar",
   Automations: "/dashboard/automations",
-  "AI Assistant": "/dashboard",
+  Roxx: "/dashboard",
   "Product Updates": "/dashboard/settings",
   "Billing Updates": "/billing",
 };
@@ -41,12 +41,15 @@ export const NOTIFICATION_CATEGORY_HREF: Record<NotificationCategory, string> = 
 export function normalizeNotificationCategory(
   value: string | null | undefined
 ): NotificationCategory {
+  // Legacy label from before the Roxx rename
+  if (value === "AI Assistant") return "Roxx";
+
   const categories: NotificationCategory[] = [
     "Gmail",
     "CRM",
     "Calendar",
     "Automations",
-    "AI Assistant",
+    "Roxx",
     "Product Updates",
     "Billing Updates",
   ];

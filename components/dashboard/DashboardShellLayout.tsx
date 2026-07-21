@@ -12,7 +12,7 @@ import { useRoutePrefetch } from "@/hooks/useRoutePrefetch";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 function resolveMobileTitle(pathname: string): string | undefined {
-  if (pathname === "/dashboard") return "AI Workspace";
+  if (pathname === "/dashboard") return "Roxx";
   if (DASHBOARD_MOBILE_TITLES[pathname]) {
     return DASHBOARD_MOBILE_TITLES[pathname];
   }
