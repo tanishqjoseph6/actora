@@ -126,10 +126,10 @@ const NAV_INDEX: SearchItem[] = [
   },
   {
     id: "assistant",
-    label: "Roxx",
+    label: "Roxx AI",
     description: "Conversation-first workspace home",
     href: "/dashboard",
-    category: "Roxx",
+    category: "Roxx AI",
     icon: Bot,
     keywords: ["assistant", "ai", "home", "roxx"],
   },

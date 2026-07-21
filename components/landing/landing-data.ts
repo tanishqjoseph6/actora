@@ -83,9 +83,9 @@ export const FEATURES = [
     icon: "automations" as const,
   },
   {
-    title: "Roxx",
+    title: "Roxx AI",
     description:
-      "Ask Roxx to draft, research, and execute across inbox, CRM, and tasks.",
+      "Ask Roxx AI to draft, research, and execute across inbox, CRM, and tasks.",
     icon: "assistant" as const,
   },
 ] as const;

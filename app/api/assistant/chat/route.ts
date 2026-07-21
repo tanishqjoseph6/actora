@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             message:
               error instanceof Error
                 ? error.message
-                : "Roxx failed to respond.",
+                : "Roxx AI failed to respond.",
           });
         } finally {
           controller.close();
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     return new Response(
       JSON.stringify({
         error:
-          error instanceof Error ? error.message : "Roxx request failed.",
+          error instanceof Error ? error.message : "Roxx AI request failed.",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

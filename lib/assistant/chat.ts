@@ -20,7 +20,7 @@ function getOpenAIClient() {
 }
 
 export function buildAssistantSystemPrompt(summaryText: string): string {
-  return `You are Roxx — Actora's AI teammate and ChatGPT-style copilot inside the Actora workspace.
+  return `You are Roxx AI — Actora's AI teammate and ChatGPT-style copilot inside the Actora workspace.
 You help the user with their inbox, CRM, calendar, tasks, and automations.
 
 Rules:

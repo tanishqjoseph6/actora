@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { dashboard } from "./dashboard-tokens";
+import { RoxxThinkingIndicator } from "./RoxxThinkingIndicator";
 import { usePlanGateActions } from "@/components/subscription/PlanGateProvider";
 
 const STORAGE_KEY = "actora-assistant-conversations-v1";
@@ -145,7 +146,7 @@ export function AiAssistantPanel() {
 
   useEffect(() => {
     const previous = document.title;
-    document.title = "Roxx | Actora";
+    document.title = "Roxx AI | Actora";
     return () => {
       document.title = previous;
     };
@@ -313,7 +314,7 @@ export function AiAssistantPanel() {
           content:
             error instanceof Error
               ? error.message
-              : "Failed to reach Roxx.",
+              : "Failed to reach Roxx AI.",
           toolStatus: null,
         });
       } finally {
@@ -397,14 +398,14 @@ export function AiAssistantPanel() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-white">Roxx</h2>
+            <h2 className="text-lg font-semibold text-white">Roxx AI</h2>
             <span className="inline-flex items-center gap-1 rounded-full border border-[#3B82F6]/30 bg-[#3B82F6]/10 px-2 py-0.5 text-[10px] font-medium text-[#93C5FD]">
               <Sparkles className="h-3 w-3" />
-              {streaming ? "Roxx is thinking…" : "Online"}
+              {streaming ? "Roxx AI is thinking…" : "Online"}
             </span>
           </div>
           <p className="mt-1 text-sm text-[#A1A1AA]">
-            Your AI teammate for Inbox, CRM, Calendar, Tasks, and Automations.
+            Your AI teammate for Inbox, CRM, Calendar, Tasks & Automations.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -497,7 +498,7 @@ export function AiAssistantPanel() {
           {messages.length === 0 && (
             <div className="flex h-full flex-col justify-center py-6">
               <p className="mb-4 text-center text-sm text-[#A1A1AA]">
-                Where conversations become execution. Ask Roxx to triage
+                Where conversations become execution. Ask Roxx AI to triage
                 inbox, update CRM, schedule meetings, or create tasks.
               </p>
               <div className="flex flex-wrap justify-center gap-2">
@@ -531,53 +532,63 @@ export function AiAssistantPanel() {
                     : "rounded-2xl rounded-bl-md border border-white/[0.08] bg-[#0A0A0A] px-3.5 py-2.5 text-sm text-[#E4E4E7]"
                 }`}
               >
-                {m.role === "assistant" && m.toolStatus && (
-                  <p className="mb-2 flex items-center gap-2 text-xs text-[#93C5FD]">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {m.toolStatus}
-                  </p>
-                )}
-                {m.content ? (
-                  <div className="leading-relaxed">
-                    {m.role === "assistant"
-                      ? renderMarkdownLite(m.content)
-                      : m.content}
-                  </div>
-                ) : (
-                  m.role === "assistant" &&
-                  streaming &&
-                  !m.toolStatus && (
-                    <span className="inline-flex items-center gap-2 text-xs text-[#71717A]">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Roxx is thinking…
-                    </span>
-                  )
-                )}
-                {m.role === "assistant" && m.content && !streaming && (
-                  <div className="mt-2 flex items-center gap-1 border-t border-white/[0.06] pt-2">
-                    <button
-                      type="button"
-                      onClick={() => void copyMessage(m.id, m.content)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
-                    >
-                      {copiedId === m.id ? (
-                        <Check className="h-3 w-3 text-emerald-400" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                      {copiedId === m.id ? "Copied" : "Copy"}
-                    </button>
-                    {lastAssistant?.id === m.id && (
-                      <button
-                        type="button"
-                        onClick={() => void regenerate()}
-                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
+                {m.role === "assistant" ? (
+                  <>
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {streaming && !m.content ? (
+                        <motion.div
+                          key="roxx-thinking"
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                          <RoxxThinkingIndicator status={m.toolStatus} />
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+
+                    {m.content ? (
+                      <motion.div
+                        key={`roxx-content-${m.id}`}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="leading-relaxed"
                       >
-                        <RefreshCw className="h-3 w-3" />
-                        Regenerate
-                      </button>
+                        {renderMarkdownLite(m.content)}
+                      </motion.div>
+                    ) : null}
+
+                    {m.content && !streaming && (
+                      <div className="mt-2 flex items-center gap-1 border-t border-white/[0.06] pt-2">
+                        <button
+                          type="button"
+                          onClick={() => void copyMessage(m.id, m.content)}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
+                        >
+                          {copiedId === m.id ? (
+                            <Check className="h-3 w-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                          {copiedId === m.id ? "Copied" : "Copy"}
+                        </button>
+                        {lastAssistant?.id === m.id && (
+                          <button
+                            type="button"
+                            onClick={() => void regenerate()}
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                            Regenerate
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
+                ) : (
+                  m.content
                 )}
               </div>
             </div>
@@ -595,7 +606,7 @@ export function AiAssistantPanel() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               rows={1}
-              placeholder="Ask Roxx anything…"
+              placeholder="Ask Roxx AI anything…"
               disabled={streaming}
               className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-white placeholder:text-[#71717A] focus:outline-none disabled:opacity-60"
             />
