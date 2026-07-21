@@ -7,6 +7,7 @@ import {
   getEmailVerificationRedirectUrl,
   mapVerificationError,
 } from "@/lib/auth/email-verification";
+import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
 import { supabase } from "@/lib/supabase";
 
 type ResendVerificationEmailProps = {
@@ -33,22 +34,39 @@ export function ResendVerificationEmail({
     setError(null);
     setSuccess(false);
 
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: trimmed,
-      options: {
-        emailRedirectTo: getEmailVerificationRedirectUrl(),
-      },
-    });
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: trimmed,
+        options: {
+          emailRedirectTo: getEmailVerificationRedirectUrl(),
+        },
+      });
 
-    setLoading(false);
+      if (resendError) {
+        setError(
+          mapVerificationError(
+            mapSupabaseAuthError(
+              resendError.message,
+              (resendError as { code?: string }).code
+            ),
+            (resendError as { code?: string }).code
+          )
+        );
+        return;
+      }
 
-    if (resendError) {
-      setError(mapVerificationError(resendError.message));
-      return;
+      setSuccess(true);
+    } catch (err) {
+      console.error("[auth] Resend verification failed", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not resend verification email. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setSuccess(true);
   };
 
   return (

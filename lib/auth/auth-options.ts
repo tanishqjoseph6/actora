@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password;
 
         if (!email || !password) {
-          return null;
+          throw new Error("Enter your email and password.");
         }
 
         try {
@@ -124,14 +124,26 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (error) {
-            if (error.message === "Email not confirmed") {
+            console.error("[next-auth] credentials sign-in error", {
+              message: error.message,
+              status: error.status,
+              code: (error as { code?: string }).code,
+            });
+            if (
+              error.message === "Email not confirmed" ||
+              (error as { code?: string }).code === "email_not_confirmed"
+            ) {
               throw new Error("Email not confirmed");
             }
-            return null;
+            throw new Error(
+              error.message === "Invalid login credentials"
+                ? "Incorrect email or password."
+                : error.message
+            );
           }
 
           if (!data.user) {
-            return null;
+            throw new Error("Incorrect email or password.");
           }
 
           if (!data.user.email_confirmed_at) {
@@ -148,14 +160,24 @@ export const authOptions: NextAuthOptions = {
               "User",
           };
         } catch (error) {
-          if (error instanceof Error && error.message === "Email not confirmed") {
-            throw error;
+          if (error instanceof Error) {
+            if (
+              error.message === "Email not confirmed" ||
+              error.message === "Incorrect email or password." ||
+              error.message === "Enter your email and password."
+            ) {
+              throw error;
+            }
           }
           console.error(
             `[next-auth] Supabase credentials sign-in failed. Ensure ${SUPABASE_ENV.URL} and ${SUPABASE_ENV.ANON_KEY} are set for the same project.`,
             error
           );
-          return null;
+          throw new Error(
+            error instanceof Error
+              ? error.message
+              : "Sign-in failed. Please try again."
+          );
         }
       },
     }),

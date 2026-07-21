@@ -72,33 +72,42 @@ function LoginContent() {
     setError(null);
     setNeedsVerification(false);
 
-    const result = await signIn("credentials", {
-      email: email.trim(),
-      password,
-      redirect: false,
-      callbackUrl,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+        callbackUrl,
+      });
 
-    setLoading(false);
+      if (result?.error) {
+        if (result.error === EMAIL_NOT_CONFIRMED) {
+          setNeedsVerification(true);
+          setError("Please verify your email before signing in.");
+          return;
+        }
 
-    if (result?.error) {
-      if (result.error === EMAIL_NOT_CONFIRMED) {
-        setNeedsVerification(true);
-        setError("Please verify your email before signing in.");
+        setError(
+          mapSupabaseAuthError(
+            result.error === "CredentialsSignin"
+              ? "Incorrect email or password."
+              : result.error
+          )
+        );
         return;
       }
 
+      router.push(result?.url ?? callbackUrl);
+    } catch (err) {
+      console.error("[login] Sign-in request failed", err);
       setError(
-        mapSupabaseAuthError(
-          result.error === "CredentialsSignin"
-            ? "Incorrect email or password."
-            : result.error
-        )
+        err instanceof Error
+          ? err.message
+          : "Could not reach the sign-in service. Please try again."
       );
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    router.push(result?.url ?? callbackUrl);
   };
 
   return (

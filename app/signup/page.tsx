@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   AuthBackLink,
   AuthCard,
@@ -12,16 +11,12 @@ import {
 } from "@/components/auth/AuthCard";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
-import {
-  getEmailVerificationRedirectUrl,
-  mapVerificationError,
-} from "@/lib/auth/email-verification";
+import { mapVerificationError } from "@/lib/auth/email-verification";
 import {
   mapSupabaseAuthError,
   validatePassword,
   validatePasswordMatch,
 } from "@/lib/auth/password-reset";
-import { supabase } from "@/lib/supabase";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -35,6 +30,12 @@ export default function SignupPage() {
   const handleEmailSignup = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError("Enter your email address.");
+      return;
+    }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
@@ -50,34 +51,48 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        emailRedirectTo: getEmailVerificationRedirectUrl(),
-        data: {
-          full_name: name.trim() || undefined,
-        },
-      },
-    });
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password,
+          name: name.trim(),
+        }),
+      });
 
-    await supabase.auth.signOut();
+      const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        code?: string | null;
+        ok?: boolean;
+        needsVerification?: boolean;
+      };
 
-    setLoading(false);
+      if (!res.ok || payload.error) {
+        const message = payload.error
+          ? mapVerificationError(
+              mapSupabaseAuthError(payload.error, payload.code),
+              payload.code
+            )
+          : `Signup failed (${res.status}). Please try again.`;
+        setError(message);
+        return;
+      }
 
-    if (signUpError) {
-      setError(mapVerificationError(mapSupabaseAuthError(signUpError.message)));
-      return;
+      router.push(
+        `/verify-email?pending=1&email=${encodeURIComponent(trimmedEmail)}`
+      );
+    } catch (err) {
+      console.error("[signup] Request failed", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not reach the signup service. Check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    if (data.user && data.user.identities?.length === 0) {
-      setError("An account with this email already exists. Try signing in.");
-      return;
-    }
-
-    router.push(
-      `/verify-email?pending=1&email=${encodeURIComponent(email.trim())}`
-    );
   };
 
   return (
