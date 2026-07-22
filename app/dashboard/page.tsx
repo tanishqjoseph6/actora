@@ -19,13 +19,25 @@ const AiAssistantPanel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className={`${dashboard.cardLg} mb-8 p-5 sm:p-6 lg:mb-10 lg:p-7`}>
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="mt-4 h-20 w-full" />
-        <div className="mt-4 flex gap-2">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-8 w-36" />
+      <div
+        className={`${dashboard.cardLg} mb-8 overflow-hidden lg:mb-10`}
+        style={{ minHeight: 520 }}
+        aria-busy="true"
+      >
+        <div className="border-b border-white/[0.06] p-5 sm:p-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="mt-2 h-4 w-72" />
+        </div>
+        <div className="flex h-[min(520px,70vh)] min-h-[400px] flex-col p-5">
+          <Skeleton className="h-20 w-full" />
+          <div className="mt-4 flex gap-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-8 w-36" />
+          </div>
+          <div className="mt-auto">
+            <Skeleton className="h-12 w-full rounded-2xl" />
+          </div>
         </div>
       </div>
     ),

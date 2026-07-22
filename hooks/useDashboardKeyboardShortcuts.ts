@@ -84,7 +84,7 @@ export function useDashboardKeyboardShortcuts({
         clearPending();
         if (href) {
           event.preventDefault();
-          router.push(href);
+          router.push(href, { scroll: false });
         }
         return;
       }

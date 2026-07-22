@@ -6,9 +6,14 @@ import { useCallback, type ComponentProps } from "react";
 
 type PrefetchLinkProps = ComponentProps<typeof Link>;
 
+/**
+ * Dashboard navigation link.
+ * Defaults to scroll={false} so App Router does not jump the page to top.
+ */
 export function PrefetchLink({
   href,
   prefetch = true,
+  scroll = false,
   onMouseEnter,
   onFocus,
   ...props
@@ -25,7 +30,6 @@ export function PrefetchLink({
     <Link
       href={href}
       prefetch={prefetch}
-      scroll={false}
       onMouseEnter={(event) => {
         warm();
         onMouseEnter?.(event);
@@ -35,6 +39,7 @@ export function PrefetchLink({
         onFocus?.(event);
       }}
       {...props}
+      scroll={scroll}
     />
   );
 }

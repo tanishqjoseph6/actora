@@ -58,6 +58,7 @@ export function TodaysScheduleWidget({
         </span>
         <Link
           href="/dashboard/calendar"
+          scroll={false}
           className="text-[11px] text-[#3B82F6] hover:text-[#93C5FD]"
         >
           Open
@@ -74,6 +75,7 @@ export function TodaysScheduleWidget({
           {!connected && (
             <Link
               href="/dashboard/settings#integrations"
+              scroll={false}
               className="mt-2 inline-block text-xs text-[#3B82F6] hover:text-[#93C5FD]"
             >
               Connect Google Calendar

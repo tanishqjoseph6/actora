@@ -131,7 +131,8 @@ export function AiAssistantPanel() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [bootstrapped, setBootstrapped] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
@@ -157,9 +158,26 @@ export function AiAssistantPanel() {
     saveConversations(conversations);
   }, [conversations, bootstrapped]);
 
+  /** Scroll only the chat message pane — never the page / dashboard shell. */
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const onMessagesScroll = useCallback(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 80;
+  }, []);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streaming]);
+    if (!stickToBottomRef.current) return;
+    // rAF keeps this off the critical path and avoids layout thrash while streaming.
+    const id = requestAnimationFrame(() => scrollMessagesToBottom("auto"));
+    return () => cancelAnimationFrame(id);
+  }, [messages, streaming, scrollMessagesToBottom]);
 
   const upsertConversation = useCallback(
     (next: Conversation) => {
@@ -174,6 +192,7 @@ export function AiAssistantPanel() {
 
   const startNewChat = useCallback(() => {
     if (streaming) return;
+    stickToBottomRef.current = true;
     setActiveId(null);
     setInput("");
     setHistoryOpen(false);
@@ -387,9 +406,9 @@ export function AiAssistantPanel() {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.28 }}
       className={`${dashboard.cardLg} mb-8 overflow-hidden lg:mb-10`}
     >
       <div className="flex items-start gap-3 border-b border-white/[0.06] p-5 sm:p-6">
@@ -431,7 +450,8 @@ export function AiAssistantPanel() {
         </div>
       </div>
 
-      <div className="relative flex min-h-[340px] flex-col sm:min-h-[400px]">
+      {/* Fixed chat viewport: only the message list scrolls; page scroll stays stable. */}
+      <div className="relative flex h-[min(520px,70vh)] min-h-[400px] flex-col sm:h-[min(560px,72vh)]">
         <AnimatePresence>
           {historyOpen && (
             <motion.aside
@@ -451,7 +471,7 @@ export function AiAssistantPanel() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="max-h-[340px] space-y-1 overflow-y-auto sm:max-h-[420px]">
+              <div className="h-[calc(100%-2rem)] space-y-1 overflow-y-auto overscroll-contain">
                 {conversations.length === 0 && (
                   <p className="px-2 py-6 text-center text-xs text-[#71717A]">
                     No conversations yet
@@ -470,6 +490,7 @@ export function AiAssistantPanel() {
                       type="button"
                       className="min-w-0 flex-1 text-left"
                       onClick={() => {
+                        stickToBottomRef.current = true;
                         setActiveId(c.id);
                         setHistoryOpen(false);
                       }}
@@ -494,9 +515,13 @@ export function AiAssistantPanel() {
           )}
         </AnimatePresence>
 
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
+        <div
+          ref={messagesRef}
+          onScroll={onMessagesScroll}
+          className="premium-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6"
+        >
           {messages.length === 0 && (
-            <div className="flex h-full flex-col justify-center py-6">
+            <div className="flex min-h-full flex-col justify-center py-6">
               <p className="mb-4 text-center text-sm text-[#A1A1AA]">
                 Where conversations become execution. Ask Roxx AI to triage
                 inbox, update CRM, schedule meetings, or create tasks.
@@ -506,11 +531,14 @@ export function AiAssistantPanel() {
                   <motion.button
                     key={prompt}
                     type="button"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.05 + index * 0.04 }}
                     disabled={streaming}
-                    onClick={() => void sendPrompt(prompt)}
+                    onClick={() => {
+                      stickToBottomRef.current = true;
+                      void sendPrompt(prompt);
+                    }}
                     className="inline-flex rounded-xl border border-white/[0.08] bg-[#0A0A0A] px-3 py-2 text-left text-xs text-[#A1A1AA] transition-all hover:-translate-y-0.5 hover:border-[#3B82F6]/35 hover:text-white disabled:opacity-50"
                   >
                     {prompt}
@@ -538,10 +566,11 @@ export function AiAssistantPanel() {
                       {streaming && !m.content ? (
                         <motion.div
                           key="roxx-thinking"
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          className="min-h-[28px]"
                         >
                           <RoxxThinkingIndicator status={m.toolStatus} />
                         </motion.div>
@@ -549,16 +578,12 @@ export function AiAssistantPanel() {
                     </AnimatePresence>
 
                     {m.content ? (
-                      <motion.div
-                        key={`roxx-content-${m.id}`}
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="leading-relaxed"
-                      >
+                      <div className="min-h-[1.25rem] leading-relaxed">
                         {renderMarkdownLite(m.content)}
-                      </motion.div>
-                    ) : null}
+                      </div>
+                    ) : streaming ? null : (
+                      <div className="min-h-[1.25rem]" aria-hidden />
+                    )}
 
                     {m.content && !streaming && (
                       <div className="mt-2 flex items-center gap-1 border-t border-white/[0.06] pt-2">
@@ -593,12 +618,14 @@ export function AiAssistantPanel() {
               </div>
             </div>
           ))}
-          <div ref={bottomRef} />
         </div>
 
         <form
-          onSubmit={onSubmit}
-          className="border-t border-white/[0.06] p-4 sm:px-6 sm:pb-5"
+          onSubmit={(e) => {
+            stickToBottomRef.current = true;
+            onSubmit(e);
+          }}
+          className="shrink-0 border-t border-white/[0.06] bg-[#111111] p-4 sm:px-6 sm:pb-5"
         >
           <div className="flex items-end gap-2 rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-2 focus-within:border-[#3B82F6]/40">
             <textarea

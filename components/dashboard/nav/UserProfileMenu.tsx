@@ -119,6 +119,7 @@ export function UserProfileMenu() {
           <div className="p-2">
             <Link
               href="/dashboard/settings#profile"
+              scroll={false}
               onClick={close}
               className={linkClass}
             >
@@ -127,6 +128,7 @@ export function UserProfileMenu() {
             </Link>
             <Link
               href="/dashboard/settings#integrations"
+              scroll={false}
               onClick={close}
               className={linkClass}
             >
@@ -144,7 +146,12 @@ export function UserProfileMenu() {
               <Keyboard className="h-4 w-4" strokeWidth={1.75} />
               Keyboard Shortcuts
             </button>
-            <Link href="/dashboard/settings" onClick={close} className={linkClass}>
+            <Link
+              href="/dashboard/settings"
+              scroll={false}
+              onClick={close}
+              className={linkClass}
+            >
               <Settings className="h-4 w-4" strokeWidth={1.75} />
               Settings
             </Link>
@@ -153,7 +160,7 @@ export function UserProfileMenu() {
               onClick={() => {
                 close();
                 if (billingPaused) showComingSoon();
-                else router.push("/billing");
+                else router.push("/billing", { scroll: false });
               }}
               className={cn(linkClass, "justify-between")}
             >

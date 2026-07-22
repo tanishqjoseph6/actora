@@ -37,7 +37,7 @@ export function NotificationsPanel() {
     (id: string, href: string) => {
       void markRead(id);
       close();
-      router.push(href);
+      router.push(href, { scroll: false });
     },
     [markRead, close, router]
   );

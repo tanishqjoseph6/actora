@@ -257,7 +257,7 @@ export const GlobalCommandSearch = memo(function GlobalCommandSearch() {
     (href: string, searchTerm?: string) => {
       if (searchTerm) saveRecentSearch(searchTerm);
       close();
-      router.push(href);
+      router.push(href, { scroll: false });
     },
     [close, router]
   );

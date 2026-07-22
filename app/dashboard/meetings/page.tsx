@@ -9,7 +9,7 @@ export default function MeetingsRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard/calendar");
+    router.replace("/dashboard/calendar", { scroll: false });
   }, [router]);
 
   return (

@@ -29,6 +29,7 @@ export function DashboardSidebar({
     >
       <Link
         href="/dashboard"
+        scroll={false}
         onClick={onNavigate}
         className="text-4xl font-bold text-blue-400 mb-8 hover:text-blue-300 transition-colors"
       >
@@ -94,6 +95,7 @@ function NavGroup({
           <Link
             key={item.href}
             href={item.href}
+            scroll={false}
             onClick={onNavigate}
             className={`
               flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium transition-all duration-200

@@ -4,6 +4,9 @@ import { memo } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 
+/**
+ * Opacity-only page enter — no vertical translate (avoids scroll/layout jump).
+ */
 function DashboardPageTransitionInner({
   children,
 }: {
@@ -14,10 +17,10 @@ function DashboardPageTransitionInner({
   return (
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="min-h-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+      className="min-h-0 will-change-[opacity]"
     >
       {children}
     </motion.div>
