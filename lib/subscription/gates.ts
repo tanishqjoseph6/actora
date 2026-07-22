@@ -44,15 +44,23 @@ export function canUseAiAction(
   const allotment =
     usage.aiCreditsAllotment ?? limits.aiActionsPerMonth;
   const used = usage.aiActionsUsed;
+  const monthlyRemaining = Number.isFinite(allotment)
+    ? Math.max(0, allotment - used)
+    : Number.POSITIVE_INFINITY;
+  const purchased = Math.max(0, usage.purchasedCreditsRemaining ?? 0);
   const remaining =
-    usage.aiCreditsRemaining ?? Math.max(0, allotment - used);
+    usage.aiCreditsRemaining ??
+    (Number.isFinite(allotment)
+      ? monthlyRemaining + purchased
+      : Number.POSITIVE_INFINITY);
 
-  if (remaining <= 0 || used >= allotment) {
+  if (!Number.isFinite(remaining) ? false : remaining <= 0) {
     return {
       allowed: false,
       limitType: "ai_actions",
       recommendedPlan: planId === "pro" ? "starter" : "pro",
-      reason: `You've used all ${allotment.toLocaleString("en-IN")} AI credits for this billing cycle. Upgrade your plan to get more credits.`,
+      reason:
+        "You've used all available AI credits (monthly + purchased). Buy more credits or upgrade your plan.",
     };
   }
 

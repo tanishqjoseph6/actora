@@ -5,6 +5,7 @@ export type UserUsageRow = {
   ai_actions_used: number;
   ai_replies_count: number;
   ai_credits_allotment?: number;
+  purchased_credits_remaining?: number;
   period_start: string;
   period_end?: string | null;
   cycle_key?: string | null;

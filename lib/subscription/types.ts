@@ -17,11 +17,15 @@ export type UsageMetrics = {
   /** Credits consumed in the current billing cycle. */
   aiActionsUsed: number;
   inboxesConnected: number;
-  /** Credits remaining (Infinity when unlimited). */
+  /** Total credits remaining (monthly + purchased). Infinity when unlimited. */
   aiCreditsRemaining?: number;
-  /** Allotment for the current cycle. */
+  /** Monthly allotment for the current cycle. */
   aiCreditsAllotment?: number;
-  /** Warning band derived from remaining %. */
+  /** Monthly credits still available this cycle. */
+  monthlyCreditsRemaining?: number;
+  /** Purchased top-up credits remaining. */
+  purchasedCreditsRemaining?: number;
+  /** Warning band derived from total remaining %. */
   aiCreditWarning?: "none" | "low_20" | "critical_10" | "exhausted";
 };
 

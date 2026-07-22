@@ -69,6 +69,8 @@ export function createDefaultSubscription(userId: string): UserSubscription {
       inboxesConnected: 0,
       aiCreditsRemaining: 100,
       aiCreditsAllotment: 100,
+      monthlyCreditsRemaining: 100,
+      purchasedCreditsRemaining: 0,
       aiCreditWarning: "none",
     },
     updatedAt: new Date().toISOString(),
@@ -119,13 +121,28 @@ async function loadUsageSafely(userId: string): Promise<UserSubscription["usage"
       usage.aiCreditsAllotment ||
       cycle.allotment ||
       getPlanLimits(cycle.planId).aiActionsPerMonth;
-    const balance = computeCreditBalance(usage.aiActionsUsed, allotment);
+    const monthlyRemaining = Number.isFinite(allotment)
+      ? Math.max(0, allotment - usage.aiActionsUsed)
+      : Number.POSITIVE_INFINITY;
+    const purchasedRemaining = Math.max(0, usage.purchasedCreditsRemaining);
+    const totalRemaining = Number.isFinite(allotment)
+      ? monthlyRemaining + purchasedRemaining
+      : Number.POSITIVE_INFINITY;
+    const warningBalance = computeCreditBalance(
+      usage.aiActionsUsed,
+      Number.isFinite(allotment)
+        ? allotment + purchasedRemaining
+        : allotment
+    );
+
     return {
       aiActionsUsed: usage.aiActionsUsed,
       inboxesConnected: 0,
-      aiCreditsRemaining: balance.remaining,
-      aiCreditsAllotment: balance.allotment,
-      aiCreditWarning: balance.warning,
+      aiCreditsRemaining: totalRemaining,
+      aiCreditsAllotment: allotment,
+      monthlyCreditsRemaining: monthlyRemaining,
+      purchasedCreditsRemaining: purchasedRemaining,
+      aiCreditWarning: warningBalance.warning,
     };
   } catch (error) {
     logApiError("subscription/provider", error, {
@@ -137,6 +154,8 @@ async function loadUsageSafely(userId: string): Promise<UserSubscription["usage"
       inboxesConnected: 0,
       aiCreditsRemaining: 100,
       aiCreditsAllotment: 100,
+      monthlyCreditsRemaining: 100,
+      purchasedCreditsRemaining: 0,
       aiCreditWarning: "none",
     };
   }

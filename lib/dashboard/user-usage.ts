@@ -10,6 +10,7 @@ export type UserUsage = {
   aiActionsUsed: number;
   aiRepliesCount: number;
   aiCreditsAllotment: number;
+  purchasedCreditsRemaining: number;
   periodStart: string;
   periodEnd: string | null;
   cycleKey: string | null;
@@ -37,6 +38,7 @@ function mapRow(row: UserUsageRow): UserUsage {
     aiActionsUsed: row.ai_actions_used ?? 0,
     aiRepliesCount: row.ai_replies_count ?? 0,
     aiCreditsAllotment: row.ai_credits_allotment ?? 100,
+    purchasedCreditsRemaining: row.purchased_credits_remaining ?? 0,
     periodStart: row.period_start,
     periodEnd: row.period_end ?? null,
     cycleKey: row.cycle_key ?? null,
@@ -49,6 +51,7 @@ function defaultUsage(userId: string, allotment = 100): UserUsage {
     aiActionsUsed: 0,
     aiRepliesCount: 0,
     aiCreditsAllotment: allotment,
+    purchasedCreditsRemaining: 0,
     periodStart: currentPeriodStart(),
     periodEnd: null,
     cycleKey: null,
@@ -75,6 +78,8 @@ function applyCycleReset(
     ...usage,
     aiActionsUsed: 0,
     aiRepliesCount: 0,
+    // Purchased top-ups survive billing-cycle resets.
+    purchasedCreditsRemaining: usage.purchasedCreditsRemaining,
     aiCreditsAllotment:
       options.allotment != null && Number.isFinite(options.allotment)
         ? options.allotment
@@ -100,6 +105,7 @@ async function persistUsage(usage: UserUsage): Promise<UserUsage> {
     ai_credits_allotment: Number.isFinite(usage.aiCreditsAllotment)
       ? usage.aiCreditsAllotment
       : 2_147_483_647,
+    purchased_credits_remaining: usage.purchasedCreditsRemaining,
     period_start: usage.periodStart,
     period_end: usage.periodEnd,
     cycle_key: usage.cycleKey,

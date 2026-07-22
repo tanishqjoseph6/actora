@@ -18,6 +18,7 @@ import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
 import { BillingFaq } from "@/components/billing/premium/BillingFaq";
 import { CurrentPlanSection } from "@/components/billing/premium/CurrentPlanSection";
+import { CreditTopUpSection } from "@/components/billing/CreditTopUpSection";
 import { TrialBillingCard } from "@/components/billing/TrialBillingCard";
 import { useSubscription } from "@/hooks/useSubscription";
 
@@ -91,6 +92,20 @@ function BillingPageActive() {
                 loading={loading}
                 onUpgradePlan={handleUpgradePlan}
                 onRefresh={refresh}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="mb-16 lg:mb-20"
+              id="buy-credits"
+            >
+              <CreditTopUpSection
+                subscription={subscription}
+                onPurchaseSuccess={refresh}
               />
             </motion.div>
 

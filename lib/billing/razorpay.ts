@@ -167,3 +167,55 @@ export async function cancelRazorpaySubscription(
   const razorpay = getRazorpayClient();
   await razorpay.subscriptions.cancel(subscriptionId, true);
 }
+
+/** One-time Razorpay order for AI credit pack top-ups. */
+export async function createRazorpayCreditTopUpOrder({
+  userId,
+  email,
+  packId,
+  credits,
+  amount,
+  currency,
+}: {
+  userId: string;
+  email?: string;
+  packId: string;
+  credits: number;
+  amount: number;
+  currency: BillingCurrency;
+}) {
+  if (!RAZORPAY_CONNECTED) {
+    throw new Error("Razorpay is not configured.");
+  }
+  if (!amount || amount < 1) {
+    throw new Error("Invalid top-up amount.");
+  }
+
+  const normalizedUserId = normalizeSubscriptionUserId(userId);
+  const normalizedEmail = email
+    ? normalizeSubscriptionUserId(email)
+    : normalizedUserId;
+
+  const razorpay = getRazorpayClient();
+  const order = await razorpay.orders.create({
+    amount,
+    currency,
+    receipt: `credits_${packId}_${Date.now()}`.slice(0, 40),
+    notes: {
+      type: "ai_credit_topup",
+      userId: normalizedUserId,
+      email: normalizedEmail,
+      packId,
+      credits: String(credits),
+      currency,
+    },
+  });
+
+  return {
+    orderId: order.id,
+    amount: Number(order.amount),
+    currency: order.currency as BillingCurrency,
+    keyId: RAZORPAY_KEY_ID,
+    description: `${credits.toLocaleString("en-US")} AI Credits`,
+  };
+}

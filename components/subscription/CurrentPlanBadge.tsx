@@ -109,10 +109,22 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
 
   const stats = [
     {
-      label: "AI Credits",
+      label: "Monthly AI Credits",
       used: subscription.usage.aiActionsUsed,
       limit: allotment,
-      unit: `${Number.isFinite(remaining) ? remaining.toLocaleString("en-IN") : "∞"} remaining this cycle`,
+      unit: `${Number.isFinite(remaining)
+        ? (subscription.usage.monthlyCreditsRemaining ?? Math.max(0, allotment - subscription.usage.aiActionsUsed)).toLocaleString("en-IN")
+        : "∞"} remaining this cycle`,
+    },
+    {
+      label: "Purchased Credits",
+      used: 0,
+      limit:
+        (subscription.usage.purchasedCreditsRemaining ?? 0) > 0
+          ? subscription.usage.purchasedCreditsRemaining!
+          : 0,
+      unit: `${(subscription.usage.purchasedCreditsRemaining ?? 0).toLocaleString("en-IN")} available top-up`,
+      displayOnly: true as const,
     },
     {
       label: "Inboxes",
@@ -123,8 +135,35 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
   ];
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {stats.map((stat) => {
+        if ("displayOnly" in stat && stat.displayOnly) {
+          return (
+            <div key={stat.label}>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm text-[#71717A]">{stat.label}</span>
+                <span className="text-sm font-medium text-white tabular-nums">
+                  {(subscription.usage.purchasedCreditsRemaining ?? 0).toLocaleString(
+                    "en-IN"
+                  )}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#0A0A0A]">
+                <div
+                  className="h-full rounded-full bg-[#60A5FA] transition-all duration-500"
+                  style={{
+                    width:
+                      (subscription.usage.purchasedCreditsRemaining ?? 0) > 0
+                        ? "100%"
+                        : "0%",
+                  }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-[#71717A]">{stat.unit}</p>
+            </div>
+          );
+        }
+
         const percent = getUsagePercent(stat.used, stat.limit);
         const limitLabel = formatLimit(stat.limit);
         const isAtLimit = percent >= 100;

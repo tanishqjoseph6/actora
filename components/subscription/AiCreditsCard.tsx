@@ -67,13 +67,33 @@ export function AiCreditsCard({
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">
             {balance.unlimited
               ? "Unlimited"
-              : balance.remaining.toLocaleString("en-IN")}
+              : (
+                  (subscription.usage.aiCreditsRemaining ??
+                    balance.remaining) as number
+                ).toLocaleString("en-IN")}
             {!balance.unlimited && (
               <span className={`ml-1 text-sm font-medium ${dashboard.subtle}`}>
                 left
               </span>
             )}
           </p>
+          {!balance.unlimited && (
+            <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] ${dashboard.subtle}`}>
+              <span>
+                Monthly:{" "}
+                {(
+                  subscription.usage.monthlyCreditsRemaining ??
+                  balance.remaining
+                ).toLocaleString("en-IN")}
+              </span>
+              <span>
+                Purchased:{" "}
+                {(
+                  subscription.usage.purchasedCreditsRemaining ?? 0
+                ).toLocaleString("en-IN")}
+              </span>
+            </div>
+          )}
         </div>
         {!compact && showUpgradeLink && !balance.unlimited && (
           <Link
