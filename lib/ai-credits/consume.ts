@@ -231,11 +231,18 @@ async function consumeFromPools(
 
 /**
  * Server-only: check balance, deduct credits (monthly first, then purchased), write ledger.
+ * When a workspace is active, credits are billed to the workspace owner pool.
  */
 export async function consumeAiCredits(
   userId: string,
   feature: AiCreditFeature,
-  options?: { metadata?: Record<string, unknown>; credits?: number }
+  options?: {
+    metadata?: Record<string, unknown>;
+    credits?: number;
+    /** Debit this pool instead of the actor (workspace owner). */
+    creditUserId?: string;
+    workspaceId?: string;
+  }
 ): Promise<ConsumeCreditsResult> {
   if (!userId) {
     return {
@@ -249,11 +256,20 @@ export async function consumeAiCredits(
     };
   }
 
+  const poolUserId = options?.creditUserId ?? userId;
   const credits = options?.credits ?? getAiCreditCost(feature);
-  const cycle = await resolveCreditCycle(userId);
+  const cycle = await resolveCreditCycle(poolUserId);
+
+  const ledgerMeta = {
+    ...(options?.metadata ?? {}),
+    ...(options?.workspaceId ? { workspaceId: options.workspaceId } : {}),
+    ...(options?.creditUserId && options.creditUserId !== userId
+      ? { actorUserId: userId }
+      : {}),
+  };
 
   if (isUnlimited(cycle.allotment)) {
-    const next = await getUserUsage(userId, {
+    const next = await getUserUsage(poolUserId, {
       cycleKey: cycle.cycleKey,
       periodStart: cycle.periodStart,
       periodEnd: cycle.periodEnd,
@@ -262,11 +278,11 @@ export async function consumeAiCredits(
       incrementReplies: feature === "email_reply",
     });
     await appendLedger({
-      userId,
+      userId: poolUserId,
       feature,
       credits,
       balanceAfter: Number.MAX_SAFE_INTEGER,
-      metadata: options?.metadata,
+      metadata: ledgerMeta,
     });
     return {
       ok: true,
@@ -283,7 +299,7 @@ export async function consumeAiCredits(
   if (db) {
     try {
       const { data, error } = await db.rpc("consume_ai_credits", {
-        p_user_id: userId,
+        p_user_id: poolUserId,
         p_credits: credits,
         p_allotment: Number.isFinite(cycle.allotment)
           ? cycle.allotment
@@ -295,7 +311,7 @@ export async function consumeAiCredits(
 
       if (!error && Array.isArray(data)) {
         if (data.length === 0) {
-          const current = await ensureCycleSynced(userId);
+          const current = await ensureCycleSynced(poolUserId);
           const allotment = current.aiCreditsAllotment || cycle.allotment;
           const pools = totalsFromUsage(current, allotment);
           return {
@@ -320,7 +336,7 @@ export async function consumeAiCredits(
         };
 
         const usage: UserUsage = {
-          userId,
+          userId: poolUserId,
           aiActionsUsed: row.ai_actions_used,
           aiRepliesCount: 0,
           aiCreditsAllotment: row.ai_credits_allotment,
@@ -332,13 +348,13 @@ export async function consumeAiCredits(
 
         const pools = totalsFromUsage(usage, row.ai_credits_allotment);
         await appendLedger({
-          userId,
+          userId: poolUserId,
           feature,
           credits,
           balanceAfter: Number.isFinite(pools.remaining)
             ? pools.remaining
             : Number.MAX_SAFE_INTEGER,
-          metadata: options?.metadata,
+          metadata: ledgerMeta,
         });
 
         return {
@@ -356,7 +372,7 @@ export async function consumeAiCredits(
   }
 
   return consumeFromPools(
-    userId,
+    poolUserId,
     credits,
     cycle,
     feature,

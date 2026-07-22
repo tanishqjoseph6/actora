@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
 import { verifyRazorpayPaymentSignature } from "@/lib/billing/razorpay";
 import {
@@ -11,6 +11,11 @@ import {
 import { getAiCreditPack } from "@/lib/ai-credits/packs";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { subscriptionProvider, toSubscriptionSnapshot } from "@/lib/subscription";
+import {
+  logWorkspaceActivity,
+  requireWorkspacePermission,
+} from "@/lib/workspace";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -19,7 +24,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const userId = normalizeSubscriptionUserId(sessionEmail);
+  const actorId = normalizeSubscriptionUserId(sessionEmail);
+
+  const wsAuth = await requireWorkspacePermission("credits", request);
+  const creditOwnerId = wsAuth.ok
+    ? wsAuth.ctx.workspace.owner_user_id
+    : actorId;
+  const workspaceId = wsAuth.ok ? wsAuth.ctx.workspaceId : null;
+
+  if (wsAuth.ok && wsAuth.ctx.role !== "owner" && wsAuth.ctx.role !== "admin") {
+    return NextResponse.json(
+      { error: "Only owners and admins can purchase credits.", code: "FORBIDDEN" },
+      { status: 403 }
+    );
+  }
 
   try {
     const body = (await request.json()) as {
@@ -54,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const alreadyPaid = await findCreditPurchaseByPaymentId(paymentId);
     if (alreadyPaid?.status === "paid") {
-      const subscription = await subscriptionProvider.getSubscription(userId);
+      const subscription = await subscriptionProvider.getSubscription(creditOwnerId);
       return NextResponse.json({
         ok: true,
         alreadyProcessed: true,
@@ -71,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (pending.userId !== userId) {
+    if (pending.userId !== creditOwnerId && pending.userId !== actorId) {
       return NextResponse.json({ error: "Purchase mismatch." }, { status: 403 });
     }
 
@@ -93,7 +111,7 @@ export async function POST(request: NextRequest) {
     const paid = await markCreditPurchasePaid({
       orderId,
       paymentId,
-      userId,
+      userId: pending.userId,
     });
 
     if (!paid || paid.status !== "paid") {
@@ -103,12 +121,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Grant credits only once (idempotent via payment id uniqueness)
     if (!alreadyPaid) {
-      await addPurchasedCreditsBalance(userId, paid.credits);
+      await addPurchasedCreditsBalance(pending.userId, paid.credits);
     }
 
-    const subscription = await subscriptionProvider.getSubscription(userId);
+    if (workspaceId) {
+      try {
+        await logWorkspaceActivity({
+          workspaceId,
+          actorUserId: actorId,
+          action: "credits.purchased",
+          metadata: {
+            credits: paid.credits,
+            packId: paid.packId,
+            amount: paid.amount,
+            currency: paid.currency,
+          },
+        });
+      } catch (err) {
+        console.error("[ai-credits/verify] activity log failed:", err);
+      }
+
+      const db = getSupabaseAdmin();
+      if (db) {
+        await db
+          .from("ai_credit_purchases")
+          .update({ workspace_id: workspaceId })
+          .eq("id", paid.id);
+      }
+    }
+
+    const subscription = await subscriptionProvider.getSubscription(pending.userId);
 
     return NextResponse.json({
       ok: true,

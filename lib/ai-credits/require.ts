@@ -2,17 +2,33 @@ import { NextResponse } from "next/server";
 import { consumeAiCredits } from "@/lib/ai-credits/consume";
 import type { AiCreditFeature } from "@/lib/ai-credits/costs";
 import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
+import { resolveWorkspaceCreditOwner } from "@/lib/workspace/credits-scope";
+
+async function resolvePool(userId: string) {
+  try {
+    return await resolveWorkspaceCreditOwner(userId);
+  } catch {
+    return {
+      creditUserId: userId,
+      workspaceId: undefined as string | undefined,
+      actorUserId: userId,
+    };
+  }
+}
 
 /**
  * Server-only gate: verify plan soft-check, then atomically consume credits.
- * Returns a NextResponse on failure, or the consume result on success.
+ * Credits are deducted from the active workspace owner's pool.
  */
 export async function requireAiCredits(
   userId: string,
   feature: AiCreditFeature,
   metadata?: Record<string, unknown>
 ) {
-  const subscription = await subscriptionProvider.getSubscription(userId);
+  const pool = await resolvePool(userId);
+  const subscription = await subscriptionProvider.getSubscription(
+    pool.creditUserId
+  );
   const gate = canUseAiAction(subscription.planId, subscription.usage);
   if (!gate.allowed) {
     return {
@@ -28,7 +44,11 @@ export async function requireAiCredits(
     };
   }
 
-  const consumed = await consumeAiCredits(userId, feature, { metadata });
+  const consumed = await consumeAiCredits(userId, feature, {
+    metadata,
+    creditUserId: pool.creditUserId,
+    workspaceId: pool.workspaceId,
+  });
   if (!consumed.ok) {
     return {
       error: NextResponse.json(
@@ -56,7 +76,10 @@ export async function requireAiCreditsResponse(
   | { ok: true; remaining: number; allotment: number }
   | { ok: false; response: Response }
 > {
-  const subscription = await subscriptionProvider.getSubscription(userId);
+  const pool = await resolvePool(userId);
+  const subscription = await subscriptionProvider.getSubscription(
+    pool.creditUserId
+  );
   const gate = canUseAiAction(subscription.planId, subscription.usage);
   if (!gate.allowed) {
     return {
@@ -72,7 +95,11 @@ export async function requireAiCreditsResponse(
     };
   }
 
-  const consumed = await consumeAiCredits(userId, feature, { metadata });
+  const consumed = await consumeAiCredits(userId, feature, {
+    metadata,
+    creditUserId: pool.creditUserId,
+    workspaceId: pool.workspaceId,
+  });
   if (!consumed.ok) {
     return {
       ok: false,

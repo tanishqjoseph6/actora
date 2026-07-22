@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
 import { isBillingCurrency } from "@/lib/billing/currency";
 import { isCheckoutAvailableServer } from "@/lib/billing/providers";
 import { createRazorpayCreditTopUpOrder } from "@/lib/billing/razorpay";
@@ -10,17 +8,26 @@ import {
   isAiCreditPackId,
 } from "@/lib/ai-credits/packs";
 import { createPendingCreditPurchase } from "@/lib/ai-credits/purchases";
-import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { RAZORPAY_CONNECTED } from "@/lib/billing/config";
+import {
+  canPurchaseCredits,
+  requireWorkspacePermission,
+} from "@/lib/workspace";
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const sessionEmail = session?.user?.email;
-  if (!sessionEmail) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  const auth = await requireWorkspacePermission("credits", request);
+  if (!auth.ok) return auth.response;
+
+  if (!canPurchaseCredits(auth.ctx.role)) {
+    return NextResponse.json(
+      { error: "Only owners and admins can purchase credits.", code: "FORBIDDEN" },
+      { status: 403 }
+    );
   }
 
-  const userId = normalizeSubscriptionUserId(sessionEmail);
+  const userId = auth.email;
+  const creditOwnerId = auth.ctx.workspace.owner_user_id;
+  const workspaceId = auth.ctx.workspaceId;
 
   try {
     const body = (await request.json()) as {
@@ -56,8 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     const order = await createRazorpayCreditTopUpOrder({
-      userId,
-      email: sessionEmail,
+      userId: creditOwnerId,
+      email: userId,
       packId: pack.id,
       credits: pack.credits,
       amount,
@@ -65,12 +72,13 @@ export async function POST(request: NextRequest) {
     });
 
     await createPendingCreditPurchase({
-      userId,
+      userId: creditOwnerId,
       packId: pack.id,
       credits: pack.credits,
       amount: order.amount,
       currency: body.currency,
       razorpayOrderId: order.orderId,
+      workspaceId,
     });
 
     return NextResponse.json({
@@ -83,6 +91,7 @@ export async function POST(request: NextRequest) {
       packId: pack.id,
       credits: pack.credits,
       packName: pack.name,
+      workspaceId,
     });
   } catch (error) {
     console.error("[ai-credits/checkout] create failed:", error);

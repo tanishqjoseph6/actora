@@ -7,24 +7,33 @@ import { LANDING_FAQ } from "./landing-data";
 import { SectionHeader } from "./SectionHeader";
 import { FadeUp } from "./motion";
 
-export function LandingFaq() {
+type LandingFaqProps = {
+  /** Limit items on the home page; omit on /faq */
+  limit?: number;
+  showHeader?: boolean;
+};
+
+export function LandingFaq({ limit, showHeader = true }: LandingFaqProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const items = typeof limit === "number" ? LANDING_FAQ.slice(0, limit) : LANDING_FAQ;
 
   return (
-    <section id="faq" className="border-t border-white/[0.06] py-20 sm:py-28">
+    <section id="faq" className="scroll-mt-24 border-t border-white/[0.06] py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <SectionHeader
-          badge="FAQ"
-          title="Questions & answers"
-          subtitle="Everything you need to know before you start."
-        />
+        {showHeader && (
+          <SectionHeader
+            badge="FAQ"
+            title="Questions & answers"
+            subtitle="Security, AI credits, billing, teams, and privacy — covered."
+          />
+        )}
 
         <FadeUp>
           <div className="divide-y divide-white/[0.06] rounded-[18px] border border-white/[0.06] bg-[#111111] px-5 sm:px-6">
-            {LANDING_FAQ.map((item, index) => {
+            {items.map((item, index) => {
               const isOpen = openIndex === index;
               return (
-                <div key={item.question} className="py-1">
+                <div key={item.id} id={item.id} className="scroll-mt-28 py-1">
                   <button
                     type="button"
                     onClick={() => setOpenIndex(isOpen ? null : index)}
@@ -39,7 +48,7 @@ export function LandingFaq() {
                         isOpen ? "rotate-45 border-[#3B82F6]/40 text-[#3B82F6]" : ""
                       }`}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4" aria-hidden />
                     </span>
                   </button>
                   <AnimatePresence initial={false}>

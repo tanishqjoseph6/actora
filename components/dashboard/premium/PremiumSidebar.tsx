@@ -17,6 +17,7 @@ import {
 } from "@/components/dashboard/nav-config";
 import { NAV_ICONS } from "@/components/dashboard/nav-icons";
 import { UpgradeButton } from "@/components/subscription/UpgradeButton";
+import { WorkspaceSwitcher } from "@/components/workspace/WorkspaceSwitcher";
 import {
   getFeatureUpgradePlan,
   type PlanFeature,
@@ -168,6 +169,7 @@ function SidebarPanel({
       </div>
 
       <nav className="premium-scrollbar flex-1 space-y-5 overflow-y-auto p-3">
+        <WorkspaceSwitcher collapsed={collapsed && !isMobile} />
         <NavSection
           title="Workspace"
           items={MAIN_NAV}

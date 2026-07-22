@@ -59,6 +59,7 @@ export async function createPendingCreditPurchase(input: {
   amount: number;
   currency: BillingCurrency;
   razorpayOrderId: string;
+  workspaceId?: string | null;
 }): Promise<AiCreditPurchaseRecord> {
   const db = requireSupabaseAdmin();
   const { data, error } = await db
@@ -71,6 +72,7 @@ export async function createPendingCreditPurchase(input: {
       currency: input.currency,
       razorpay_order_id: input.razorpayOrderId,
       status: "pending",
+      workspace_id: input.workspaceId ?? null,
     })
     .select("*")
     .single();

@@ -27,10 +27,18 @@ import {
 import { SettingsHeader, SettingsSidebar } from "@/components/settings/SettingsSidebar";
 import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
 import {
+  WorkspaceActivitySection,
+  WorkspaceBillingSection,
+  WorkspaceCreditsSection,
+  WorkspaceDangerZone,
+  WorkspaceGeneralSection,
+  WorkspaceMembersSection,
+  WorkspacePermissionsSection,
+} from "@/components/workspace/WorkspaceSettingsPanels";
+import {
   ComingSoonBadge,
   useBillingPause,
 } from "@/components/billing/BillingPauseProvider";
-import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { formatLimit } from "@/lib/subscription";
 import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/openai";
@@ -67,12 +75,19 @@ export default function SettingsPage() {
   useEffect(() => {
     const ids = [
       "profile",
+      "workspace-general",
+      "workspace-members",
+      "workspace-permissions",
+      "workspace-billing",
+      "workspace-credits",
+      "workspace-activity",
       "notifications",
       "integrations",
       "preferences",
       "shortcuts",
       "billing",
       "account",
+      "workspace-danger",
     ];
     const sections = ids
       .map((id) => document.getElementById(id))
@@ -160,6 +175,54 @@ export default function SettingsPage() {
             </div>
           </SettingsSection>
 
+          <SettingsSection
+            id="workspace-general"
+            title="General"
+            description="Workspace name, logo, icon, and identity."
+          >
+            <WorkspaceGeneralSection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-members"
+            title="Members"
+            description="Invite teammates and manage roles."
+          >
+            <WorkspaceMembersSection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-permissions"
+            title="Permissions"
+            description="Role-based access across Actora surfaces."
+          >
+            <WorkspacePermissionsSection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-billing"
+            title="Billing"
+            description="Subscription and invoices for this workspace."
+          >
+            <WorkspaceBillingSection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-credits"
+            title="AI Credits"
+            description="Monthly and purchased credits shared by all members."
+          >
+            <WorkspaceCreditsSection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-activity"
+            title="Audit log"
+            description="Membership, role, plan, and credit events."
+          >
+            <WorkspaceActivitySection />
+          </SettingsSection>
+
           {/* Notifications */}
           <SettingsSection
             id="notifications"
@@ -212,32 +275,6 @@ export default function SettingsPage() {
             >
               <IntegrationsPanel />
             </Suspense>
-          </SettingsSection>
-
-          <SettingsSection
-            id="team"
-            title="Team"
-            description="Collaboration features for your organization."
-          >
-            <FeatureGate feature="team_workspace" compact>
-              <div className={`p-4 rounded-xl border ${dashboard.border} ${dashboard.surface}`}>
-                <p className="text-sm font-medium text-white">Team workspace</p>
-                <p className={`text-xs ${dashboard.subtle} mt-1`}>
-                  Invite members, assign roles, and manage your org from one workspace.
-                </p>
-              </div>
-            </FeatureGate>
-
-            <div className="mt-4">
-              <FeatureGate feature="shared_inbox" compact>
-                <div className={`p-4 rounded-xl border ${dashboard.border} ${dashboard.surface}`}>
-                  <p className="text-sm font-medium text-white">Shared inbox</p>
-                  <p className={`text-xs ${dashboard.subtle} mt-1`}>
-                    Your team can collaborate on email threads in a unified inbox.
-                  </p>
-                </div>
-              </FeatureGate>
-            </div>
           </SettingsSection>
 
           {/* Preferences */}
@@ -393,6 +430,14 @@ export default function SettingsPage() {
             >
               Sign out
             </button>
+          </SettingsSection>
+
+          <SettingsSection
+            id="workspace-danger"
+            title="Danger Zone"
+            description="Irreversible workspace actions."
+          >
+            <WorkspaceDangerZone />
           </SettingsSection>
         </div>
       </div>

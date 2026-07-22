@@ -4,12 +4,19 @@ import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 const SECTIONS = [
   { id: "profile", label: "Profile" },
+  { id: "workspace-general", label: "General" },
+  { id: "workspace-members", label: "Members" },
+  { id: "workspace-permissions", label: "Permissions" },
+  { id: "workspace-billing", label: "Billing" },
+  { id: "workspace-credits", label: "AI Credits" },
+  { id: "workspace-activity", label: "Audit log" },
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
   { id: "preferences", label: "Preferences" },
   { id: "shortcuts", label: "Shortcuts" },
-  { id: "billing", label: "Billing" },
+  { id: "billing", label: "Account billing" },
   { id: "account", label: "Account" },
+  { id: "workspace-danger", label: "Danger Zone" },
 ] as const;
 
 type SettingsSidebarProps = {
@@ -56,7 +63,7 @@ export function SettingsHeader() {
         Settings
       </h1>
       <p className={`${dashboard.muted} mt-2 text-sm sm:text-base max-w-xl`}>
-        Manage your profile, notifications, integrations, and subscription.
+        Manage your workspace, team, permissions, billing, and account.
       </p>
     </div>
   );

@@ -8,10 +8,52 @@ import { ActoraLogo } from "@/components/branding/ActoraLogo";
 import {
   MENU_FLAT_LINKS,
   MENU_GROUPS,
+  NAV_LINKS,
   type MenuGroup,
   type MenuLink,
 } from "./landing-data";
 import { cn } from "@/lib/utils";
+
+function NavAnchor({
+  href,
+  children,
+  className,
+  onNavigate,
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+  onNavigate?: () => void;
+}) {
+  if (href.startsWith("mailto:") || href.startsWith("http")) {
+    return (
+      <a
+        href={href}
+        onClick={onNavigate}
+        className={className}
+        {...(href.startsWith("http")
+          ? { target: "_blank", rel: "noopener noreferrer" }
+          : {})}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  if (href.startsWith("/")) {
+    return (
+      <Link href={href} onClick={onNavigate} className={className}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={href} onClick={onNavigate} className={className}>
+      {children}
+    </a>
+  );
+}
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -35,16 +77,11 @@ export function LandingNav() {
 
   useEffect(() => {
     if (!open) return;
-
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     };
-
     window.addEventListener("keydown", onKeyDown);
     closeButtonRef.current?.focus();
-
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
@@ -59,7 +96,10 @@ export function LandingNav() {
           : "bg-transparent"
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:px-8 lg:h-[72px]">
+      <nav
+        className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:px-8 lg:h-[72px]"
+        aria-label="Primary"
+      >
         <ActoraLogo
           href="/"
           size={28}
@@ -67,10 +107,23 @@ export function LandingNav() {
           wordmarkClassName="text-[15px] font-semibold tracking-tight text-white"
         />
 
+        <ul className="hidden items-center gap-1 md:flex">
+          {NAV_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="rounded-xl px-3 py-2 text-sm text-[#A1A1AA] transition-colors hover:text-white"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/login"
-            className="rounded-xl px-3 py-2 text-sm text-[#A1A1AA] transition-colors hover:text-white"
+            className="hidden rounded-xl px-3 py-2 text-sm text-[#A1A1AA] transition-colors hover:text-white sm:inline-flex"
           >
             Login
           </Link>
@@ -78,14 +131,14 @@ export function LandingNav() {
             href="/signup"
             className="rounded-xl bg-[#3B82F6] px-3.5 py-2 text-sm font-medium text-white transition-all hover:bg-[#2563EB] active:scale-[0.98] sm:px-4"
           >
-            Start Free
+            Get Started
           </Link>
           <button
             type="button"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls={menuId}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.02] text-white transition-colors hover:border-[#3B82F6]/35 hover:bg-white/[0.04]"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.02] text-white transition-colors hover:border-[#3B82F6]/35 hover:bg-white/[0.04] md:hidden"
             onClick={() => setOpen((value) => !value)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -103,7 +156,7 @@ export function LandingNav() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
               onClick={closeMenu}
             />
 
@@ -116,7 +169,7 @@ export function LandingNav() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 380, damping: 36 }}
-              className="fixed inset-y-0 right-0 z-[70] flex w-[min(100vw-1.25rem,380px)] flex-col p-3 sm:p-4"
+              className="fixed inset-y-0 right-0 z-[70] flex w-[min(100vw-1.25rem,380px)] flex-col p-3 sm:p-4 md:hidden"
             >
               <div className="flex h-full flex-col overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#0A0A0A]/85 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
                 <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
@@ -141,7 +194,6 @@ export function LandingNav() {
                         onNavigate={closeMenu}
                       />
                     ))}
-
                     {MENU_FLAT_LINKS.map((link) => (
                       <FlatMenuLink
                         key={link.label}
@@ -165,7 +217,7 @@ export function LandingNav() {
                     onClick={closeMenu}
                     className="flex h-11 items-center justify-center rounded-xl bg-[#3B82F6] text-sm font-medium text-white transition-colors hover:bg-[#2563EB]"
                   >
-                    Start Free
+                    Get Started
                   </Link>
                 </div>
               </div>
@@ -184,29 +236,14 @@ function FlatMenuLink({
   link: MenuLink;
   onNavigate: () => void;
 }) {
-  const className =
-    "flex w-full items-center rounded-xl px-3 py-3 text-sm font-medium text-[#D4D4D8] transition-colors hover:bg-white/[0.04] hover:text-white";
-
-  if (link.href.startsWith("mailto:")) {
-    return (
-      <a href={link.href} onClick={onNavigate} className={className}>
-        {link.label}
-      </a>
-    );
-  }
-
-  if (link.href.startsWith("/")) {
-    return (
-      <Link href={link.href} onClick={onNavigate} className={className}>
-        {link.label}
-      </Link>
-    );
-  }
-
   return (
-    <a href={link.href} onClick={onNavigate} className={className}>
+    <NavAnchor
+      href={link.href}
+      onNavigate={onNavigate}
+      className="flex w-full items-center rounded-xl px-3 py-3 text-sm font-medium text-[#D4D4D8] transition-colors hover:bg-white/[0.04] hover:text-white"
+    >
       {link.label}
-    </a>
+    </NavAnchor>
   );
 }
 
@@ -255,13 +292,13 @@ function MenuAccordion({
             <ul className="space-y-0.5 pb-2 pl-2">
               {group.links.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <NavAnchor
                     href={link.href}
-                    onClick={onNavigate}
+                    onNavigate={onNavigate}
                     className="flex rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
                   >
                     {link.label}
-                  </a>
+                  </NavAnchor>
                 </li>
               ))}
             </ul>

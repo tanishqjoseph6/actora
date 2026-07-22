@@ -8,7 +8,7 @@ export function LandingFooter() {
   return (
     <footer className="border-t border-white/[0.06] pb-10 pt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <ActoraLogo
               href="/"
@@ -28,12 +28,12 @@ export function LandingFooter() {
             <ul className="space-y-3">
               {FOOTER_LINKS.product.map((link) => (
                 <li key={link.label}>
-                  <a
+                  <Link
                     href={link.href}
                     className="text-sm text-[#A1A1AA] transition-colors hover:text-white"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -64,20 +64,54 @@ export function LandingFooter() {
               </li>
             </ul>
           </div>
+
+          <div>
+            <p className="mb-4 text-xs font-medium uppercase tracking-[0.14em] text-[#52525B]">
+              Legal
+            </p>
+            <ul className="space-y-3">
+              {FOOTER_LINKS.legal.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-[#A1A1AA] transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mb-3 mt-8 text-xs font-medium uppercase tracking-[0.14em] text-[#52525B]">
+              Social
+            </p>
+            <ul className="space-y-3">
+              {FOOTER_LINKS.social.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#A1A1AA] transition-colors hover:text-white"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div
-          id="blog"
-          className="mt-12 flex flex-col gap-3 border-t border-white/[0.06] pt-8 sm:flex-row sm:items-center sm:justify-between"
-        >
+        <div className="mt-12 flex flex-col gap-3 border-t border-white/[0.06] pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-[#52525B]">
             © {new Date().getFullYear()} Actora. All rights reserved.
           </p>
           <p className="text-xs text-[#52525B]">
-            Blog coming soon · Built for modern operators
+            Built for modern operators · {SITE_LINE}
           </p>
         </div>
       </div>
     </footer>
   );
 }
+
+const SITE_LINE = "useactora.com";

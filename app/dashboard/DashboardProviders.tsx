@@ -8,6 +8,7 @@ import { DashboardShellLayout } from "@/components/dashboard/DashboardShellLayou
 import { ToastProvider } from "@/providers/ToastProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
 import { GmailAccountsProvider } from "@/providers/GmailAccountsProvider";
+import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import { KeyboardShortcutsModal } from "@/components/dashboard/nav/KeyboardShortcutsModal";
 import { useDashboardKeyboardShortcuts } from "@/hooks/useDashboardKeyboardShortcuts";
 
@@ -34,19 +35,21 @@ function DashboardKeyboardLayer({ children }: { children: React.ReactNode }) {
 export function DashboardProviders({ children }: { children: React.ReactNode }) {
   return (
     <GmailAccountsProvider>
-      <PlanGateProvider>
-        <NotificationsProvider>
-          <ToastProvider>
-            <PlanActivationToastListener />
-            <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
-              <TrialBanner />
-            </div>
-            <DashboardKeyboardLayer>
-              <DashboardShellLayout>{children}</DashboardShellLayout>
-            </DashboardKeyboardLayer>
-          </ToastProvider>
-        </NotificationsProvider>
-      </PlanGateProvider>
+      <WorkspaceProvider>
+        <PlanGateProvider>
+          <NotificationsProvider>
+            <ToastProvider>
+              <PlanActivationToastListener />
+              <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
+                <TrialBanner />
+              </div>
+              <DashboardKeyboardLayer>
+                <DashboardShellLayout>{children}</DashboardShellLayout>
+              </DashboardKeyboardLayer>
+            </ToastProvider>
+          </NotificationsProvider>
+        </PlanGateProvider>
+      </WorkspaceProvider>
     </GmailAccountsProvider>
   );
 }
