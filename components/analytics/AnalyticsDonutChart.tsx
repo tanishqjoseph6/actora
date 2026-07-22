@@ -9,12 +9,14 @@ type AnalyticsDonutChartProps = {
   title: string;
   subtitle?: string;
   data: StageBreakdown[];
+  centerLabel?: string;
 };
 
 export function AnalyticsDonutChart({
   title,
   subtitle,
   data,
+  centerLabel = "total",
 }: AnalyticsDonutChartProps) {
   const total = data.reduce((s, d) => s + d.value, 0);
 
@@ -88,7 +90,7 @@ export function AnalyticsDonutChart({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-white tabular-nums">{total}</span>
-            <span className={`text-[10px] ${dashboard.subtle}`}>deals</span>
+            <span className={`text-[10px] ${dashboard.subtle}`}>{centerLabel}</span>
           </div>
         </div>
 

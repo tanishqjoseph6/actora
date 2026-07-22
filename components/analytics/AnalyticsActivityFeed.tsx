@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
-import { formatActivityTime } from "@/lib/analytics/mock-data";
+import { formatActivityTime } from "@/lib/analytics/format";
 import type { ActivityItem } from "@/lib/analytics/types";
 
 const TYPE_META: Record<
@@ -14,6 +14,7 @@ const TYPE_META: Record<
   deal: { icon: "💼", color: "bg-[#3B82F6]/10 border-[#3B82F6]/25" },
   meeting: { icon: "📅", color: "bg-[#0A0A0A] border-white/[0.06]" },
   ai: { icon: "✦", color: "bg-[#3B82F6]/20 border-[#3B82F6]/35" },
+  automation: { icon: "⚡", color: "bg-[#3B82F6]/15 border-[#3B82F6]/30" },
 };
 
 type AnalyticsActivityFeedProps = {
