@@ -24,11 +24,19 @@ import {
 } from "lucide-react";
 import { dashboard } from "./dashboard-tokens";
 import { RoxxThinkingIndicator } from "./RoxxThinkingIndicator";
+import { RoxxModelSelector } from "./RoxxModelSelector";
 import { usePlanGate, usePlanGateActions } from "@/components/subscription/PlanGateProvider";
 import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
-import { formatLimit } from "@/lib/subscription";
+import { formatLimit, type PlanId } from "@/lib/subscription";
+import {
+  defaultRoxxModelForPlan,
+  isRoxxModelId,
+  planAllowsRoxxModel,
+  type RoxxModelId,
+} from "@/lib/assistant/models";
 
 const STORAGE_KEY = "actora-assistant-conversations-v1";
+const MODEL_STORAGE_KEY = "actora-roxx-model-v1";
 
 const SUGGESTED_PROMPTS = [
   "Summarize today's emails",
@@ -101,6 +109,25 @@ function saveConversations(items: Conversation[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, 40)));
 }
 
+function loadSavedModel(planId: PlanId): RoxxModelId {
+  if (typeof window === "undefined") return defaultRoxxModelForPlan(planId);
+  try {
+    const raw = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (isRoxxModelId(raw) && planAllowsRoxxModel(planId, raw)) return raw;
+  } catch {
+    /* ignore */
+  }
+  return defaultRoxxModelForPlan(planId);
+}
+
+function saveSelectedModel(modelId: RoxxModelId) {
+  try {
+    localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+  } catch {
+    /* ignore */
+  }
+}
+
 function renderMarkdownLite(text: string) {
   const parts = text.split(/(```[\s\S]*?```)/g);
   return parts.map((part, i) => {
@@ -127,6 +154,8 @@ export function AiAssistantPanel() {
   const { checkAiAction, showLimitModal, refreshSubscription } =
     usePlanGateActions();
   const { subscription, loading: planLoading } = usePlanGate();
+  const planId = (subscription?.planId ?? "free") as PlanId;
+  const [selectedModel, setSelectedModel] = useState<RoxxModelId>("gpt-4o-mini");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -137,6 +166,8 @@ export function AiAssistantPanel() {
   const messagesRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
+  const selectedModelRef = useRef<RoxxModelId>(selectedModel);
+  selectedModelRef.current = selectedModel;
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
@@ -147,6 +178,20 @@ export function AiAssistantPanel() {
     if (items[0]) setActiveId(items[0].id);
     setBootstrapped(true);
   }, []);
+
+  useEffect(() => {
+    if (planLoading) return;
+    const allowed = loadSavedModel(planId);
+    setSelectedModel(allowed);
+  }, [planId, planLoading]);
+
+  useEffect(() => {
+    if (!planAllowsRoxxModel(planId, selectedModel)) {
+      const fallback = defaultRoxxModelForPlan(planId);
+      setSelectedModel(fallback);
+      saveSelectedModel(fallback);
+    }
+  }, [planId, selectedModel]);
 
   useEffect(() => {
     const previous = document.title;
@@ -256,6 +301,7 @@ export function AiAssistantPanel() {
               role: m.role,
               content: m.content,
             })),
+            model: selectedModelRef.current,
           }),
         });
 
@@ -264,9 +310,14 @@ export function AiAssistantPanel() {
             error?: string;
             code?: string;
             limitType?: "ai_actions" | "inboxes" | "feature";
+            recommendedPlan?: PlanId;
           };
           if (err.code === "PLAN_LIMIT" && err.limitType) {
-            showLimitModal(err.error || "AI limit reached", err.limitType);
+            showLimitModal(
+              err.error || "AI limit reached",
+              err.limitType,
+              err.recommendedPlan
+            );
           }
           patchAssistant({
             content: err.error || "Something went wrong. Please try again.",
@@ -450,6 +501,22 @@ export function AiAssistantPanel() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          <RoxxModelSelector
+            planId={planId}
+            value={selectedModel}
+            disabled={streaming}
+            onChange={(modelId) => {
+              setSelectedModel(modelId);
+              saveSelectedModel(modelId);
+            }}
+            onLockedSelect={(_modelId, upgradePlan) => {
+              showLimitModal(
+                "This model isn’t included in your plan. Upgrade to unlock it in Roxx AI.",
+                "feature",
+                upgradePlan
+              );
+            }}
+          />
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}

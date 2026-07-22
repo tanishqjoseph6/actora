@@ -1,16 +1,15 @@
 import OpenAI from "openai";
 import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
-import {
-  OPENAI_MODEL,
-  withModelSafeParams,
-} from "@/lib/openai/model-params";
-import {
-  buildWorkspaceContext,
-} from "@/lib/assistant/context";
+import { withModelSafeParams } from "@/lib/openai/model-params";
+import { buildWorkspaceContext } from "@/lib/assistant/context";
 import {
   ASSISTANT_TOOLS,
   executeAssistantTool,
 } from "@/lib/assistant/tools";
+import {
+  getRoxxModel,
+  type RoxxModelId,
+} from "@/lib/assistant/models";
 
 export type ChatMessage = {
   role: "user" | "assistant" | "system";
@@ -55,10 +54,16 @@ export type AssistantStreamEvent =
  */
 export async function* streamAssistantChat(
   userId: string,
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  modelId: RoxxModelId = "gpt-4o-mini"
 ): AsyncGenerator<AssistantStreamEvent> {
   const openai = getOpenAIClient();
   const context = await buildWorkspaceContext(userId);
+  const roxxModel = getRoxxModel(modelId);
+  const modelOptions = {
+    model: roxxModel.apiModel,
+    serviceTier: roxxModel.serviceTier,
+  };
 
   const openaiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: buildAssistantSystemPrompt(context.summaryText) },
@@ -73,12 +78,15 @@ export async function* streamAssistantChat(
 
   for (let round = 0; round < 4; round++) {
     const completion = await openai.chat.completions.create(
-      withModelSafeParams({
-        model: OPENAI_MODEL,
-        messages: openaiMessages,
-        tools: ASSISTANT_TOOLS,
-        tool_choice: "auto" as const,
-      })
+      withModelSafeParams(
+        {
+          model: roxxModel.apiModel,
+          messages: openaiMessages,
+          tools: ASSISTANT_TOOLS,
+          tool_choice: "auto" as const,
+        },
+        modelOptions
+      )
     );
 
     const choice = completion.choices[0]?.message;
@@ -128,11 +136,14 @@ export async function* streamAssistantChat(
   }
 
   const stream = await openai.chat.completions.create(
-    withModelSafeParams({
-      model: OPENAI_MODEL,
-      messages: openaiMessages,
-      stream: true as const,
-    })
+    withModelSafeParams(
+      {
+        model: roxxModel.apiModel,
+        messages: openaiMessages,
+        stream: true as const,
+      },
+      modelOptions
+    )
   );
 
   let full = "";
