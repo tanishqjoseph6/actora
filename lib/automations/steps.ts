@@ -4,6 +4,7 @@ import {
   generateEmailReply,
   generateEmailSummary,
 } from "@/lib/openai";
+import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
 import { sendEmailReply } from "@/lib/gmail";
 import { getCalendarProvider } from "@/lib/calendar/providers";
 import { upsertSyncedMeetings } from "@/lib/calendar/sync";
@@ -45,7 +46,7 @@ export async function executeLiveStep(
       case "summarize-email": {
         const subject = str(context.subject, "Email");
         const body = str(context.body || context.preview, "");
-        if (!body && !process.env.OPENAI_API_KEY) {
+        if (!body && !resolveOpenAiApiKey()) {
           return simulateStepOutput(node, context);
         }
         try {

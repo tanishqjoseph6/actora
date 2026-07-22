@@ -1,4 +1,9 @@
 import OpenAI from "openai";
+import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
+import {
+  DEFAULT_OPENAI_MODEL,
+  withModelSafeParams,
+} from "@/lib/openai/model-params";
 
 export const REPLY_TONES = [
   "professional",
@@ -40,12 +45,13 @@ function getToneInstruction(tone: ReplyTone): string {
 }
 
 function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = resolveOpenAiApiKey();
+  if (!apiKey) {
     throw new Error("OpenAI API key is not configured.");
   }
 
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey,
   });
 }
 
@@ -69,32 +75,34 @@ export async function generateEmailReply({
     ? `\n\nPrior messages in this thread (for context):\n${threadContext.slice(0, 8000)}`
     : "";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    temperature: tone === "short" ? 0.5 : 0.7,
-    messages: [
-      {
-        role: "system",
-        content: `You are Actora, a professional email assistant. Write clear, contextual replies that:
+  const response = await openai.chat.completions.create(
+    withModelSafeParams({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: tone === "short" ? 0.5 : 0.7,
+      messages: [
+        {
+          role: "system",
+          content: `You are Actora, a professional email assistant. Write clear, contextual replies that:
 - Directly address the sender's questions, requests, or concerns
 - Use thread history when provided to maintain continuity
 - Tone guidance: ${toneGuide}
 - Use a greeting and sign-off appropriate to the tone
 - Never include a subject line, markdown, or quoted text from the original email
 - Output only the reply body text`,
-      },
-      {
-        role: "user",
-        content: `Write a reply to this email.
+        },
+        {
+          role: "user",
+          content: `Write a reply to this email.
 
 From: ${sender}
 Subject: ${subject}
 
 Email body:
 ${body.slice(0, 12000)}${threadSection}`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const reply = response.choices[0]?.message?.content?.trim();
 
@@ -136,31 +144,33 @@ export async function generateEmailSummary({
     ? `\n\nPrior messages in this thread:\n${threadContext.slice(0, 6000)}`
     : "";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    temperature: 0.4,
-    messages: [
-      {
-        role: "system",
-        content: `You are Actora, an email assistant. Summarize emails clearly for a busy professional.
+  const response = await openai.chat.completions.create(
+    withModelSafeParams({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.4,
+      messages: [
+        {
+          role: "system",
+          content: `You are Actora, an email assistant. Summarize emails clearly for a busy professional.
 - 2–4 short bullet points covering key facts, requests, and deadlines
 - Note any action items for the recipient
 - Keep under 120 words
 - Use plain text bullets starting with "•"
 - No markdown headers or subject line repetition`,
-      },
-      {
-        role: "user",
-        content: `Summarize this email.
+        },
+        {
+          role: "user",
+          content: `Summarize this email.
 
 From: ${sender}
 Subject: ${subject}
 
 Email body:
 ${body.slice(0, 12000)}${threadSection}`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const summary = response.choices[0]?.message?.content?.trim();
 
@@ -261,32 +271,34 @@ export async function generateEmailInsights({
     ? `\n\nPrior messages in this thread:\n${threadContext.slice(0, 6000)}`
     : "";
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You are Actora, an email intelligence assistant. Analyze the email and return JSON only with:
+  const response = await openai.chat.completions.create(
+    withModelSafeParams({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You are Actora, an email intelligence assistant. Analyze the email and return JSON only with:
 - priority: "high" | "medium" | "low"
 - priorityReason: one short sentence
 - followUps: array of up to 3 objects { label, timing, draftHint } for suggested follow-up messages
 - nextActions: array of up to 4 objects { label, type } where type is reply|schedule|task|archive|follow_up
 Be practical and specific to the email content.`,
-      },
-      {
-        role: "user",
-        content: `Analyze this email.
+        },
+        {
+          role: "user",
+          content: `Analyze this email.
 
 From: ${sender}
 Subject: ${subject}
 
 Email body:
 ${body.slice(0, 10000)}${threadSection}`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const raw = response.choices[0]?.message?.content?.trim();
   if (!raw) throw new Error("OpenAI returned empty insights.");
@@ -349,22 +361,23 @@ export async function generateCrmContactInsights(input: {
 }): Promise<CrmContactInsights> {
   const openai = getOpenAIClient();
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You are Actora CRM AI. Analyze contact context and return JSON only:
+  const response = await openai.chat.completions.create(
+    withModelSafeParams({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: `You are Actora CRM AI. Analyze contact context and return JSON only:
 - summary: 2-3 sentence overview of relationship health and deal potential
 - nextSteps: array of up to 4 specific actionable next steps
 - riskLevel: "low" | "medium" | "high" based on churn/disengagement risk
 - engagementScore: 0-100 based on recent activity and email engagement`,
-      },
-      {
-        role: "user",
-        content: `Contact: ${input.name} (${input.title || "no title"})
+        },
+        {
+          role: "user",
+          content: `Contact: ${input.name} (${input.title || "no title"})
 Email: ${input.email}
 Company: ${input.company || "Unknown"}
 Status: ${input.status}
@@ -380,9 +393,10 @@ ${input.recentActivities.join("\n") || "None"}
 
 Recent emails:
 ${input.recentEmails.join("\n") || "None"}`,
-      },
-    ],
-  });
+        },
+      ],
+    })
+  );
 
   const raw = response.choices[0]?.message?.content?.trim();
   if (!raw) throw new Error("OpenAI returned empty CRM insights.");

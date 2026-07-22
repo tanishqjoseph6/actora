@@ -1,4 +1,9 @@
 import OpenAI from "openai";
+import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
+import {
+  DEFAULT_OPENAI_MODEL,
+  withModelSafeParams,
+} from "@/lib/openai/model-params";
 import {
   buildWorkspaceContext,
 } from "@/lib/assistant/context";
@@ -13,10 +18,11 @@ export type ChatMessage = {
 };
 
 function getOpenAIClient() {
-  if (!process.env.OPENAI_API_KEY) {
+  const apiKey = resolveOpenAiApiKey();
+  if (!apiKey) {
     throw new Error("OpenAI API key is not configured.");
   }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return new OpenAI({ apiKey });
 }
 
 export function buildAssistantSystemPrompt(summaryText: string): string {
@@ -66,13 +72,15 @@ export async function* streamAssistantChat(
   ];
 
   for (let round = 0; round < 4; round++) {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      temperature: 0.4,
-      messages: openaiMessages,
-      tools: ASSISTANT_TOOLS,
-      tool_choice: "auto",
-    });
+    const completion = await openai.chat.completions.create(
+      withModelSafeParams({
+        model: DEFAULT_OPENAI_MODEL,
+        temperature: 0.4,
+        messages: openaiMessages,
+        tools: ASSISTANT_TOOLS,
+        tool_choice: "auto" as const,
+      })
+    );
 
     const choice = completion.choices[0]?.message;
     if (!choice) {
@@ -120,12 +128,14 @@ export async function* streamAssistantChat(
     }
   }
 
-  const stream = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    temperature: 0.4,
-    messages: openaiMessages,
-    stream: true,
-  });
+  const stream = await openai.chat.completions.create(
+    withModelSafeParams({
+      model: DEFAULT_OPENAI_MODEL,
+      temperature: 0.4,
+      messages: openaiMessages,
+      stream: true as const,
+    })
+  );
 
   let full = "";
   for await (const part of stream) {
