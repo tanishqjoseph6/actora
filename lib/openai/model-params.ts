@@ -1,38 +1,35 @@
 import type { ChatCompletionCreateParams } from "openai/resources/chat/completions";
 
-/**
- * GPT-5 and o4-series models reject `temperature` (and some other sampling params).
- * Build chat.completions params with only model-supported fields.
- */
+/** Canonical OpenAI model for all Actora API calls. */
+export const OPENAI_MODEL = "gpt-5-mini" as const;
 
-export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
-
-export function isGpt5OrO4Model(model: string): boolean {
-  const id = model.trim().toLowerCase();
-  return (
-    id.startsWith("gpt-5") ||
-    id.startsWith("o4") ||
-    id.includes("gpt-5") ||
-    id.includes("o4-")
-  );
-}
+/** @deprecated Use OPENAI_MODEL */
+export const DEFAULT_OPENAI_MODEL = OPENAI_MODEL;
 
 /**
- * Returns params suitable for `openai.chat.completions.create`.
- * Strips `temperature` when the model does not support it.
+ * gpt-5-mini rejects sampling params such as `temperature`.
+ * Force the project model and strip unsupported fields.
  */
 export function withModelSafeParams<T extends ChatCompletionCreateParams>(
   params: T
 ): T {
-  const model =
-    typeof params.model === "string" && params.model.trim()
-      ? params.model
-      : DEFAULT_OPENAI_MODEL;
+  const {
+    temperature: _temperature,
+    top_p: _top_p,
+    presence_penalty: _presence_penalty,
+    frequency_penalty: _frequency_penalty,
+    logit_bias: _logit_bias,
+    ...rest
+  } = params as T & {
+    temperature?: number;
+    top_p?: number;
+    presence_penalty?: number;
+    frequency_penalty?: number;
+    logit_bias?: Record<string, number>;
+  };
 
-  if (!isGpt5OrO4Model(model) || params.temperature === undefined) {
-    return params;
-  }
-
-  const { temperature: _omit, ...rest } = params;
-  return rest as T;
+  return {
+    ...rest,
+    model: OPENAI_MODEL,
+  } as T;
 }

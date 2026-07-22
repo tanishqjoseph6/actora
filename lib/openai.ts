@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
 import {
-  DEFAULT_OPENAI_MODEL,
+  OPENAI_MODEL,
   withModelSafeParams,
 } from "@/lib/openai/model-params";
 
@@ -77,8 +77,7 @@ export async function generateEmailReply({
 
   const response = await openai.chat.completions.create(
     withModelSafeParams({
-      model: DEFAULT_OPENAI_MODEL,
-      temperature: tone === "short" ? 0.5 : 0.7,
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -146,8 +145,7 @@ export async function generateEmailSummary({
 
   const response = await openai.chat.completions.create(
     withModelSafeParams({
-      model: DEFAULT_OPENAI_MODEL,
-      temperature: 0.4,
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -273,8 +271,7 @@ export async function generateEmailInsights({
 
   const response = await openai.chat.completions.create(
     withModelSafeParams({
-      model: DEFAULT_OPENAI_MODEL,
-      temperature: 0.3,
+      model: OPENAI_MODEL,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -363,8 +360,7 @@ export async function generateCrmContactInsights(input: {
 
   const response = await openai.chat.completions.create(
     withModelSafeParams({
-      model: DEFAULT_OPENAI_MODEL,
-      temperature: 0.3,
+      model: OPENAI_MODEL,
       response_format: { type: "json_object" },
       messages: [
         {

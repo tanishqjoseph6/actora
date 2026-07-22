@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
 import {
-  DEFAULT_OPENAI_MODEL,
+  OPENAI_MODEL,
   withModelSafeParams,
 } from "@/lib/openai/model-params";
 import {
@@ -74,8 +74,7 @@ export async function* streamAssistantChat(
   for (let round = 0; round < 4; round++) {
     const completion = await openai.chat.completions.create(
       withModelSafeParams({
-        model: DEFAULT_OPENAI_MODEL,
-        temperature: 0.4,
+        model: OPENAI_MODEL,
         messages: openaiMessages,
         tools: ASSISTANT_TOOLS,
         tool_choice: "auto" as const,
@@ -130,8 +129,7 @@ export async function* streamAssistantChat(
 
   const stream = await openai.chat.completions.create(
     withModelSafeParams({
-      model: DEFAULT_OPENAI_MODEL,
-      temperature: 0.4,
+      model: OPENAI_MODEL,
       messages: openaiMessages,
       stream: true as const,
     })
