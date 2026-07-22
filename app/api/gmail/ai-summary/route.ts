@@ -1,11 +1,8 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
-import { recordAiAction } from "@/lib/dashboard/user-usage";
-import {
-  generateEmailSummaryWithRetry,
-} from "@/lib/openai";
-import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
+import { requireAiCredits } from "@/lib/ai-credits/require";
+import { generateEmailSummaryWithRetry } from "@/lib/openai";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -26,19 +23,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscription = await subscriptionProvider.getSubscription(userId);
-    const gate = canUseAiAction(subscription.planId, subscription.usage);
-
-    if (!gate.allowed) {
-      return NextResponse.json(
-        {
-          error: gate.reason,
-          code: "PLAN_LIMIT",
-          limitType: gate.limitType,
-        },
-        { status: 403 }
-      );
-    }
+    const creditGate = await requireAiCredits(userId, "email_summary");
+    if ("error" in creditGate && creditGate.error) return creditGate.error;
 
     const summary = await generateEmailSummaryWithRetry({
       sender,
@@ -48,13 +34,15 @@ export async function POST(request: NextRequest) {
         typeof threadContext === "string" ? threadContext : undefined,
     });
 
-    const usage = await recordAiAction(userId);
+    const consumed = creditGate.consumed!;
 
     return NextResponse.json({
       summary,
       usage: {
-        aiActionsUsed: usage.aiActionsUsed,
-        aiRepliesCount: usage.aiRepliesCount,
+        aiActionsUsed: consumed.usage.aiActionsUsed,
+        aiRepliesCount: consumed.usage.aiRepliesCount,
+        aiCreditsRemaining: consumed.remaining,
+        aiCreditsAllotment: consumed.allotment,
       },
     });
   } catch (error) {

@@ -18,25 +18,25 @@ type PlanLimitModalProps = {
 };
 
 const LIMIT_HEADINGS: Record<LimitType, string> = {
-  ai_actions: "AI action limit reached",
+  ai_actions: "AI credits exhausted",
   inboxes: "Inbox limit reached",
   feature: "Feature not available",
 };
 
 const LIMIT_FEATURES: Record<LimitType, string[]> = {
   ai_actions: [
-    "More AI replies and drafts each month",
-    "Faster inbox automation",
-    "Priority support on paid plans",
+    "5,000 AI credits / cycle on Pro",
+    "50,000 AI credits / cycle on Team",
+    "Full Roxx AI, inbox replies, and CRM insights",
   ],
   inboxes: [
-    "Connect multiple Gmail accounts",
-    "Manage team inboxes in one place",
+    "Up to 5 Gmail accounts on Pro",
+    "Unlimited inboxes on Team",
     "Scale automation across accounts",
   ],
   feature: [
     "Unlock premium workspace features",
-    "Unlimited AI actions on Pro",
+    "More AI credits on Pro and Team",
     "Team collaboration on Team plan",
   ],
 };

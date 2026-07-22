@@ -1,0 +1,334 @@
+import {
+  getSupabaseAdmin,
+  isMissingUserUsageSchemaError,
+  isSupabaseNetworkError,
+} from "@/lib/supabase-admin";
+import { getStoredSubscription } from "@/lib/subscription/repository";
+import { getPlanLimits, isUnlimited } from "@/lib/subscription/plans";
+import type { PlanId } from "@/lib/subscription/types";
+import {
+  getAiCreditCost,
+  type AiCreditFeature,
+} from "@/lib/ai-credits/costs";
+import { computeCreditBalance } from "@/lib/ai-credits/balance";
+import {
+  getUserUsage,
+  type UserUsage,
+} from "@/lib/dashboard/user-usage";
+
+export type ConsumeCreditsResult =
+  | {
+      ok: true;
+      usage: UserUsage;
+      remaining: number;
+      allotment: number;
+    }
+  | {
+      ok: false;
+      code: "INSUFFICIENT_CREDITS" | "UNAUTHENTICATED" | "ERROR";
+      reason: string;
+      remaining: number;
+      allotment: number;
+    };
+
+export type AiCreditLedgerEntry = {
+  id: string;
+  userId: string;
+  feature: string;
+  credits: number;
+  balanceAfter: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+function startOfUtcDay(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Resolve billing-cycle boundaries for credit reset.
+ * Prefer subscription period; fall back to trial window; else calendar month.
+ */
+export async function resolveCreditCycle(userId: string): Promise<{
+  planId: PlanId;
+  allotment: number;
+  cycleKey: string;
+  periodStart: string;
+  periodEnd: string | null;
+}> {
+  const stored = await getStoredSubscription(userId);
+  const planId = (stored?.planId ?? "free") as PlanId;
+  const limits = getPlanLimits(planId);
+  const allotment = limits.aiActionsPerMonth;
+
+  if (stored?.isTrial && stored.trialStartedAt && stored.trialEndsAt) {
+    const start = new Date(stored.trialStartedAt);
+    return {
+      planId,
+      allotment,
+      cycleKey: `trial:${stored.trialStartedAt}`,
+      periodStart: startOfUtcDay(start),
+      periodEnd: stored.trialEndsAt,
+    };
+  }
+
+  if (stored?.currentPeriodEnd) {
+    const end = new Date(stored.currentPeriodEnd);
+    const start = new Date(end);
+    if (stored.billingInterval === "yearly") {
+      start.setFullYear(start.getFullYear() - 1);
+    } else {
+      start.setMonth(start.getMonth() - 1);
+    }
+    return {
+      planId,
+      allotment,
+      cycleKey: `sub:${stored.currentPeriodEnd}`,
+      periodStart: startOfUtcDay(start),
+      periodEnd: stored.currentPeriodEnd,
+    };
+  }
+
+  const now = new Date();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  );
+  const monthEnd = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  );
+  return {
+    planId,
+    allotment,
+    cycleKey: `cal:${monthStart.toISOString().slice(0, 10)}`,
+    periodStart: startOfUtcDay(monthStart),
+    periodEnd: monthEnd.toISOString(),
+  };
+}
+
+async function ensureCycleSynced(userId: string): Promise<UserUsage> {
+  const cycle = await resolveCreditCycle(userId);
+  const usage = await getUserUsage(userId, {
+    cycleKey: cycle.cycleKey,
+    periodStart: cycle.periodStart,
+    periodEnd: cycle.periodEnd,
+    allotment: cycle.allotment,
+  });
+  return usage;
+}
+
+async function appendLedger(entry: {
+  userId: string;
+  feature: AiCreditFeature;
+  credits: number;
+  balanceAfter: number;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  const db = getSupabaseAdmin();
+  if (!db) return;
+
+  const { error } = await db.from("ai_credit_ledger").insert({
+    user_id: entry.userId,
+    feature: entry.feature,
+    credits: entry.credits,
+    balance_after: entry.balanceAfter,
+    metadata: entry.metadata ?? {},
+  });
+
+  if (error && !isMissingUserUsageSchemaError(error.message)) {
+    console.error("[ai-credits] ledger insert failed:", error.message);
+  }
+}
+
+/**
+ * Server-only: check balance, deduct credits, write ledger.
+ * Never call from the client — UI may pre-check but this is authoritative.
+ */
+export async function consumeAiCredits(
+  userId: string,
+  feature: AiCreditFeature,
+  options?: { metadata?: Record<string, unknown>; credits?: number }
+): Promise<ConsumeCreditsResult> {
+  if (!userId) {
+    return {
+      ok: false,
+      code: "UNAUTHENTICATED",
+      reason: "Not authenticated.",
+      remaining: 0,
+      allotment: 0,
+    };
+  }
+
+  const credits = options?.credits ?? getAiCreditCost(feature);
+  const cycle = await resolveCreditCycle(userId);
+
+  if (isUnlimited(cycle.allotment)) {
+    const usage = await ensureCycleSynced(userId);
+    // Still track usage for analytics, but never block.
+    const next = await getUserUsage(userId, {
+      cycleKey: cycle.cycleKey,
+      periodStart: cycle.periodStart,
+      periodEnd: cycle.periodEnd,
+      allotment: cycle.allotment,
+      incrementBy: credits,
+      incrementReplies: feature === "email_reply",
+    });
+    await appendLedger({
+      userId,
+      feature,
+      credits,
+      balanceAfter: Number.MAX_SAFE_INTEGER,
+      metadata: options?.metadata,
+    });
+    return {
+      ok: true,
+      usage: next,
+      remaining: Number.POSITIVE_INFINITY,
+      allotment: cycle.allotment,
+    };
+  }
+
+  const db = getSupabaseAdmin();
+
+  // Prefer atomic RPC when available
+  if (db) {
+    try {
+      const { data, error } = await db.rpc("consume_ai_credits", {
+        p_user_id: userId,
+        p_credits: credits,
+        p_allotment: Number.isFinite(cycle.allotment)
+          ? cycle.allotment
+          : 2_147_483_647,
+        p_cycle_key: cycle.cycleKey,
+        p_period_start: cycle.periodStart,
+        p_period_end: cycle.periodEnd,
+      });
+
+      if (!error && Array.isArray(data)) {
+        if (data.length === 0) {
+          const current = await ensureCycleSynced(userId);
+          const balance = computeCreditBalance(
+            current.aiActionsUsed,
+            current.aiCreditsAllotment || cycle.allotment
+          );
+          return {
+            ok: false,
+            code: "INSUFFICIENT_CREDITS",
+            reason: `You've used all ${balance.allotment} AI credits for this billing cycle. Upgrade to continue.`,
+            remaining: balance.remaining,
+            allotment: balance.allotment,
+          };
+        }
+
+        const row = data[0] as {
+          ai_actions_used: number;
+          ai_credits_allotment: number;
+          period_start: string;
+          period_end: string | null;
+          cycle_key: string;
+        };
+
+        const usage: UserUsage = {
+          userId,
+          aiActionsUsed: row.ai_actions_used,
+          aiRepliesCount: 0,
+          aiCreditsAllotment: row.ai_credits_allotment,
+          periodStart: row.period_start,
+          periodEnd: row.period_end,
+          cycleKey: row.cycle_key,
+        };
+
+        const remaining = Math.max(
+          0,
+          row.ai_credits_allotment - row.ai_actions_used
+        );
+
+        await appendLedger({
+          userId,
+          feature,
+          credits,
+          balanceAfter: remaining,
+          metadata: options?.metadata,
+        });
+
+        return {
+          ok: true,
+          usage,
+          remaining,
+          allotment: row.ai_credits_allotment,
+        };
+      }
+    } catch (err) {
+      console.error("[ai-credits] RPC consume failed, falling back:", err);
+    }
+  }
+
+  // Fallback: application-level check + persist
+  const current = await ensureCycleSynced(userId);
+  const allotment = current.aiCreditsAllotment || cycle.allotment;
+  const balance = computeCreditBalance(current.aiActionsUsed, allotment);
+
+  if (balance.remaining < credits) {
+    return {
+      ok: false,
+      code: "INSUFFICIENT_CREDITS",
+      reason: `You've used all ${allotment} AI credits for this billing cycle. Upgrade to continue.`,
+      remaining: balance.remaining,
+      allotment,
+    };
+  }
+
+  const next = await getUserUsage(userId, {
+    cycleKey: cycle.cycleKey,
+    periodStart: cycle.periodStart,
+    periodEnd: cycle.periodEnd,
+    allotment,
+    incrementBy: credits,
+    incrementReplies: feature === "email_reply",
+  });
+
+  const remaining = Math.max(0, allotment - next.aiActionsUsed);
+  await appendLedger({
+    userId,
+    feature,
+    credits,
+    balanceAfter: remaining,
+    metadata: options?.metadata,
+  });
+
+  return { ok: true, usage: next, remaining, allotment };
+}
+
+export async function getAiCreditLedger(
+  userId: string,
+  limit = 50
+): Promise<AiCreditLedgerEntry[]> {
+  const db = getSupabaseAdmin();
+  if (!db) return [];
+
+  const { data, error } = await db
+    .from("ai_credit_ledger")
+    .select("id, user_id, feature, credits, balance_after, metadata, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (
+      !isMissingUserUsageSchemaError(error.message) &&
+      !isSupabaseNetworkError(error.message)
+    ) {
+      console.error("[ai-credits] ledger read failed:", error.message);
+    }
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    userId: row.user_id as string,
+    feature: row.feature as string,
+    credits: row.credits as number,
+    balanceAfter: row.balance_after as number,
+    metadata: (row.metadata as Record<string, unknown>) ?? {},
+    createdAt: row.created_at as string,
+  }));
+}

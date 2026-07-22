@@ -3,6 +3,10 @@ import type { PlanLimits } from "./types";
 
 export const DEFAULT_PLAN_ID: PlanId = "free";
 
+/**
+ * AI credit allotments per billing cycle + inbox caps.
+ * Trial: 100 credits / 14 days. Pro: 5,000. Team: 50,000.
+ */
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
     aiActionsPerMonth: 100,
@@ -10,18 +14,18 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     unlimited: false,
   },
   trial: {
-    aiActionsPerMonth: Infinity,
-    inboxes: Infinity,
-    unlimited: true,
+    aiActionsPerMonth: 100,
+    inboxes: 1,
+    unlimited: false,
   },
   starter: {
-    aiActionsPerMonth: Infinity,
+    aiActionsPerMonth: 50_000,
     inboxes: Infinity,
-    unlimited: true,
+    unlimited: false,
   },
   pro: {
-    aiActionsPerMonth: Infinity,
-    inboxes: 20,
+    aiActionsPerMonth: 5_000,
+    inboxes: 5,
     unlimited: false,
   },
   enterprise: {
@@ -52,7 +56,8 @@ export function isUnlimited(value: number): boolean {
 }
 
 export function formatLimit(value: number): string {
-  return isUnlimited(value) ? "Unlimited" : String(value);
+  if (isUnlimited(value)) return "Unlimited";
+  return value.toLocaleString("en-IN");
 }
 
 export function getPlanBadgeStyles(planId: PlanId): {

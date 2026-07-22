@@ -7,6 +7,7 @@ import {
 } from "@/lib/crm/api-response";
 import { fetchContactForUser } from "@/lib/crm/contacts-query";
 import { getContactEmailHistory } from "@/lib/crm/email-link";
+import { requireAiCredits } from "@/lib/ai-credits/require";
 import { generateCrmContactInsights } from "@/lib/openai";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -97,6 +98,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       }
 
       try {
+        const creditGate = await requireAiCredits(userId, "crm_insights", {
+          contactId: id,
+        });
+        if ("error" in creditGate && creditGate.error) return creditGate.error;
+
         const insights = await generateCrmContactInsights({
           name: contact.name,
           email: contact.email,

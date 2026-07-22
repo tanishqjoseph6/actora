@@ -9,6 +9,11 @@ import { CrmPreviewSection } from "@/components/dashboard/premium/CrmPreviewSect
 import { RetryErrorState } from "@/components/ui/RetryErrorState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import {
+  AiCreditsCard,
+  AiCreditWarningBanner,
+} from "@/components/subscription/AiCreditsCard";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 const AiAssistantPanel = dynamic(
@@ -71,6 +76,7 @@ export default function Dashboard() {
     error: statsError,
     refresh,
   } = useDashboardStats();
+  const { subscription, loading: planLoading } = usePlanGate();
 
   const emailCountDisplay = useMemo(() => {
     if (statsLoading) return "—";
@@ -80,6 +86,14 @@ export default function Dashboard() {
   return (
     <>
       <DashboardHero />
+      <AiCreditWarningBanner subscription={subscription} />
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <AiCreditsCard
+          subscription={subscription}
+          loading={planLoading}
+          className="lg:col-span-1"
+        />
+      </div>
       <AiAssistantPanel />
 
       {statsError && !statsLoading && (

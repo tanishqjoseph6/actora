@@ -9,6 +9,11 @@ import {
   formatRenewalDate,
   PlanUsageDisplay,
 } from "@/components/subscription/CurrentPlanBadge";
+import {
+  AiCreditsCard,
+  AiCreditWarningBanner,
+} from "@/components/subscription/AiCreditsCard";
+import { AiCreditUsageHistory } from "@/components/subscription/AiCreditUsageHistory";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
@@ -325,14 +330,19 @@ export default function SettingsPage() {
               )}
             </div>
 
+            <AiCreditWarningBanner subscription={subscription} />
+            <div className="mb-4">
+              <AiCreditsCard subscription={subscription} loading={loading} />
+            </div>
+
             <PlanUsageDisplay subscription={subscription} loading={loading} />
 
             {subscription && (
               <div className="grid sm:grid-cols-2 gap-3 mt-2">
                 <div className={`rounded-[18px] border ${dashboard.border} ${dashboard.surface} p-4`}>
-                  <p className="text-sm font-medium text-white">AI actions limit</p>
+                  <p className="text-sm font-medium text-white">AI credits / cycle</p>
                   <p className="text-sm font-semibold text-white mt-1 tabular-nums">
-                    {formatLimit(subscription.limits.aiActionsPerMonth)}/month
+                    {formatLimit(subscription.limits.aiActionsPerMonth)}
                   </p>
                 </div>
                 <div className={`rounded-[18px] border ${dashboard.border} ${dashboard.surface} p-4`}>
@@ -343,6 +353,10 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            <div className="mt-4">
+              <AiCreditUsageHistory />
+            </div>
 
             <Link
               href="/billing"

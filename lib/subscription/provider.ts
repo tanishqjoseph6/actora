@@ -6,6 +6,8 @@ import type {
 } from "./types";
 import { DEFAULT_PLAN_ID, getPlanDisplayName, getPlanLimits } from "./plans";
 import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard/user-usage";
+import { computeCreditBalance } from "@/lib/ai-credits/balance";
+import { resolveCreditCycle } from "@/lib/ai-credits/consume";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { logApiError } from "@/lib/api/log-error";
 import {
@@ -65,6 +67,9 @@ export function createDefaultSubscription(userId: string): UserSubscription {
     usage: {
       aiActionsUsed: 0,
       inboxesConnected: 0,
+      aiCreditsRemaining: 100,
+      aiCreditsAllotment: 100,
+      aiCreditWarning: "none",
     },
     updatedAt: new Date().toISOString(),
     isTrial: false,
@@ -103,17 +108,37 @@ export function toSubscriptionSnapshot(
 
 async function loadUsageSafely(userId: string): Promise<UserSubscription["usage"]> {
   try {
-    const usage = await getUserUsage(userId);
+    const cycle = await resolveCreditCycle(userId);
+    const usage = await getUserUsage(userId, {
+      cycleKey: cycle.cycleKey,
+      periodStart: cycle.periodStart,
+      periodEnd: cycle.periodEnd,
+      allotment: cycle.allotment,
+    });
+    const allotment =
+      usage.aiCreditsAllotment ||
+      cycle.allotment ||
+      getPlanLimits(cycle.planId).aiActionsPerMonth;
+    const balance = computeCreditBalance(usage.aiActionsUsed, allotment);
     return {
       aiActionsUsed: usage.aiActionsUsed,
       inboxesConnected: 0,
+      aiCreditsRemaining: balance.remaining,
+      aiCreditsAllotment: balance.allotment,
+      aiCreditWarning: balance.warning,
     };
   } catch (error) {
     logApiError("subscription/provider", error, {
       operation: "getUserUsage",
       userId,
     });
-    return { aiActionsUsed: 0, inboxesConnected: 0 };
+    return {
+      aiActionsUsed: 0,
+      inboxesConnected: 0,
+      aiCreditsRemaining: 100,
+      aiCreditsAllotment: 100,
+      aiCreditWarning: "none",
+    };
   }
 }
 
@@ -140,7 +165,7 @@ class SupabaseSubscriptionProvider implements SubscriptionProvider {
     ]);
 
     return toUserSubscription(stored, {
-      aiActionsUsed: usageBase.aiActionsUsed,
+      ...usageBase,
       inboxesConnected,
     });
   }
@@ -158,7 +183,7 @@ class SupabaseSubscriptionProvider implements SubscriptionProvider {
     ]);
 
     return toUserSubscription(stored, {
-      aiActionsUsed: usageBase.aiActionsUsed,
+      ...usageBase,
       inboxesConnected,
     });
   }

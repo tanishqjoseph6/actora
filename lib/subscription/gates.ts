@@ -41,12 +41,18 @@ export function canUseAiAction(
     return { allowed: true };
   }
 
-  if (usage.aiActionsUsed >= limits.aiActionsPerMonth) {
+  const allotment =
+    usage.aiCreditsAllotment ?? limits.aiActionsPerMonth;
+  const used = usage.aiActionsUsed;
+  const remaining =
+    usage.aiCreditsRemaining ?? Math.max(0, allotment - used);
+
+  if (remaining <= 0 || used >= allotment) {
     return {
       allowed: false,
       limitType: "ai_actions",
-      recommendedPlan: "pro",
-      reason: `You've used all ${limits.aiActionsPerMonth} AI actions for this month. Upgrade to Pro for unlimited AI actions.`,
+      recommendedPlan: planId === "pro" ? "starter" : "pro",
+      reason: `You've used all ${allotment.toLocaleString("en-IN")} AI credits for this billing cycle. Upgrade your plan to get more credits.`,
     };
   }
 
@@ -68,7 +74,7 @@ export function canConnectInbox(
       allowed: false,
       limitType: "inboxes",
       recommendedPlan: "pro",
-      reason: `Your Free plan includes ${limits.inboxes} Gmail account. Upgrade to Pro for unlimited inboxes.`,
+      reason: `Your plan includes ${limits.inboxes} Gmail account${limits.inboxes === 1 ? "" : "s"}. Upgrade to Pro for up to 5 inboxes, or Team for unlimited.`,
     };
   }
 

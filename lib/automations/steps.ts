@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createUserNotification } from "@/lib/notifications/repository";
+import { consumeAiCredits } from "@/lib/ai-credits/consume";
 import {
   generateEmailReply,
   generateEmailSummary,
@@ -50,6 +51,18 @@ export async function executeLiveStep(
           return simulateStepOutput(node, context);
         }
         try {
+          if (!isTest) {
+            const credits = await consumeAiCredits(userId, "automation_ai", {
+              metadata: { blockId: node.blockId, workflowNodeId: node.id },
+            });
+            if (!credits.ok) {
+              return {
+                ...simulateStepOutput(node, context),
+                error: credits.reason,
+                creditBlocked: true,
+              };
+            }
+          }
           const summary = await generateEmailSummary({
             sender: str(context.from || context.sender, "Unknown"),
             subject,
@@ -63,6 +76,18 @@ export async function executeLiveStep(
 
       case "generate-reply": {
         try {
+          if (!isTest) {
+            const credits = await consumeAiCredits(userId, "automation_ai", {
+              metadata: { blockId: node.blockId, workflowNodeId: node.id },
+            });
+            if (!credits.ok) {
+              return {
+                ...simulateStepOutput(node, context),
+                error: credits.reason,
+                creditBlocked: true,
+              };
+            }
+          }
           const draft = await generateEmailReply({
             sender: str(context.from || context.sender, "there"),
             subject: str(context.subject, "Re: your message"),

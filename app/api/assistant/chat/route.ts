@@ -1,9 +1,8 @@
-import { getServerSession } from "next-auth";
 import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
 import { streamAssistantChat, type ChatMessage } from "@/lib/assistant/chat";
-import { recordAiAction } from "@/lib/dashboard/user-usage";
-import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
+import { requireAiCreditsResponse } from "@/lib/ai-credits/require";
+import { getServerSession } from "next-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,20 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const subscription = await subscriptionProvider.getSubscription(userId);
-    const gate = canUseAiAction(subscription.planId, subscription.usage);
-    if (!gate.allowed) {
-      return new Response(
-        JSON.stringify({
-          error: gate.reason,
-          code: "PLAN_LIMIT",
-          limitType: gate.limitType,
-        }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    await recordAiAction(userId);
+    const creditGate = await requireAiCreditsResponse(userId, "roxx_chat", {
+      regenerate: Boolean(body.regenerate),
+    });
+    if (!creditGate.ok) return creditGate.response;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -90,7 +79,7 @@ export async function POST(request: NextRequest) {
     return new Response(
       JSON.stringify({
         error:
-          error instanceof Error ? error.message : "Roxx AI request failed.",
+          error instanceof Error ? error.message : "Failed to start chat.",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

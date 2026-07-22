@@ -24,7 +24,9 @@ import {
 } from "lucide-react";
 import { dashboard } from "./dashboard-tokens";
 import { RoxxThinkingIndicator } from "./RoxxThinkingIndicator";
-import { usePlanGateActions } from "@/components/subscription/PlanGateProvider";
+import { usePlanGate, usePlanGateActions } from "@/components/subscription/PlanGateProvider";
+import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
+import { formatLimit } from "@/lib/subscription";
 
 const STORAGE_KEY = "actora-assistant-conversations-v1";
 
@@ -124,6 +126,7 @@ function renderMarkdownLite(text: string) {
 export function AiAssistantPanel() {
   const { checkAiAction, showLimitModal, refreshSubscription } =
     usePlanGateActions();
+  const { subscription, loading: planLoading } = usePlanGate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -405,6 +408,14 @@ export function AiAssistantPanel() {
     .find((m) => m.role === "assistant" && m.content);
 
   return (
+    <>
+    <div className="mb-4 lg:hidden">
+      <AiCreditsCard
+        subscription={subscription}
+        loading={planLoading}
+        compact
+      />
+    </div>
     <motion.section
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -426,6 +437,17 @@ export function AiAssistantPanel() {
           <p className="mt-1 text-sm text-[#A1A1AA]">
             Your AI teammate for Inbox, CRM, Calendar, Tasks & Automations.
           </p>
+          {subscription && (
+            <p className="mt-1.5 text-[11px] tabular-nums text-[#71717A]">
+              {subscription.usage.aiCreditsRemaining != null &&
+              Number.isFinite(subscription.usage.aiCreditsRemaining)
+                ? `${subscription.usage.aiCreditsRemaining.toLocaleString("en-IN")} / ${formatLimit(
+                    subscription.usage.aiCreditsAllotment ??
+                      subscription.limits.aiActionsPerMonth
+                  )} AI credits left`
+                : `${formatLimit(subscription.limits.aiActionsPerMonth)} AI credits / cycle`}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <button
@@ -656,5 +678,6 @@ export function AiAssistantPanel() {
         </form>
       </div>
     </motion.section>
+    </>
   );
 }

@@ -10,6 +10,8 @@ import {
   formatRenewalDate,
   PlanUsageDisplay,
 } from "@/components/subscription/CurrentPlanBadge";
+import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
+import { AiCreditUsageHistory } from "@/components/subscription/AiCreditUsageHistory";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   ComingSoonBadge,
@@ -195,10 +197,22 @@ export function CurrentPlanSection({
         )}
       </div>
 
-      <div className={`${dashboard.cardLg} p-6 sm:p-8`}>
-        <h3 className="text-lg font-bold text-white mb-5">Usage this month</h3>
-        <PlanUsageDisplay subscription={subscription} loading={loading} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <AiCreditsCard
+          subscription={subscription}
+          loading={loading}
+          className="lg:col-span-1"
+          showUpgradeLink={Boolean(onUpgradePlan)}
+        />
+        <div className={`${dashboard.cardLg} p-6 sm:p-8 lg:col-span-2`}>
+          <h3 className="text-lg font-bold text-white mb-5">
+            Usage this billing cycle
+          </h3>
+          <PlanUsageDisplay subscription={subscription} loading={loading} />
+        </div>
       </div>
+
+      <AiCreditUsageHistory />
     </motion.div>
   );
 }

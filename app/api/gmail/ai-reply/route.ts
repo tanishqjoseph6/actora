@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
-import { recordAiReply } from "@/lib/dashboard/user-usage";
+import { requireAiCredits } from "@/lib/ai-credits/require";
 import { generateEmailReplyWithRetry, isReplyTone } from "@/lib/openai";
-import { canUseAiAction, subscriptionProvider } from "@/lib/subscription";
+import { subscriptionProvider } from "@/lib/subscription";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -29,19 +29,10 @@ export async function POST(request: NextRequest) {
 
     const replyTone = tone && isReplyTone(tone) ? tone : "professional";
 
-    const subscription = await subscriptionProvider.getSubscription(userId);
-    const gate = canUseAiAction(subscription.planId, subscription.usage);
-
-    if (!gate.allowed) {
-      return NextResponse.json(
-        {
-          error: gate.reason,
-          code: "PLAN_LIMIT",
-          limitType: gate.limitType,
-        },
-        { status: 403 }
-      );
-    }
+    const creditGate = await requireAiCredits(userId, "email_reply", {
+      subject: typeof subject === "string" ? subject.slice(0, 120) : undefined,
+    });
+    if ("error" in creditGate && creditGate.error) return creditGate.error;
 
     const reply = await generateEmailReplyWithRetry({
       sender,
@@ -52,15 +43,17 @@ export async function POST(request: NextRequest) {
       tone: replyTone,
     });
 
-    const updated = await recordAiReply(userId);
     const refreshed = await subscriptionProvider.getSubscription(userId);
+    const consumed = creditGate.consumed!;
 
     return NextResponse.json({
       reply,
       tone: replyTone,
       usage: {
-        aiActionsUsed: updated.aiActionsUsed,
-        aiRepliesCount: updated.aiRepliesCount,
+        aiActionsUsed: consumed.usage.aiActionsUsed,
+        aiRepliesCount: consumed.usage.aiRepliesCount,
+        aiCreditsRemaining: consumed.remaining,
+        aiCreditsAllotment: consumed.allotment,
         inboxesConnected: refreshed.usage.inboxesConnected,
       },
     });

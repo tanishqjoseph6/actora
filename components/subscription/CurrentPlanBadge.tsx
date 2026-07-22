@@ -100,12 +100,19 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
     );
   }
 
+  const allotment =
+    subscription.usage.aiCreditsAllotment ??
+    subscription.limits.aiActionsPerMonth;
+  const remaining =
+    subscription.usage.aiCreditsRemaining ??
+    Math.max(0, allotment - subscription.usage.aiActionsUsed);
+
   const stats = [
     {
-      label: "AI Actions",
+      label: "AI Credits",
       used: subscription.usage.aiActionsUsed,
-      limit: subscription.limits.aiActionsPerMonth,
-      unit: "this month",
+      limit: allotment,
+      unit: `${Number.isFinite(remaining) ? remaining.toLocaleString("en-IN") : "∞"} remaining this cycle`,
     },
     {
       label: "Inboxes",
@@ -121,20 +128,25 @@ export function PlanUsageDisplay({ subscription, loading }: PlanUsageDisplayProp
         const percent = getUsagePercent(stat.used, stat.limit);
         const limitLabel = formatLimit(stat.limit);
         const isAtLimit = percent >= 100;
+        const isWarn = percent >= 80 && percent < 100;
 
         return (
           <div key={stat.label}>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm text-[#71717A]">{stat.label}</span>
               <span className="text-sm font-medium text-white">
-                {stat.used}
+                {stat.used.toLocaleString("en-IN")}
                 <span className="text-[#71717A]"> / {limitLabel}</span>
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[#0A0A0A]">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isAtLimit ? "bg-[#EF4444]" : "bg-[#3B82F6]"
+                  isAtLimit
+                    ? "bg-[#EF4444]"
+                    : isWarn
+                      ? "bg-amber-400"
+                      : "bg-[#3B82F6]"
                 }`}
                 style={{ width: `${percent}%` }}
               />

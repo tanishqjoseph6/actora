@@ -4,8 +4,21 @@ export type UserUsageRow = {
   user_id: string;
   ai_actions_used: number;
   ai_replies_count: number;
+  ai_credits_allotment?: number;
   period_start: string;
+  period_end?: string | null;
+  cycle_key?: string | null;
   updated_at: string;
+};
+
+export type AiCreditLedgerRow = {
+  id: string;
+  user_id: string;
+  feature: string;
+  credits: number;
+  balance_after: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
 };
 
 export type UserSubscriptionRow = {
