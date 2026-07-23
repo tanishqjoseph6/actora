@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { InboxEmail } from "@/lib/gmail";
+import type { InboxEmail } from "@/lib/gmail/message-types";
 
 type UseInboxKeyboardShortcutsOptions = {
   enabled?: boolean;

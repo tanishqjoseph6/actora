@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { InboxEmail } from "@/lib/gmail";
+import type { InboxEmail } from "@/lib/gmail/message-types";
 import { sortByPriority } from "@/lib/gmail/priority";
 import {
   listReadySnoozes,

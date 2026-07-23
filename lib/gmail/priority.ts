@@ -1,4 +1,4 @@
-import type { InboxEmail } from "@/lib/gmail";
+import type { InboxEmail } from "@/lib/gmail/message-types";
 
 export type PriorityLevel = "high" | "medium" | "low";
 

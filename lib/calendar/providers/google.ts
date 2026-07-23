@@ -1,3 +1,5 @@
+import "server-only";
+
 import { google } from "googleapis";
 import type { calendar_v3 } from "googleapis";
 import type { CalendarProviderAdapter } from "@/lib/calendar/providers/types";

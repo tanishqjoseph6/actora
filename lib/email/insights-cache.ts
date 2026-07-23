@@ -1,4 +1,4 @@
-import type { EmailInsights } from "@/lib/openai";
+import type { EmailInsights } from "@/lib/openai/types";
 
 const cache = new Map<string, EmailInsights>();
 

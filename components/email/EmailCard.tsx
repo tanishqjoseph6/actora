@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import type { InboxEmail } from "@/lib/gmail";
+import type { InboxEmail } from "@/lib/gmail/message-types";
 import { scoreEmailPriority } from "@/lib/gmail/priority";
 import { motion } from "framer-motion";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";

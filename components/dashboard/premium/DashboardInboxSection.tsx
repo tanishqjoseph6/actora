@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { InboxEmail } from "@/lib/gmail";
+import type { InboxEmail } from "@/lib/gmail/message-types";
 import { EmailCard } from "@/components/email/EmailCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";

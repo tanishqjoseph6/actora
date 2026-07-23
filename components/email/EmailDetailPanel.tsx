@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { EmailDetail, InboxEmail } from "@/lib/gmail";
+import type { EmailDetail, InboxEmail } from "@/lib/gmail/message-types";
 import { getAvatarGradient, getInitials } from "@/lib/avatar";
 import { usePlanGateActions } from "@/components/subscription/PlanGateProvider";
 import { isPlanLimitError } from "@/lib/subscription";
@@ -37,7 +37,7 @@ import {
   type ReplyLength,
   type ReplyTone,
 } from "@/lib/email-reply/tones";
-import type { EmailInsights } from "@/lib/openai";
+import type { EmailInsights } from "@/lib/openai/types";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton";
 import { EmailSchedulingActions } from "@/components/calendar/EmailSchedulingActions";

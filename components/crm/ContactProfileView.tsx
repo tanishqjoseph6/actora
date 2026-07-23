@@ -8,7 +8,7 @@ import { ContactMeetingsSection } from "@/components/crm/ContactMeetingsSection"
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { getAiScoreStyle } from "@/lib/crm/entities";
 import type { CrmContact, CrmContactStatus } from "@/lib/crm/live";
-import type { CrmContactInsights } from "@/lib/openai";
+import type { CrmContactInsights } from "@/lib/openai/types";
 
 const STATUS_STYLES: Record<CrmContactStatus, string> = {
   active: "bg-emerald-500/15 border-emerald-400/25 text-emerald-400",

@@ -1,3 +1,5 @@
+import "server-only";
+
 import OpenAI from "openai";
 import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
 import {
@@ -11,25 +13,16 @@ import {
   type ReplyTone,
 } from "@/lib/email-reply";
 
-// Tone/length/action constants — safe for Client Components via ./email-reply/tones.
-// This module also contains server AI helpers; Client Components should import
-// tones from "@/lib/email-reply/tones" (or type-only from here) to avoid bundling
-// OpenAI / googleapis into the browser.
-export {
-  REPLY_TONES,
-  REPLY_TONE_LABELS,
-  isReplyTone,
-  type ReplyTone,
-  PRIMARY_REPLY_TONES,
-  REPLY_LENGTHS,
-  REPLY_LENGTH_LABELS,
-  isReplyLength,
-  type ReplyLength,
-  REPLY_ACTIONS,
-  REPLY_ACTION_LABELS,
-  isReplyAction,
-  type ReplyAction,
-} from "@/lib/email-reply/tones";
+export type {
+  CrmContactInsights,
+  EmailInsights,
+  FollowUpSuggestion,
+  NextActionSuggestion,
+} from "@/lib/openai/types";
+import type {
+  CrmContactInsights,
+  EmailInsights,
+} from "@/lib/openai/types";
 
 export async function generateEmailReply({
   sender,
@@ -146,24 +139,6 @@ export async function generateEmailSummaryWithRetry(
   }
 }
 
-export type FollowUpSuggestion = {
-  label: string;
-  timing: string;
-  draftHint: string;
-};
-
-export type NextActionSuggestion = {
-  label: string;
-  type: "reply" | "schedule" | "task" | "archive" | "follow_up";
-};
-
-export type EmailInsights = {
-  priority: "high" | "medium" | "low";
-  priorityReason: string;
-  followUps: FollowUpSuggestion[];
-  nextActions: NextActionSuggestion[];
-};
-
 function parseInsightsJson(raw: string): EmailInsights {
   const parsed = JSON.parse(raw) as Partial<EmailInsights>;
   return {
@@ -268,13 +243,6 @@ export async function generateEmailInsightsWithRetry(
     }
   }
 }
-
-export type CrmContactInsights = {
-  summary: string;
-  nextSteps: string[];
-  riskLevel: "low" | "medium" | "high";
-  engagementScore: number;
-};
 
 function parseCrmInsightsJson(raw: string): CrmContactInsights {
   const parsed = JSON.parse(raw) as Partial<CrmContactInsights>;
