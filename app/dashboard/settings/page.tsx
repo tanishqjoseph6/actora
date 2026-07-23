@@ -369,7 +369,7 @@ export default function SettingsPage() {
 
             <AiCreditWarningBanner subscription={subscription} />
             <div className="mb-4">
-              <AiCreditsCard subscription={subscription} loading={loading} />
+              <AiCreditsCard subscription={subscription} loading={loading} detailed />
             </div>
 
             <PlanUsageDisplay subscription={subscription} loading={loading} />

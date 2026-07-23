@@ -91,6 +91,7 @@ export default function Dashboard() {
         <AiCreditsCard
           subscription={subscription}
           loading={planLoading}
+          detailed
           className="lg:col-span-1"
         />
       </div>

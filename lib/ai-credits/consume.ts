@@ -16,6 +16,17 @@ import {
   type UserUsage,
 } from "@/lib/dashboard/user-usage";
 
+async function notifyUsageMilestones(userId: string) {
+  try {
+    const { evaluateAiCreditUsageNotifications } = await import(
+      "@/lib/ai-credits/usage-notifications"
+    );
+    await evaluateAiCreditUsageNotifications(userId);
+  } catch (err) {
+    console.error("[ai-credits] usage notifications failed:", err);
+  }
+}
+
 export type ConsumeCreditsResult =
   | {
       ok: true;
@@ -219,6 +230,8 @@ async function consumeFromPools(
     metadata: { fromMonthly, fromPurchased },
   });
 
+  void notifyUsageMilestones(userId);
+
   return {
     ok: true,
     usage: next,
@@ -356,6 +369,8 @@ export async function consumeAiCredits(
             : Number.MAX_SAFE_INTEGER,
           metadata: ledgerMeta,
         });
+
+        void notifyUsageMilestones(poolUserId);
 
         return {
           ok: true,

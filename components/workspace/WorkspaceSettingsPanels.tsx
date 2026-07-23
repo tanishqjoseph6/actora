@@ -508,7 +508,7 @@ export function WorkspaceCreditsSection() {
   const { hasPermission } = useWorkspace();
   return (
     <div className="space-y-4">
-      <AiCreditsCard subscription={subscription} loading={loading} />
+      <AiCreditsCard subscription={subscription} loading={loading} detailed />
       {hasPermission("credits") ? (
         <Link
           href="/dashboard/billing#buy-credits"

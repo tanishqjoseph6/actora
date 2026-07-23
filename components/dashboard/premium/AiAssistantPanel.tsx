@@ -493,6 +493,7 @@ export function AiAssistantPanel() {
         subscription={subscription}
         loading={planLoading}
         compact
+        detailed
       />
     </div>
     <motion.section

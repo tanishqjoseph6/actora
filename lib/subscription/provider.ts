@@ -143,6 +143,8 @@ async function loadUsageSafely(userId: string): Promise<UserSubscription["usage"
       monthlyCreditsRemaining: monthlyRemaining,
       purchasedCreditsRemaining: purchasedRemaining,
       aiCreditWarning: warningBalance.warning,
+      periodEnd: usage.periodEnd ?? cycle.periodEnd,
+      cycleKey: usage.cycleKey ?? cycle.cycleKey,
     };
   } catch (error) {
     logApiError("subscription/provider", error, {

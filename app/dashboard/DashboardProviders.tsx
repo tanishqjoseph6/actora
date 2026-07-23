@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { PlanGateProvider } from "@/components/subscription/PlanGateProvider";
 import { PlanActivationToastListener } from "@/components/billing/PlanActivationToastListener";
+import { AiCreditUsageAlerts } from "@/components/subscription/AiCreditUsageAlerts";
 import { TrialBanner } from "@/components/subscription/TrialBanner";
 import { DashboardShellLayout } from "@/components/dashboard/DashboardShellLayout";
 import { ToastProvider } from "@/providers/ToastProvider";
@@ -40,6 +41,7 @@ export function DashboardProviders({ children }: { children: React.ReactNode }) 
           <NotificationsProvider>
             <ToastProvider>
               <PlanActivationToastListener />
+              <AiCreditUsageAlerts />
               <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
                 <TrialBanner />
               </div>

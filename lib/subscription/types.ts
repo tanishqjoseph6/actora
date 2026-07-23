@@ -27,6 +27,10 @@ export type UsageMetrics = {
   purchasedCreditsRemaining?: number;
   /** Warning band derived from total remaining %. */
   aiCreditWarning?: "none" | "low_20" | "critical_10" | "exhausted";
+  /** ISO date when monthly credits reset. */
+  periodEnd?: string | null;
+  /** Stable billing-cycle key for client-side dedupe. */
+  cycleKey?: string | null;
 };
 
 export type UserSubscription = {

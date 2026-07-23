@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { formatLimit, getUsagePercent, isUnlimited } from "@/lib/subscription";
 import { computeCreditBalance } from "@/lib/ai-credits/balance";
+import { formatCredits, formatNextResetDate } from "@/lib/ai-credits/format";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ type AiCreditsCardProps = {
   subscription: SubscriptionSnapshot | null;
   loading?: boolean;
   compact?: boolean;
+  detailed?: boolean;
   className?: string;
   showUpgradeLink?: boolean;
 };
@@ -26,10 +28,35 @@ function resolveBalance(subscription: SubscriptionSnapshot | null) {
   return computeCreditBalance(subscription.usage.aiActionsUsed, allotment);
 }
 
+function StatRow({
+  label,
+  value,
+  emphasize,
+}: {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <span className={dashboard.subtle}>{label}</span>
+      <span
+        className={cn(
+          "tabular-nums",
+          emphasize ? "font-semibold text-white" : "text-[#A1A1AA]"
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export function AiCreditsCard({
   subscription,
   loading,
   compact,
+  detailed = false,
   className,
   showUpgradeLink = true,
 }: AiCreditsCardProps) {
@@ -48,6 +75,17 @@ export function AiCreditsCard({
 
   const balance = resolveBalance(subscription);
   const percent = getUsagePercent(balance.used, balance.allotment);
+  const remaining =
+    subscription.usage.aiCreditsRemaining ?? balance.remaining;
+  const monthlyRemaining =
+    subscription.usage.monthlyCreditsRemaining ?? balance.remaining;
+  const purchasedRemaining =
+    subscription.usage.purchasedCreditsRemaining ?? 0;
+  const totalMonthly =
+    subscription.usage.aiCreditsAllotment ??
+    subscription.limits.aiActionsPerMonth;
+  const nextReset = formatNextResetDate(subscription.usage.periodEnd);
+
   const barColor =
     balance.warning === "exhausted"
       ? "bg-[#EF4444]"
@@ -60,51 +98,56 @@ export function AiCreditsCard({
   return (
     <div className={cn(dashboard.cardLg, "p-4 sm:p-5", className)}>
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className={`text-[11px] uppercase tracking-wider ${dashboard.subtle}`}>
             AI Credits
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-white">
-            {balance.unlimited
-              ? "Unlimited"
-              : (
-                  (subscription.usage.aiCreditsRemaining ??
-                    balance.remaining) as number
-                ).toLocaleString("en-IN")}
+            {balance.unlimited ? "Unlimited" : formatCredits(remaining as number)}
             {!balance.unlimited && (
               <span className={`ml-1 text-sm font-medium ${dashboard.subtle}`}>
-                left
+                remaining
               </span>
             )}
           </p>
-          {!balance.unlimited && (
-            <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] ${dashboard.subtle}`}>
-              <span>
-                Monthly:{" "}
-                {(
-                  subscription.usage.monthlyCreditsRemaining ??
-                  balance.remaining
-                ).toLocaleString("en-IN")}
-              </span>
-              <span>
-                Purchased:{" "}
-                {(
-                  subscription.usage.purchasedCreditsRemaining ?? 0
-                ).toLocaleString("en-IN")}
-              </span>
-            </div>
-          )}
         </div>
         {!compact && showUpgradeLink && !balance.unlimited && (
           <Link
-            href="/billing"
+            href="/billing#ai-credits"
             scroll={false}
-            className="text-xs font-medium text-[#3B82F6] hover:text-[#93C5FD]"
+            className="shrink-0 text-xs font-medium text-[#3B82F6] hover:text-[#93C5FD]"
           >
-            Upgrade
+            Buy credits
           </Link>
         )}
       </div>
+
+      {(detailed || !compact) && !balance.unlimited && (
+        <div className="mt-4 space-y-2 rounded-xl border border-white/[0.06] bg-[#0A0A0A]/80 p-3">
+          <StatRow
+            label="Remaining credits"
+            value={formatCredits(remaining as number)}
+            emphasize
+          />
+          <StatRow label="Used credits" value={formatCredits(balance.used)} />
+          <StatRow
+            label="Total monthly credits"
+            value={formatCredits(totalMonthly as number)}
+          />
+          <StatRow
+            label="Purchased credits"
+            value={formatCredits(purchasedRemaining)}
+          />
+          <StatRow label="Next reset date" value={nextReset} />
+        </div>
+      )}
+
+      {compact && !detailed && !balance.unlimited && (
+        <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] ${dashboard.subtle}`}>
+          <span>Monthly: {formatCredits(monthlyRemaining as number)}</span>
+          <span>Purchased: {formatCredits(purchasedRemaining)}</span>
+        </div>
+      )}
 
       {!balance.unlimited && (
         <>
@@ -119,15 +162,14 @@ export function AiCreditsCard({
           </div>
           <div className="mt-2 flex items-center justify-between text-xs text-[#71717A]">
             <span>
-              {balance.used.toLocaleString("en-IN")} used of{" "}
-              {formatLimit(balance.allotment)}
+              {formatCredits(balance.used)} used of {formatLimit(balance.allotment)}
             </span>
-            <span>{Math.round(balance.percentRemaining)}% left</span>
+            <span>{Math.round(balance.percentUsed)}% used</span>
           </div>
         </>
       )}
 
-      {balance.warning !== "none" && (
+      {balance.warning !== "none" && !compact && (
         <p
           className={cn(
             "mt-3 text-xs leading-relaxed",
@@ -137,10 +179,10 @@ export function AiCreditsCard({
           )}
         >
           {balance.warning === "exhausted"
-            ? "You're out of AI credits. Upgrade to continue using Roxx AI and inbox automation."
+            ? "Monthly AI credits exhausted. Buy more credits or upgrade to keep Roxxx AI running."
             : balance.warning === "critical_10"
-              ? "Only 10% of your AI credits remain this billing cycle."
-              : "You're down to 20% of your AI credits for this cycle."}
+              ? "Only 10% of your monthly AI credits remain this billing cycle."
+              : "You're down to 20% of your monthly AI credits for this cycle."}
         </p>
       )}
     </div>
@@ -173,17 +215,17 @@ export function AiCreditWarningBanner({
     >
       <p>
         {balance.warning === "exhausted"
-          ? "AI credits exhausted — AI features are paused until your next billing cycle or an upgrade."
+          ? "Monthly AI credits exhausted — purchase top-ups or upgrade to continue."
           : balance.warning === "critical_10"
-            ? `Critical: ${balance.remaining.toLocaleString("en-IN")} AI credits remaining (≤10%).`
-            : `Warning: ${balance.remaining.toLocaleString("en-IN")} AI credits remaining (≤20%).`}
+            ? `Critical: ${formatCredits(balance.remaining)} AI credits remaining (≤10%).`
+            : `Warning: ${formatCredits(balance.remaining)} AI credits remaining (≤20%).`}
       </p>
       <Link
-        href="/billing"
+        href="/billing#ai-credits"
         scroll={false}
         className="shrink-0 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/15"
       >
-        View plans
+        Buy credits
       </Link>
     </div>
   );

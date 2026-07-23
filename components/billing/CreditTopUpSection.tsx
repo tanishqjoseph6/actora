@@ -201,7 +201,7 @@ export function CreditTopUpSection({
   const packs = useMemo(() => AI_CREDIT_PACKS, []);
 
   return (
-    <section className="relative">
+    <section id="ai-credits" className="relative scroll-mt-24">
       <div className="mb-8 text-center sm:text-left">
         <p className={`text-sm font-medium ${dashboard.accent} mb-2`}>
           AI Credits

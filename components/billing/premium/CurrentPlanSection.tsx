@@ -201,6 +201,7 @@ export function CurrentPlanSection({
         <AiCreditsCard
           subscription={subscription}
           loading={loading}
+          detailed
           className="lg:col-span-1"
           showUpgradeLink={Boolean(onUpgradePlan)}
         />

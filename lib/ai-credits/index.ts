@@ -15,6 +15,16 @@ export {
 } from "./balance";
 
 export {
+  AI_CREDIT_USAGE_MILESTONES,
+  AI_CREDIT_EMAIL_MILESTONES,
+  milestoneMessage,
+  milestoneTitle,
+  type AiCreditUsageMilestone,
+} from "./milestones";
+
+export { formatCredits, formatNextResetDate } from "./format";
+
+export {
   consumeAiCredits,
   getAiCreditLedger,
   resolveCreditCycle,
