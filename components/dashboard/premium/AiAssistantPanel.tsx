@@ -25,7 +25,10 @@ import {
 import { dashboard } from "./dashboard-tokens";
 import { RoxxThinkingIndicator } from "./RoxxThinkingIndicator";
 import { RoxxModelSelector } from "./RoxxModelSelector";
+import { RoxxAiCooldownScreen } from "./RoxxAiCooldownScreen";
 import { usePlanGate, usePlanGateActions } from "@/components/subscription/PlanGateProvider";
+import { useRoxxFairUsage } from "@/hooks/useRoxxFairUsage";
+import type { RoxxFairUsageStatus } from "@/lib/assistant/fair-usage/types";
 import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
 import { formatLimit, type PlanId } from "@/lib/subscription";
 import {
@@ -154,6 +157,11 @@ export function AiAssistantPanel() {
   const { checkAiAction, showLimitModal, refreshSubscription } =
     usePlanGateActions();
   const { subscription, loading: planLoading } = usePlanGate();
+  const {
+    status: fairUsage,
+    blocked: fairUsageBlocked,
+    refresh: refreshFairUsage,
+  } = useRoxxFairUsage({ enabled: !planLoading });
   const planId = (subscription?.planId ?? "free") as PlanId;
   const [selectedModel, setSelectedModel] = useState<RoxxModelId>("gpt-4o-mini");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -256,6 +264,7 @@ export function AiAssistantPanel() {
 
   const runChat = useCallback(
     async (history: UiMessage[], conversationId: string, title: string) => {
+      if (fairUsageBlocked) return;
       if (!checkAiAction()) return;
 
       const assistantId = uid();
@@ -311,7 +320,25 @@ export function AiAssistantPanel() {
             code?: string;
             limitType?: "ai_actions" | "inboxes" | "feature";
             recommendedPlan?: PlanId;
+            fairUsage?: RoxxFairUsageStatus;
           };
+          if (err.code === "FAIR_USAGE_COOLDOWN") {
+            void refreshFairUsage();
+            patchAssistant({
+              content: "",
+              toolStatus: null,
+            });
+            setConversations((prev) =>
+              prev.map((c) => {
+                if (c.id !== conversationId) return c;
+                return {
+                  ...c,
+                  messages: c.messages.filter((m) => m.id !== assistantId),
+                };
+              })
+            );
+            return;
+          }
           if (err.code === "PLAN_LIMIT" && err.limitType) {
             showLimitModal(
               err.error || "AI limit reached",
@@ -381,6 +408,7 @@ export function AiAssistantPanel() {
         }
 
         void refreshSubscription();
+        void refreshFairUsage();
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
         patchAssistant({
@@ -394,13 +422,13 @@ export function AiAssistantPanel() {
         setStreaming(false);
       }
     },
-    [checkAiAction, refreshSubscription, showLimitModal, upsertConversation]
+    [checkAiAction, fairUsageBlocked, refreshFairUsage, refreshSubscription, showLimitModal, upsertConversation]
   );
 
   const sendPrompt = useCallback(
     async (text: string) => {
       const prompt = text.trim();
-      if (!prompt || streaming) return;
+      if (!prompt || streaming || fairUsageBlocked) return;
 
       const conversationId = activeId ?? uid();
       const existing = conversations.find((c) => c.id === conversationId);
@@ -418,7 +446,7 @@ export function AiAssistantPanel() {
 
       await runChat(history, conversationId, title);
     },
-    [activeId, conversations, runChat, streaming, upsertConversation]
+    [activeId, conversations, fairUsageBlocked, runChat, streaming, upsertConversation]
   );
 
   const onSubmit = (e: FormEvent) => {
@@ -444,7 +472,7 @@ export function AiAssistantPanel() {
   };
 
   const regenerate = async () => {
-    if (!active || streaming) return;
+    if (!active || streaming || fairUsageBlocked) return;
     const lastUserIdx = [...active.messages]
       .map((m, i) => ({ m, i }))
       .reverse()
@@ -623,7 +651,7 @@ export function AiAssistantPanel() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.05 + index * 0.04 }}
-                    disabled={streaming}
+                    disabled={streaming || fairUsageBlocked}
                     onClick={() => {
                       stickToBottomRef.current = true;
                       void sendPrompt(prompt);
@@ -709,26 +737,40 @@ export function AiAssistantPanel() {
           ))}
         </div>
 
+        <AnimatePresence>
+          {fairUsageBlocked && !fairUsage.unlimited ? (
+            <RoxxAiCooldownScreen status={fairUsage} />
+          ) : null}
+        </AnimatePresence>
+
         <form
           onSubmit={(e) => {
             stickToBottomRef.current = true;
             onSubmit(e);
           }}
-          className="shrink-0 border-t border-white/[0.06] bg-[#111111] p-4 sm:px-6 sm:pb-5"
+          className="relative shrink-0 border-t border-white/[0.06] bg-[#111111] p-4 sm:px-6 sm:pb-5"
         >
-          <div className="flex items-end gap-2 rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-2 focus-within:border-[#3B82F6]/40">
+          <div
+            className={`flex items-end gap-2 rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-2 focus-within:border-[#3B82F6]/40 ${
+              fairUsageBlocked ? "pointer-events-none opacity-40" : ""
+            }`}
+          >
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               rows={1}
-              placeholder="Ask Roxx AI anything…"
-              disabled={streaming}
+              placeholder={
+                fairUsageBlocked
+                  ? "Roxxx AI cooldown active…"
+                  : "Ask Roxx AI anything…"
+              }
+              disabled={streaming || fairUsageBlocked}
               className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-white placeholder:text-[#71717A] focus:outline-none disabled:opacity-60"
             />
             <button
               type="submit"
-              disabled={streaming || !input.trim()}
+              disabled={streaming || fairUsageBlocked || !input.trim()}
               className={`${dashboard.btnPrimary} h-10 w-10 shrink-0 disabled:cursor-not-allowed disabled:opacity-40`}
               aria-label="Send"
             >

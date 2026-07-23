@@ -2,6 +2,11 @@ import { NextRequest } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
 import { streamAssistantChat, type ChatMessage } from "@/lib/assistant/chat";
 import {
+  assertRoxxFairUsageAllowed,
+  fairUsageBlockedMessage,
+  recordRoxxAiMessageComplete,
+} from "@/lib/assistant/fair-usage";
+import {
   getRoxxModel,
   resolveRoxxModelForPlan,
 } from "@/lib/assistant/models";
@@ -65,6 +70,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const fairUsageGate = await assertRoxxFairUsageAllowed(userId, planId);
+    if (!fairUsageGate.ok) {
+      return new Response(
+        JSON.stringify({
+          error: fairUsageBlockedMessage(fairUsageGate.status),
+          code: "FAIR_USAGE_COOLDOWN",
+          fairUsage: fairUsageGate.status,
+        }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const creditGate = await requireAiCreditsResponse(userId, "roxx_chat", {
       regenerate: Boolean(body.regenerate),
       model: resolved.model.id,
@@ -72,6 +89,7 @@ export async function POST(request: NextRequest) {
     if (!creditGate.ok) return creditGate.response;
 
     const encoder = new TextEncoder();
+    let totalTokens = 0;
     const stream = new ReadableStream({
       async start(controller) {
         const send = (event: unknown) => {
@@ -85,8 +103,17 @@ export async function POST(request: NextRequest) {
             messages,
             resolved.model.id
           )) {
+            if (event.type === "usage") {
+              totalTokens += event.tokens;
+            } else if (event.type === "done" && event.tokens) {
+              totalTokens = Math.max(totalTokens, event.tokens);
+            }
             send(event);
           }
+          await recordRoxxAiMessageComplete(userId, planId, {
+            tokens: totalTokens,
+            model: resolved.model.id,
+          });
         } catch (error) {
           send({
             type: "error",

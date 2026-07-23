@@ -46,7 +46,8 @@ export type AssistantStreamEvent =
   | { type: "token"; text: string }
   | { type: "tool_start"; name: string }
   | { type: "tool_result"; name: string; result: Record<string, unknown> }
-  | { type: "done"; content: string }
+  | { type: "usage"; tokens: number }
+  | { type: "done"; content: string; tokens?: number }
   | { type: "error"; message: string };
 
 /**
@@ -76,6 +77,8 @@ export async function* streamAssistantChat(
       })),
   ];
 
+  let totalTokens = 0;
+
   for (let round = 0; round < 4; round++) {
     const completion = await openai.chat.completions.create(
       withModelSafeParams(
@@ -88,6 +91,11 @@ export async function* streamAssistantChat(
         modelOptions
       )
     );
+
+    if (completion.usage?.total_tokens) {
+      totalTokens += completion.usage.total_tokens;
+      yield { type: "usage", tokens: completion.usage.total_tokens };
+    }
 
     const choice = completion.choices[0]?.message;
     if (!choice) {
@@ -104,7 +112,7 @@ export async function* streamAssistantChat(
           yield { type: "token", text: content.slice(i, i + chunkSize) };
           await new Promise((r) => setTimeout(r, 6));
         }
-        yield { type: "done", content };
+        yield { type: "done", content, tokens: totalTokens };
         return;
       }
       break;
@@ -141,6 +149,7 @@ export async function* streamAssistantChat(
         model: roxxModel.apiModel,
         messages: openaiMessages,
         stream: true as const,
+        stream_options: { include_usage: true },
       },
       modelOptions
     )
@@ -148,11 +157,15 @@ export async function* streamAssistantChat(
 
   let full = "";
   for await (const part of stream) {
+    if (part.usage?.total_tokens) {
+      totalTokens += part.usage.total_tokens;
+      yield { type: "usage", tokens: part.usage.total_tokens };
+    }
     const text = part.choices[0]?.delta?.content ?? "";
     if (text) {
       full += text;
       yield { type: "token", text };
     }
   }
-  yield { type: "done", content: full };
+  yield { type: "done", content: full, tokens: totalTokens };
 }
