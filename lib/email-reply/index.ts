@@ -1,5 +1,9 @@
+/**
+ * Client-safe email-reply exports (tones / lengths / actions / prompts types).
+ * Do NOT re-export style-learn or anything that imports googleapis.
+ */
 export * from "./tones";
-export * from "./prompts";
+export type { WritingStyleProfileData, ReplyGenerateInput } from "./prompts";
 export {
   generateEmailReply,
   generateEmailReplyWithRetry,
@@ -12,7 +16,3 @@ export {
   getWritingStyleProfileInternal,
   setWritingStyleEnabled,
 } from "./style-profile";
-export {
-  fetchSentEmailSamples,
-  learnWritingStyleFromSamples,
-} from "./style-learn";

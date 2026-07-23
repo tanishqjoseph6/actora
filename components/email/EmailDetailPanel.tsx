@@ -33,11 +33,11 @@ import {
   REPLY_LENGTHS,
   REPLY_TONE_LABELS,
   REPLY_TONES,
-  type EmailInsights,
   type ReplyAction,
   type ReplyLength,
   type ReplyTone,
-} from "@/lib/openai";
+} from "@/lib/email-reply/tones";
+import type { EmailInsights } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton";
 import { EmailSchedulingActions } from "@/components/calendar/EmailSchedulingActions";

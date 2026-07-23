@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth-options";
 import { getGmailAuthClient } from "@/lib/gmail-auth";
 import {
-  fetchSentEmailSamples,
   getWritingStyleStatus,
-  learnWritingStyleFromSamples,
   setWritingStyleEnabled,
 } from "@/lib/email-reply";
+import {
+  fetchSentEmailSamples,
+  learnWritingStyleFromSamples,
+} from "@/lib/email-reply/server";
 import { hasPlanFeature, subscriptionProvider } from "@/lib/subscription";
 import type { PlanId } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+import { getServerSession } from "next-auth";
+import { NextRequest, NextResponse } from "next/server";
+import { authOptions } from "@/lib/auth/auth-options";
 
 /**
  * Public status only — never returns the learned style profile contents.

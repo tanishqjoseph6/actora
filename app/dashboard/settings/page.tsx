@@ -41,7 +41,7 @@ import {
 } from "@/components/billing/BillingPauseProvider";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { formatLimit } from "@/lib/subscription";
-import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/openai";
+import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/email-reply/tones";
 import { DASHBOARD_SHORTCUTS } from "@/hooks/useDashboardKeyboardShortcuts";
 
 export default function SettingsPage() {

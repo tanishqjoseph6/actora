@@ -11,6 +11,10 @@ import {
   type ReplyTone,
 } from "@/lib/email-reply";
 
+// Tone/length/action constants — safe for Client Components via ./email-reply/tones.
+// This module also contains server AI helpers; Client Components should import
+// tones from "@/lib/email-reply/tones" (or type-only from here) to avoid bundling
+// OpenAI / googleapis into the browser.
 export {
   REPLY_TONES,
   REPLY_TONE_LABELS,
@@ -25,7 +29,7 @@ export {
   REPLY_ACTION_LABELS,
   isReplyAction,
   type ReplyAction,
-} from "@/lib/email-reply";
+} from "@/lib/email-reply/tones";
 
 export async function generateEmailReply({
   sender,

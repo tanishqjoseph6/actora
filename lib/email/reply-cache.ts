@@ -1,5 +1,5 @@
 import type { ReplyContent } from "@/components/email/ReplyComposer";
-import type { ReplyLength, ReplyTone } from "@/lib/email-reply";
+import type { ReplyLength, ReplyTone } from "@/lib/email-reply/tones";
 
 type CachedReply = ReplyContent & {
   tone: ReplyTone;
