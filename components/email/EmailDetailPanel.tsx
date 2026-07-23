@@ -10,6 +10,7 @@ import {
   type ReplyComposerHandle,
   type ReplyContent,
 } from "@/components/email/ReplyComposer";
+import { SoundLikeMeUpgradeModal } from "@/components/email/SoundLikeMeUpgradeModal";
 import { hasRichFormatting, isComposerEmpty } from "@/lib/email/html";
 import {
   getCachedReply,
@@ -25,14 +26,23 @@ import {
 } from "@/lib/email/insights-cache";
 import { SNOOZE_OPTIONS } from "@/lib/email/snooze-store";
 import {
+  PRIMARY_REPLY_TONES,
+  REPLY_ACTION_LABELS,
+  REPLY_ACTIONS,
+  REPLY_LENGTH_LABELS,
+  REPLY_LENGTHS,
   REPLY_TONE_LABELS,
   REPLY_TONES,
   type EmailInsights,
+  type ReplyAction,
+  type ReplyLength,
   type ReplyTone,
 } from "@/lib/openai";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
 import { Skeleton, SkeletonText, SkeletonInline } from "@/components/ui/Skeleton";
 import { EmailSchedulingActions } from "@/components/calendar/EmailSchedulingActions";
+
+const SOUND_LIKE_ME_KEY = "actora_sound_like_me_pref";
 
 type EmailDetailPanelProps = {
   email: InboxEmail;
@@ -62,7 +72,7 @@ export function EmailDetailPanel({
   onStar,
   onSnooze,
 }: EmailDetailPanelProps) {
-  const { checkAiAction, showLimitModal, refreshSubscription } =
+  const { checkAiAction, showLimitModal, refreshSubscription, canAccessFeature } =
     usePlanGateActions();
   const composerRef = useRef<ReplyComposerHandle>(null);
 
@@ -73,11 +83,23 @@ export function EmailDetailPanel({
   const [composerOpen, setComposerOpen] = useState(false);
   const [reply, setReply] = useState<ReplyContent>(EMPTY_REPLY);
   const [selectedTone, setSelectedTone] = useState<ReplyTone>("professional");
+  const [selectedLength, setSelectedLength] = useState<ReplyLength>("medium");
   const [showTonePicker, setShowTonePicker] = useState(false);
+  const [showMoreTones, setShowMoreTones] = useState(false);
+  const [soundLikeMe, setSoundLikeMe] = useState(false);
+  const [styleStatus, setStyleStatus] = useState<{
+    allowed: boolean;
+    enabled: boolean;
+    ready: boolean;
+    sampleCount: number;
+  } | null>(null);
+  const [soundLikeMeModalOpen, setSoundLikeMeModalOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [toast, setToast] = useState<AppToastState>(null);
+  const [isTransforming, setIsTransforming] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryState, setSummaryState] = useState<
     "idle" | "loading" | "ready" | "error"
@@ -315,15 +337,61 @@ export function EmailDetailPanel({
     setComposerOpen(true);
   }, []);
 
+  useEffect(() => {
+    try {
+      const pref = localStorage.getItem(SOUND_LIKE_ME_KEY);
+      if (pref === "1") setSoundLikeMe(true);
+    } catch {
+      /* ignore */
+    }
+    void (async () => {
+      try {
+        const res = await fetch("/api/gmail/writing-style", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          allowed: boolean;
+          enabled: boolean;
+          ready: boolean;
+          sampleCount: number;
+        };
+        setStyleStatus(data);
+        if (data.allowed && data.enabled && data.ready) {
+          setSoundLikeMe(true);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   const generateReply = useCallback(
-    async (tone: ReplyTone, options?: { skipCache?: boolean }) => {
+    async (
+      tone: ReplyTone,
+      options?: {
+        skipCache?: boolean;
+        length?: ReplyLength;
+        soundLikeMe?: boolean;
+        variants?: boolean;
+      }
+    ) => {
       if (!detail) return false;
       if (!checkAiAction()) return false;
 
-      if (!options?.skipCache) {
-        const cached = getCachedReply(email.id, tone);
+      const length = options?.length ?? selectedLength;
+      const useSoundLikeMe = options?.soundLikeMe ?? soundLikeMe;
+
+      if (useSoundLikeMe && !canAccessFeature("sound_like_me")) {
+        setSoundLikeMeModalOpen(true);
+        return false;
+      }
+
+      if (!options?.skipCache && !options?.variants) {
+        const cached = getCachedReply(email.id, tone, length, useSoundLikeMe);
         if (cached) {
           setSelectedTone(tone);
+          setSelectedLength(length);
           openComposerWithContent({
             plain: cached.plain,
             html: cached.html,
@@ -335,6 +403,7 @@ export function EmailDetailPanel({
       setIsGenerating(true);
       setShowTonePicker(false);
       setComposerOpen(true);
+      setSuggestions([]);
 
       try {
         const res = await fetch("/api/gmail/ai-reply", {
@@ -346,14 +415,37 @@ export function EmailDetailPanel({
             emailBody: detail.body,
             threadContext: detail.threadContext,
             tone,
+            length,
+            soundLikeMe: useSoundLikeMe,
+            stream: !options?.variants,
+            variants: options?.variants ? 3 : undefined,
           }),
         });
 
-        const data = await res.json();
-
         if (!res.ok) {
-          if (isPlanLimitError(data)) {
-            showLimitModal(data.error, data.limitType);
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            code?: string;
+            feature?: string;
+            limitType?: "ai_actions" | "inboxes" | "feature";
+          };
+          if (data.feature === "sound_like_me" || data.code === "PLAN_LIMIT") {
+            if (data.feature === "sound_like_me") {
+              setSoundLikeMeModalOpen(true);
+            } else if (isPlanLimitError(data)) {
+              showLimitModal(data.error ?? "Limit reached", data.limitType);
+            }
+            setComposerOpen(false);
+            return false;
+          }
+          if (data.code === "STYLE_NOT_READY") {
+            setToast({
+              type: "error",
+              title: "Sound Like Me",
+              message:
+                data.error ??
+                "Train Sound Like Me from your sent emails first.",
+            });
             setComposerOpen(false);
             return false;
           }
@@ -365,17 +457,101 @@ export function EmailDetailPanel({
           return false;
         }
 
-        const content: ReplyContent = {
-          plain: data.reply,
-          html: "",
-        };
+        if (options?.variants) {
+          const data = (await res.json()) as {
+            suggestions?: string[];
+            reply?: string;
+          };
+          const list = data.suggestions?.length
+            ? data.suggestions
+            : data.reply
+              ? [data.reply]
+              : [];
+          setSuggestions(list);
+          const first = list[0] ?? "";
+          setSelectedTone(tone);
+          setSelectedLength(length);
+          openComposerWithContent({ plain: first, html: "" });
+          setCachedReply(
+            email.id,
+            tone,
+            { plain: first, html: "" },
+            length,
+            useSoundLikeMe
+          );
+          await refreshSubscription();
+          return true;
+        }
 
+        // Streaming path
+        const reader = res.body?.getReader();
+        if (!reader) {
+          setToast({
+            type: "error",
+            title: "Generation failed",
+            message: "No response stream.",
+          });
+          return false;
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let full = "";
         setSelectedTone(tone);
-        openComposerWithContent(content);
-        setCachedReply(email.id, tone, {
-          plain: data.reply,
-          html: composerRef.current?.getContent().html ?? "",
-        });
+        setSelectedLength(length);
+        openComposerWithContent({ plain: "", html: "" });
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const chunks = buffer.split("\n\n");
+          buffer = chunks.pop() ?? "";
+
+          for (const chunk of chunks) {
+            const line = chunk
+              .split("\n")
+              .map((l) => l.trim())
+              .find((l) => l.startsWith("data:"));
+            if (!line) continue;
+            const raw = line.replace(/^data:\s*/, "");
+            if (!raw) continue;
+            let event: {
+              type?: string;
+              text?: string;
+              reply?: string;
+              message?: string;
+            };
+            try {
+              event = JSON.parse(raw) as typeof event;
+            } catch {
+              continue;
+            }
+
+            if (event.type === "token" && event.text) {
+              full += event.text;
+              openComposerWithContent({ plain: full, html: "" });
+            } else if (event.type === "done") {
+              full = event.reply ?? full;
+              openComposerWithContent({ plain: full, html: "" });
+            } else if (event.type === "error") {
+              setToast({
+                type: "error",
+                title: "Generation failed",
+                message: event.message ?? "Failed to generate reply.",
+              });
+              return false;
+            }
+          }
+        }
+
+        setCachedReply(
+          email.id,
+          tone,
+          { plain: full, html: composerRef.current?.getContent().html ?? "" },
+          length,
+          useSoundLikeMe
+        );
         await refreshSubscription();
         return true;
       } catch {
@@ -392,6 +568,9 @@ export function EmailDetailPanel({
     [
       detail,
       checkAiAction,
+      canAccessFeature,
+      selectedLength,
+      soundLikeMe,
       email.id,
       openComposerWithContent,
       showLimitModal,
@@ -414,6 +593,124 @@ export function EmailDetailPanel({
 
   const handleRegenerate = () => {
     void generateReply(selectedTone, { skipCache: true });
+  };
+
+  const handleTransform = async (action: ReplyAction) => {
+    if (action === "regenerate") {
+      handleRegenerate();
+      return;
+    }
+    const draft = composerRef.current?.getContent().plain || reply.plain;
+    if (!draft.trim() || !checkAiAction()) return;
+
+    setIsTransforming(true);
+    try {
+      const res = await fetch("/api/gmail/ai-reply/transform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft, action }),
+      });
+      const data = (await res.json()) as { reply?: string; error?: string };
+      if (!res.ok) {
+        if (isPlanLimitError(data)) {
+          showLimitModal(
+            (data as { error?: string }).error ?? "Limit reached",
+            (data as { limitType?: "ai_actions" }).limitType ?? "ai_actions"
+          );
+          return;
+        }
+        setToast({
+          type: "error",
+          title: "Action failed",
+          message: data.error ?? "Could not update reply.",
+        });
+        return;
+      }
+      if (data.reply) {
+        openComposerWithContent({ plain: data.reply, html: "" });
+        setCachedReply(
+          email.id,
+          selectedTone,
+          { plain: data.reply, html: "" },
+          selectedLength,
+          soundLikeMe
+        );
+        await refreshSubscription();
+      }
+    } catch {
+      setToast({
+        type: "error",
+        title: "Action failed",
+        message: "Could not update reply.",
+      });
+    } finally {
+      setIsTransforming(false);
+    }
+  };
+
+  const handleSoundLikeMeToggle = async () => {
+    if (!canAccessFeature("sound_like_me")) {
+      setSoundLikeMeModalOpen(true);
+      return;
+    }
+
+    const next = !soundLikeMe;
+    if (next && styleStatus && !styleStatus.ready) {
+      // Learn from sent mail first
+      try {
+        const res = await fetch("/api/gmail/writing-style", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "learn" }),
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          ready?: boolean;
+          enabled?: boolean;
+          sampleCount?: number;
+          allowed?: boolean;
+        };
+        if (!res.ok) {
+          setToast({
+            type: "error",
+            title: "Sound Like Me",
+            message: data.error ?? "Could not learn your writing style.",
+          });
+          return;
+        }
+        setStyleStatus({
+          allowed: true,
+          enabled: true,
+          ready: Boolean(data.ready ?? true),
+          sampleCount: data.sampleCount ?? 0,
+        });
+        setSoundLikeMe(true);
+        localStorage.setItem(SOUND_LIKE_ME_KEY, "1");
+        setToast({
+          type: "success",
+          title: "Sound Like Me ready",
+          message: "Learned patterns from your sent emails.",
+        });
+        return;
+      } catch {
+        setToast({
+          type: "error",
+          title: "Sound Like Me",
+          message: "Could not learn your writing style.",
+        });
+        return;
+      }
+    }
+
+    setSoundLikeMe(next);
+    localStorage.setItem(SOUND_LIKE_ME_KEY, next ? "1" : "0");
+    void fetch("/api/gmail/writing-style", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: next }),
+    });
   };
 
   const handleCancelComposer = () => {
@@ -764,24 +1061,84 @@ export function EmailDetailPanel({
 
               {showTonePicker && (
                 <div className="mt-3 p-4 rounded-2xl bg-[#111111]/60 border border-white/[0.06] backdrop-blur-sm animate-fade-in">
-                  <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-3">
-                    Choose tone
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6]">
+                      Choose tone
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleSoundLikeMeToggle()}
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                        soundLikeMe && canAccessFeature("sound_like_me")
+                          ? "border-[#3B82F6]/40 bg-[#3B82F6]/15 text-[#93C5FD]"
+                          : "border-white/[0.08] text-[#A1A1AA] hover:border-[#3B82F6]/30 hover:text-white"
+                      }`}
+                    >
+                      ✨ Sound Like Me
+                      {!canAccessFeature("sound_like_me") && (
+                        <span className="text-[10px] text-[#71717A]">Pro</span>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-[#52525B]">
+                    Length
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {REPLY_TONES.map((tone) => (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {REPLY_LENGTHS.map((length) => (
                       <button
-                        key={tone}
-                        onClick={() => handleToneSelect(tone)}
-                        disabled={isGenerating}
+                        key={length}
+                        type="button"
+                        onClick={() => setSelectedLength(length)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
-                          selectedTone === tone
+                          selectedLength === length
                             ? "bg-[#3B82F6]/20 border-[#3B82F6]/40 text-[#93C5FD]"
                             : "border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/30 hover:text-white"
-                        } disabled:opacity-50`}
+                        }`}
                       >
-                        {REPLY_TONE_LABELS[tone]}
+                        {REPLY_LENGTH_LABELS[length]}
                       </button>
                     ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {(showMoreTones ? REPLY_TONES : PRIMARY_REPLY_TONES).map(
+                      (tone) => (
+                        <button
+                          key={tone}
+                          type="button"
+                          onClick={() => handleToneSelect(tone)}
+                          disabled={isGenerating}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-200 ${
+                            selectedTone === tone
+                              ? "bg-[#3B82F6]/20 border-[#3B82F6]/40 text-[#93C5FD]"
+                              : "border-white/[0.06] text-[#A1A1AA] hover:border-[#3B82F6]/30 hover:text-white"
+                          } disabled:opacity-50`}
+                        >
+                          {REPLY_TONE_LABELS[tone]}
+                        </button>
+                      )
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowMoreTones((v) => !v)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-white/[0.1] text-[#71717A] hover:text-white"
+                    >
+                      {showMoreTones ? "Less" : "More tones"}
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={isGenerating}
+                      onClick={() =>
+                        void generateReply(selectedTone, { variants: true })
+                      }
+                      className="rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/30 hover:text-white disabled:opacity-50"
+                    >
+                      3 suggestions
+                    </button>
                   </div>
                 </div>
               )}
@@ -1029,7 +1386,9 @@ export function EmailDetailPanel({
                     </h3>
                     {selectedTone && !isGenerating && (
                       <span className="text-xs px-2.5 py-1 rounded-full bg-[#3B82F6]/10 border border-white/[0.06] text-[#93C5FD]">
-                        {REPLY_TONE_LABELS[selectedTone]}
+                        {REPLY_TONE_LABELS[selectedTone]} ·{" "}
+                        {REPLY_LENGTH_LABELS[selectedLength]}
+                        {soundLikeMe ? " · Sound Like Me" : ""}
                       </span>
                     )}
                     {!isGenerating && isComposerEmpty(reply.plain, reply.html) && (
@@ -1046,17 +1405,66 @@ export function EmailDetailPanel({
                   {isGenerating ? (
                     <ComposerSkeleton />
                   ) : (
-                    <ReplyComposer
-                      ref={composerRef}
-                      onChange={(content) => {
-                        setReply(content);
-                        if (detail) {
-                          setCachedReply(email.id, selectedTone, content);
-                        }
-                      }}
-                      disabled={isGenerating || isSending}
-                      placeholder="Your reply will appear here…"
-                    />
+                    <>
+                      {suggestions.length > 1 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {suggestions.map((suggestion, index) => (
+                            <button
+                              key={`suggestion-${index}`}
+                              type="button"
+                              onClick={() =>
+                                openComposerWithContent({
+                                  plain: suggestion,
+                                  html: "",
+                                })
+                              }
+                              className={`rounded-lg border px-2.5 py-1 text-[11px] transition-colors ${
+                                reply.plain === suggestion
+                                  ? "border-[#3B82F6]/40 bg-[#3B82F6]/15 text-[#93C5FD]"
+                                  : "border-white/[0.08] text-[#A1A1AA] hover:text-white"
+                              }`}
+                            >
+                              Option {index + 1}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <ReplyComposer
+                        ref={composerRef}
+                        onChange={(content) => {
+                          setReply(content);
+                          if (detail) {
+                            setCachedReply(
+                              email.id,
+                              selectedTone,
+                              content,
+                              selectedLength,
+                              soundLikeMe
+                            );
+                          }
+                        }}
+                        disabled={isGenerating || isSending || isTransforming}
+                        placeholder="Your reply will appear here…"
+                      />
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {REPLY_ACTIONS.filter((a) => a !== "regenerate").map(
+                          (action) => (
+                            <button
+                              key={action}
+                              type="button"
+                              disabled={
+                                isTransforming ||
+                                isComposerEmpty(reply.plain, reply.html)
+                              }
+                              onClick={() => void handleTransform(action)}
+                              className="rounded-lg border border-white/[0.06] px-2 py-1 text-[10px] text-[#71717A] transition-colors hover:border-[#3B82F6]/30 hover:text-white disabled:opacity-40"
+                            >
+                              {REPLY_ACTION_LABELS[action]}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </>
                   )}
 
                   {!isGenerating && (
@@ -1111,6 +1519,11 @@ export function EmailDetailPanel({
           )}
         </div>
       </aside>
+
+      <SoundLikeMeUpgradeModal
+        open={soundLikeMeModalOpen}
+        onClose={() => setSoundLikeMeModalOpen(false)}
+      />
     </>
   );
 }

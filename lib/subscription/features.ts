@@ -7,7 +7,8 @@ export type PlanFeature =
   | "analytics"
   | "full_crm"
   | "shared_inbox"
-  | "team_workspace";
+  | "team_workspace"
+  | "sound_like_me";
 
 export type PlanFeatureFlags = Record<PlanFeature, boolean>;
 
@@ -19,6 +20,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     full_crm: false,
     shared_inbox: false,
     team_workspace: false,
+    sound_like_me: false,
   },
   /** Trial unlocks the same product surface as Pro (no Team-only features). */
   trial: {
@@ -28,6 +30,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     full_crm: true,
     shared_inbox: false,
     team_workspace: false,
+    sound_like_me: true,
   },
   pro: {
     automations: true,
@@ -36,6 +39,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     full_crm: true,
     shared_inbox: false,
     team_workspace: false,
+    sound_like_me: true,
   },
   starter: {
     automations: true,
@@ -44,6 +48,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     full_crm: true,
     shared_inbox: true,
     team_workspace: true,
+    sound_like_me: true,
   },
   enterprise: {
     automations: true,
@@ -52,6 +57,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatureFlags> = {
     full_crm: true,
     shared_inbox: true,
     team_workspace: true,
+    sound_like_me: true,
   },
 };
 
@@ -84,6 +90,10 @@ export const FEATURE_META: Record<
     label: "Team Workspace",
     description: "Invite members, assign roles, and manage your org in Actora.",
     teamOnly: true,
+  },
+  sound_like_me: {
+    label: "Sound Like Me",
+    description: "Generate replies in your personal writing style.",
   },
 };
 
