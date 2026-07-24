@@ -13,7 +13,6 @@ import {
   isTokenExpired,
   refreshOAuthTokens,
 } from "@/lib/gmail/oauth";
-import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { calendarAccountRepository } from "@/lib/calendar/repository";
 import { GOOGLE_CALENDAR_SCOPES } from "@/lib/calendar/scopes";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
@@ -171,24 +170,6 @@ export async function connectCalendarFromTokens(input: {
     tokenExpiresAt: expiresAt,
     scopes: [...GOOGLE_CALENDAR_SCOPES],
   });
-
-  // Keep Gmail tokens in sync when the same Google account is connected,
-  // so incremental Calendar consent does not orphan Gmail refresh tokens.
-  try {
-    const gmailAccounts = await gmailAccountRepository.listAccounts(input.userId);
-    const match = gmailAccounts.find(
-      (a) => a.email.toLowerCase() === accountEmail.toLowerCase()
-    );
-    if (match && input.refreshToken) {
-      await gmailAccountRepository.updateTokens(input.userId, match.email, {
-        accessToken: input.accessToken,
-        refreshToken: input.refreshToken,
-        tokenExpiresAt: expiresAt,
-      });
-    }
-  } catch (error) {
-    console.warn("[calendar/auth] gmail token sync skipped", error);
-  }
 
   return account;
 }

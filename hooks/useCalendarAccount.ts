@@ -6,6 +6,7 @@ import { fetchJson } from "@/lib/api/fetch-json";
 import {
   CALENDAR_OAUTH_CALLBACK_URL,
   GOOGLE_CALENDAR_CONNECT_SCOPE,
+  GOOGLE_PRODUCT_OAUTH_PARAMS,
 } from "@/lib/calendar/scopes";
 import type { CalendarAccountPublic } from "@/lib/calendar/types";
 
@@ -48,9 +49,7 @@ export function useCalendarAccount() {
       { callbackUrl: CALENDAR_OAUTH_CALLBACK_URL },
       {
         scope: GOOGLE_CALENDAR_CONNECT_SCOPE,
-        include_granted_scopes: "true",
-        prompt: "consent",
-        access_type: "offline",
+        ...GOOGLE_PRODUCT_OAUTH_PARAMS,
       }
     );
   }, []);

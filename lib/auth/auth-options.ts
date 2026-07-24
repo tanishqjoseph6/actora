@@ -9,6 +9,7 @@ import {
   resolveAuthUrl,
   shouldUseSecureCookies,
 } from "@/lib/auth/nextauth-url";
+import { GOOGLE_IDENTITY_SCOPE } from "@/lib/calendar/scopes";
 import { createSupabaseAnonClient } from "@/lib/supabase/create-anon-client";
 import {
   logSupabaseProjectValidation,
@@ -186,10 +187,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            "openid email profile https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send",
-          prompt: "consent",
-          access_type: "offline",
+          scope: GOOGLE_IDENTITY_SCOPE,
         },
       },
     }),

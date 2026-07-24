@@ -4,6 +4,10 @@ import { useCallback, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import {
+  GOOGLE_GMAIL_CONNECT_SCOPE,
+  GOOGLE_PRODUCT_OAUTH_PARAMS,
+} from "@/lib/calendar/scopes";
+import {
   CONNECT_IDEMPOTENCY_KEY,
   GMAIL_INBOX_CALLBACK_URL,
 } from "@/hooks/useGmailOAuthCallback";
@@ -61,6 +65,8 @@ export function useGmailReconnect() {
           "google",
           { callbackUrl: GMAIL_INBOX_CALLBACK_URL },
           {
+            scope: GOOGLE_GMAIL_CONNECT_SCOPE,
+            ...GOOGLE_PRODUCT_OAUTH_PARAMS,
             prompt: "consent",
             ...(targetEmail ? { login_hint: targetEmail } : {}),
           }

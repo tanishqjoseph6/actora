@@ -6,6 +6,10 @@ import { CompactEmptyState } from "@/components/ui/CompactEmptyState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatGmailSyncTime } from "@/hooks/useGmailAccounts";
 import { GMAIL_OAUTH_CALLBACK_URL } from "@/hooks/useGmailOAuthCallback";
+import {
+  GOOGLE_GMAIL_CONNECT_SCOPE,
+  GOOGLE_PRODUCT_OAUTH_PARAMS,
+} from "@/lib/calendar/scopes";
 import type { GmailAccountPublic } from "@/lib/gmail/types";
 
 type GmailAccountsPanelProps = {
@@ -141,7 +145,11 @@ export function GmailAccountsPanel({
               void signIn(
                 "google",
                 { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
-                { prompt: "select_account consent" }
+                {
+                  scope: GOOGLE_GMAIL_CONNECT_SCOPE,
+                  ...GOOGLE_PRODUCT_OAUTH_PARAMS,
+                  prompt: "select_account consent",
+                }
               )
             }
             className={`${dashboard.btnSecondary} px-4 py-2.5 text-sm`}

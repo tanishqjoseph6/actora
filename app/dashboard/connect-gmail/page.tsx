@@ -11,6 +11,10 @@ import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { clearGmailClientSessionCache } from "@/hooks/useGmailReconnect";
 import { fetchJson } from "@/lib/api/fetch-json";
 import {
+  GOOGLE_GMAIL_CONNECT_SCOPE,
+  GOOGLE_PRODUCT_OAUTH_PARAMS,
+} from "@/lib/calendar/scopes";
+import {
   GMAIL_OAUTH_CALLBACK_URL,
   useGmailOAuthCallback,
 } from "@/hooks/useGmailOAuthCallback";
@@ -72,6 +76,8 @@ function ConnectGmailContent() {
       "google",
       { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
       {
+        scope: GOOGLE_GMAIL_CONNECT_SCOPE,
+        ...GOOGLE_PRODUCT_OAUTH_PARAMS,
         prompt: reconnectEmail ? "consent" : "select_account consent",
         ...(reconnectEmail ? { login_hint: reconnectEmail } : {}),
       }

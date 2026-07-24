@@ -20,6 +20,10 @@ import {
 import {
   GMAIL_OAUTH_CALLBACK_URL,
 } from "@/hooks/useGmailOAuthCallback";
+import {
+  GOOGLE_GMAIL_CONNECT_SCOPE,
+  GOOGLE_PRODUCT_OAUTH_PARAMS,
+} from "@/lib/calendar/scopes";
 import { useDismissible } from "@/hooks/useDismissible";
 import { formatLimit } from "@/lib/subscription";
 import { DropdownShell } from "./DropdownShell";
@@ -72,7 +76,11 @@ export function GmailAccountSwitcher() {
     await signIn(
       "google",
       { callbackUrl: GMAIL_OAUTH_CALLBACK_URL },
-      { prompt: "select_account consent" }
+      {
+        scope: GOOGLE_GMAIL_CONNECT_SCOPE,
+        ...GOOGLE_PRODUCT_OAUTH_PARAMS,
+        prompt: "select_account consent",
+      }
     );
   }, [canAddAccount, checkInbox, close]);
 
