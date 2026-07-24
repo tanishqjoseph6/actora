@@ -1,3 +1,5 @@
+import "server-only";
+
 import OpenAI from "openai";
 import { resolveOpenAiApiKey } from "@/lib/openai/api-key";
 import {

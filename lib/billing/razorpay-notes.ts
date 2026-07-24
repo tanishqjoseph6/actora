@@ -10,6 +10,10 @@ export type ParsedRazorpayNotes = {
   billingCycle?: string;
   currency?: string;
   razorpayPlanId?: string;
+  type?: string;
+  packId?: string;
+  credits?: string;
+  orderId?: string;
 };
 
 /** Razorpay sends notes as string key-value pairs; normalize all access paths. */
@@ -37,6 +41,10 @@ export function parseRazorpayNotes(notes: unknown): ParsedRazorpayNotes | null {
   const period = pickNote(record, "period", "billing_period", "billingCycle");
   const currency = pickNote(record, "currency");
   const razorpayPlanId = pickNote(record, "razorpayPlanId", "razorpay_plan_id");
+  const type = pickNote(record, "type");
+  const packId = pickNote(record, "packId", "pack_id");
+  const credits = pickNote(record, "credits");
+  const orderId = pickNote(record, "orderId", "order_id", "razorpayOrderId");
 
   return {
     userId: userId ? normalizeSubscriptionUserId(userId) : undefined,
@@ -49,6 +57,10 @@ export function parseRazorpayNotes(notes: unknown): ParsedRazorpayNotes | null {
     billingCycle: period,
     currency,
     razorpayPlanId,
+    type,
+    packId,
+    credits,
+    orderId,
   };
 }
 

@@ -11,6 +11,7 @@ import {
   resolveRoxxModelForPlan,
 } from "@/lib/assistant/models";
 import { requireAiCreditsResponse } from "@/lib/ai-credits/require";
+import { refundAiCredits } from "@/lib/ai-credits/consume";
 import { getServerSession } from "next-auth";
 import { subscriptionProvider } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     const encoder = new TextEncoder();
     let totalTokens = 0;
+    let completed = false;
     const stream = new ReadableStream({
       async start(controller) {
         const send = (event: unknown) => {
@@ -105,22 +107,38 @@ export async function POST(request: NextRequest) {
           )) {
             if (event.type === "usage") {
               totalTokens += event.tokens;
-            } else if (event.type === "done" && event.tokens) {
-              totalTokens = Math.max(totalTokens, event.tokens);
+            } else if (event.type === "done") {
+              completed = true;
+              if (event.tokens) {
+                totalTokens = Math.max(totalTokens, event.tokens);
+              }
+            } else if (event.type === "error") {
+              completed = false;
             }
             send(event);
           }
-          await recordRoxxAiMessageComplete(userId, planId, {
-            tokens: totalTokens,
-            model: resolved.model.id,
-          });
+          if (completed) {
+            await recordRoxxAiMessageComplete(userId, planId, {
+              tokens: totalTokens,
+              model: resolved.model.id,
+            });
+          } else {
+            await refundAiCredits(userId, 1, {
+              creditUserId: creditGate.creditUserId,
+              feature: "roxx_chat",
+              reason: "assistant_stream_incomplete",
+            });
+          }
         } catch (error) {
+          console.error("[assistant/chat] stream failed:", error);
+          await refundAiCredits(userId, 1, {
+            creditUserId: creditGate.creditUserId,
+            feature: "roxx_chat",
+            reason: "assistant_stream_error",
+          });
           send({
             type: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Roxx AI failed to respond.",
+            message: "Roxx AI failed to respond. Please try again.",
           });
         } finally {
           controller.close();
@@ -137,10 +155,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error("[assistant/chat] failed:", error);
     return new Response(
       JSON.stringify({
-        error:
-          error instanceof Error ? error.message : "Failed to start chat.",
+        error: "Failed to start chat. Please try again.",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

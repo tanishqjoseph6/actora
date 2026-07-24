@@ -363,3 +363,65 @@ export async function getAiCreditLedger(
     createdAt: row.created_at as string,
   }));
 }
+
+/**
+ * Refund credits after a failed AI request (best-effort).
+ * Credits are returned to the purchased pool so monthly allotment math stays intact.
+ */
+export async function refundAiCredits(
+  userId: string,
+  credits = 1,
+  options?: {
+    creditUserId?: string;
+    feature?: string;
+    reason?: string;
+  }
+): Promise<void> {
+  if (!userId || credits <= 0) return;
+  const poolUserId = options?.creditUserId ?? userId;
+  const db = getSupabaseAdmin();
+  if (!db) return;
+
+  try {
+    const { error } = await db.rpc("add_purchased_ai_credits", {
+      p_user_id: poolUserId,
+      p_credits: credits,
+    });
+    if (error) {
+      const { data: row } = await db
+        .from("user_usage")
+        .select("purchased_credits_remaining, ai_actions_used")
+        .eq("user_id", poolUserId)
+        .maybeSingle();
+      const current = Number(
+        (row as { purchased_credits_remaining?: number } | null)
+          ?.purchased_credits_remaining ?? 0
+      );
+      const used = Number(
+        (row as { ai_actions_used?: number } | null)?.ai_actions_used ?? 0
+      );
+      await db
+        .from("user_usage")
+        .update({
+          purchased_credits_remaining: current + credits,
+          ai_actions_used: Math.max(0, used - credits),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", poolUserId);
+    }
+
+    await db.from("ai_credit_ledger").insert({
+      user_id: poolUserId,
+      feature: options?.feature ?? "refund",
+      credits: -credits,
+      balance_after: null,
+      metadata: {
+        refund: true,
+        reason: options?.reason ?? "ai_request_failed",
+        actorUserId: userId,
+      },
+    });
+  } catch (err) {
+    console.error("[ai-credits] refund failed:", err);
+  }
+}

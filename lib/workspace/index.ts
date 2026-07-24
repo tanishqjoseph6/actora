@@ -19,6 +19,7 @@ export {
   listInvitations,
   revokeInvitation,
   acceptInvitation,
+  leaveWorkspace,
   listActivity,
   syncWorkspacePlan,
   logWorkspaceActivity,

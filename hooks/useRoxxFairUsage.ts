@@ -94,10 +94,13 @@ export function useRoxxFairUsage(options: UseRoxxFairUsageOptions = {}) {
       ...status,
       cooldownRemainingSeconds: localRemaining,
       inCooldown: localRemaining > 0 || status.inCooldown,
-      allowed: status.unlimited || localRemaining <= 0,
+      allowed:
+        status.unlimited || (status.allowed && localRemaining <= 0),
     },
     loading,
-    blocked: status.unlimited ? false : localRemaining > 0 || !status.allowed,
+    blocked: status.unlimited
+      ? false
+      : localRemaining > 0 || status.inCooldown || !status.allowed,
     refresh,
   };
 }

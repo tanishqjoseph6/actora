@@ -1,4 +1,3 @@
-import { getAppUrl } from "@/lib/email/config";
 import { actoraEmailLayout } from "@/lib/email/templates/layout";
 
 export function buildPasswordResetEmail(actionLink: string) {

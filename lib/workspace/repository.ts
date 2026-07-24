@@ -291,6 +291,12 @@ export async function softDeleteWorkspace(
 
   if (error) throw new Error(error.message);
 
+  await db
+    .from("workspace_invitations")
+    .update({ status: "revoked" })
+    .eq("workspace_id", workspaceId)
+    .eq("status", "pending");
+
   await logWorkspaceActivity({
     workspaceId,
     actorUserId: normalizeSubscriptionUserId(actorUserId),
@@ -381,30 +387,57 @@ export async function transferOwnership(input: {
   const actor = normalizeSubscriptionUserId(input.actorUserId);
   const nextOwner = normalizeSubscriptionUserId(input.newOwnerUserId);
 
-  const { error: wsError } = await db
+  if (actor === nextOwner) {
+    throw new Error("You already own this workspace.");
+  }
+
+  const { data: targetMember, error: targetError } = await db
+    .from("workspace_members")
+    .select("id, status, role_id")
+    .eq("workspace_id", input.workspaceId)
+    .eq("user_id", nextOwner)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (targetError) throw new Error(targetError.message);
+  if (!targetMember) {
+    throw new Error("New owner must be an active workspace member.");
+  }
+
+  const { data: wsUpdated, error: wsError } = await db
     .from("workspaces")
     .update({
       owner_user_id: nextOwner,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.workspaceId)
-    .is("deleted_at", null);
+    .eq("owner_user_id", actor)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (wsError) throw new Error(wsError.message);
+  if (!wsUpdated) {
+    throw new Error("Only the current owner can transfer ownership.");
+  }
 
-  await db
+  const { error: demoteError } = await db
     .from("workspace_members")
     .update({ role_id: "admin", updated_at: new Date().toISOString() })
     .eq("workspace_id", input.workspaceId)
     .eq("user_id", actor)
     .eq("status", "active");
 
-  await db
+  if (demoteError) throw new Error(demoteError.message);
+
+  const { error: promoteError } = await db
     .from("workspace_members")
     .update({ role_id: "owner", updated_at: new Date().toISOString() })
     .eq("workspace_id", input.workspaceId)
     .eq("user_id", nextOwner)
     .eq("status", "active");
+
+  if (promoteError) throw new Error(promoteError.message);
 
   await logWorkspaceActivity({
     workspaceId: input.workspaceId,
@@ -426,14 +459,13 @@ export async function createInvitation(input: {
     throw new Error("Cannot invite someone as owner. Transfer ownership instead.");
   }
 
-  // Expire stale pending invites for same email
+  // Expire / revoke any existing pending invites for same email (one live invite only)
   await db
     .from("workspace_invitations")
-    .update({ status: "expired" })
+    .update({ status: "revoked" })
     .eq("workspace_id", input.workspaceId)
     .eq("email", email)
-    .eq("status", "pending")
-    .lt("expires_at", new Date().toISOString());
+    .eq("status", "pending");
 
   const { data: existingMember } = await db
     .from("workspace_members")
@@ -485,12 +517,17 @@ export async function listInvitations(
 
   const { data, error } = await db
     .from("workspace_invitations")
-    .select("*")
+    .select(
+      "id, workspace_id, email, role_id, invited_by, status, expires_at, accepted_at, accepted_user_id, created_at"
+    )
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as WorkspaceInvitationRecord[];
+  return (data ?? []).map((row) => ({
+    ...(row as Omit<WorkspaceInvitationRecord, "token">),
+    token: "",
+  }));
 }
 
 export async function revokeInvitation(input: {
@@ -546,6 +583,32 @@ export async function acceptInvitation(input: {
     throw new Error("This invitation was sent to a different email address.");
   }
 
+  const workspace = await getWorkspaceById(record.workspace_id);
+  if (!workspace) {
+    throw new Error("This workspace is no longer available.");
+  }
+
+  const { data: existingMember } = await db
+    .from("workspace_members")
+    .select("id, status, role_id")
+    .eq("workspace_id", record.workspace_id)
+    .eq("user_id", uid)
+    .maybeSingle();
+
+  if (existingMember?.status === "active") {
+    // Already a member — consume invite without downgrading role
+    await db
+      .from("workspace_invitations")
+      .update({
+        status: "accepted",
+        accepted_at: new Date().toISOString(),
+        accepted_user_id: uid,
+      })
+      .eq("id", record.id)
+      .eq("status", "pending");
+    return { workspaceId: record.workspace_id };
+  }
+
   const { error: memberError } = await db.from("workspace_members").upsert(
     {
       workspace_id: record.workspace_id,
@@ -560,14 +623,22 @@ export async function acceptInvitation(input: {
 
   if (memberError) throw new Error(memberError.message);
 
-  await db
+  const { data: accepted, error: acceptError } = await db
     .from("workspace_invitations")
     .update({
       status: "accepted",
       accepted_at: new Date().toISOString(),
       accepted_user_id: uid,
     })
-    .eq("id", record.id);
+    .eq("id", record.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (acceptError) throw new Error(acceptError.message);
+  if (!accepted) {
+    throw new Error("Invitation was already used.");
+  }
 
   await logWorkspaceActivity({
     workspaceId: record.workspace_id,
@@ -577,6 +648,40 @@ export async function acceptInvitation(input: {
   });
 
   return { workspaceId: record.workspace_id };
+}
+
+export async function leaveWorkspace(input: {
+  workspaceId: string;
+  userId: string;
+}): Promise<void> {
+  const db = requireSupabaseAdmin();
+  const uid = normalizeSubscriptionUserId(input.userId);
+  const membership = await getMembership(input.workspaceId, uid);
+  if (!membership || membership.status !== "active") {
+    throw new Error("You are not a member of this workspace.");
+  }
+  if (membership.role_id === "owner") {
+    throw new Error("Owners must transfer ownership before leaving.");
+  }
+
+  const { error } = await db
+    .from("workspace_members")
+    .update({
+      status: "removed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("workspace_id", input.workspaceId)
+    .eq("user_id", uid)
+    .eq("status", "active");
+
+  if (error) throw new Error(error.message);
+
+  await logWorkspaceActivity({
+    workspaceId: input.workspaceId,
+    actorUserId: uid,
+    action: "member.left",
+    metadata: { role: membership.role_id },
+  });
 }
 
 export async function listActivity(

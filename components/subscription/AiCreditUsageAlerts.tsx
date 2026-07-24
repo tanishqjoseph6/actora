@@ -100,9 +100,18 @@ export function AiCreditUsageAlerts({ onUpgradePlan }: AiCreditUsageAlertsProps)
     if (isUnlimited(allotment)) return;
 
     const monthlyRemaining = subscription.usage.monthlyCreditsRemaining ?? 0;
+    const purchasedRemaining =
+      subscription.usage.purchasedCreditsRemaining ?? 0;
+    const totalRemaining =
+      subscription.usage.aiCreditsRemaining ??
+      monthlyRemaining + purchasedRemaining;
     const cycleKey = subscription.usage.cycleKey ?? "default";
-    const modalKey = `actora-monthly-exhausted-${cycleKey}`;
-    if (monthlyRemaining <= 0 && !sessionStorage.getItem(modalKey)) {
+    const modalKey = `actora-credits-exhausted-${cycleKey}`;
+    if (
+      Number.isFinite(totalRemaining) &&
+      totalRemaining <= 0 &&
+      !sessionStorage.getItem(modalKey)
+    ) {
       setExhaustedOpen(true);
       sessionStorage.setItem(modalKey, "1");
     }

@@ -103,12 +103,9 @@ export async function sendTrialEmail(
   }
 
   const result = await deliverEmail(userId, emailType);
-  if (result.sent || result.skipped === "missing_resend_api_key") {
-    if (result.sent) {
-      await markEmailSent(userId, emailType);
-    } else if (process.env.NODE_ENV === "production") {
-      await markEmailSent(userId, emailType);
-    }
+  // Only mark sent after a confirmed successful delivery — never when Resend is missing.
+  if (result.sent) {
+    await markEmailSent(userId, emailType);
   }
 
   return { sent: result.sent, reason: result.skipped };

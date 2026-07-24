@@ -12,6 +12,15 @@ import { isBillingCurrency, type BillingCurrency } from "@/lib/billing/currency"
 import { logApiError } from "@/lib/api/log-error";
 import { setStoredPlan } from "@/lib/subscription/repository";
 import type { BillingInterval, PlanId } from "@/lib/subscription/types";
+import {
+  addPurchasedCreditsBalance,
+  findCreditPurchaseByOrderId,
+  findCreditPurchaseByPaymentId,
+  markCreditPurchasePaid,
+} from "@/lib/ai-credits/purchases";
+import { getAiCreditPack, isAiCreditPackId } from "@/lib/ai-credits/packs";
+import { sendCreditPurchaseConfirmationEmail } from "@/lib/email/billing-emails";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 /** Configure these events in the Razorpay Live dashboard webhook settings. */
 export const RAZORPAY_WEBHOOK_EVENTS = [
@@ -35,6 +44,7 @@ type RazorpayPaymentEntity = {
   status?: string;
   notes?: unknown;
   subscription_id?: string;
+  order_id?: string;
 };
 
 export type RazorpayWebhookPayload = {
@@ -174,8 +184,24 @@ export async function handleRazorpayWebhook(
     return { handled: false, event, reason: "unsupported_event" };
   }
 
+  const payment = payload.payload?.payment?.entity;
+  const paymentNotes = parseRazorpayNotes(payment?.notes);
+
+  if (event === "payment.captured" && paymentNotes?.type === "ai_credit_topup") {
+    const result = await fulfillCreditTopUpFromWebhook({
+      paymentId: payment?.id,
+      orderId: payment?.order_id,
+      notes: paymentNotes,
+    });
+    return { handled: true, event, reason: result.reason };
+  }
+
   const context = await extractActivationContext(payload);
   if (!context) {
+    // Credit top-ups without plan context should not 500 and retry forever.
+    if (paymentNotes?.type === "ai_credit_topup") {
+      return { handled: true, event, reason: "ai_credit_topup_no_plan" };
+    }
     console.error("[razorpay-webhook] step:missing_context", {
       event,
       subscriptionId: payload.payload?.subscription?.entity?.id,
@@ -255,4 +281,61 @@ export async function handleRazorpayWebhook(
   });
 
   return { handled: true, event };
+}
+
+async function fulfillCreditTopUpFromWebhook(input: {
+  paymentId?: string;
+  orderId?: string;
+  notes: NonNullable<ReturnType<typeof parseRazorpayNotes>>;
+}): Promise<{ reason: string }> {
+  const paymentId = input.paymentId?.trim();
+  const orderId = input.orderId?.trim();
+  if (!paymentId) {
+    return { reason: "missing_payment_id" };
+  }
+
+  const existing = await findCreditPurchaseByPaymentId(paymentId);
+  if (existing?.status === "paid") {
+    return { reason: "already_paid" };
+  }
+
+  const pending = orderId ? await findCreditPurchaseByOrderId(orderId) : null;
+  if (!pending) {
+    return { reason: orderId ? "purchase_not_found" : "missing_order" };
+  }
+
+  const marked = await markCreditPurchasePaid({
+    orderId: pending.razorpayOrderId ?? orderId ?? "",
+    paymentId,
+    userId: pending.userId,
+  });
+
+  if (!marked) {
+    return { reason: "mark_paid_failed" };
+  }
+
+  if (marked.newlyPaid) {
+    await addPurchasedCreditsBalance(pending.userId, marked.purchase.credits);
+    const pack = isAiCreditPackId(marked.purchase.packId)
+      ? getAiCreditPack(marked.purchase.packId)
+      : null;
+    const amountLabel =
+      marked.purchase.currency === "USD"
+        ? `$${(marked.purchase.amount / 100).toFixed(2)}`
+        : `₹${Math.round(marked.purchase.amount / 100).toLocaleString("en-IN")}`;
+    const to =
+      input.notes.email ??
+      normalizeSubscriptionUserId(input.notes.userId ?? pending.userId);
+    void sendCreditPurchaseConfirmationEmail({
+      to,
+      packName: pack?.name ?? "AI Credits",
+      credits: marked.purchase.credits,
+      amountLabel,
+    }).catch((err) => {
+      console.error("[razorpay-webhook] credit email failed:", err);
+    });
+    return { reason: "credits_granted" };
+  }
+
+  return { reason: "already_processed" };
 }

@@ -73,7 +73,7 @@ export async function requireAiCreditsResponse(
   feature: AiCreditFeature,
   metadata?: Record<string, unknown>
 ): Promise<
-  | { ok: true; remaining: number; allotment: number }
+  | { ok: true; remaining: number; allotment: number; creditUserId: string }
   | { ok: false; response: Response }
 > {
   const pool = await resolvePool(userId);
@@ -119,5 +119,6 @@ export async function requireAiCreditsResponse(
     ok: true,
     remaining: consumed.remaining,
     allotment: consumed.allotment,
+    creditUserId: pool.creditUserId,
   };
 }

@@ -299,5 +299,6 @@ export const FOOTER_LINKS = {
   social: [
     { label: "X / Twitter", href: "https://twitter.com/useactora", external: true },
     { label: "LinkedIn", href: "https://www.linkedin.com/company/actora", external: true },
+    { label: "Instagram", href: "https://instagram.com/useactora", external: true },
   ],
 } as const;

@@ -118,9 +118,11 @@ export async function markCreditPurchasePaid(input: {
   orderId: string;
   paymentId: string;
   userId: string;
-}): Promise<AiCreditPurchaseRecord | null> {
+}): Promise<{ purchase: AiCreditPurchaseRecord; newlyPaid: boolean } | null> {
   const existing = await findCreditPurchaseByPaymentId(input.paymentId);
-  if (existing?.status === "paid") return existing;
+  if (existing?.status === "paid") {
+    return { purchase: existing, newlyPaid: false };
+  }
 
   const db = requireSupabaseAdmin();
   const { data, error } = await db
@@ -142,9 +144,21 @@ export async function markCreditPurchasePaid(input: {
     );
   }
 
-  if (data) return mapRow(data as PurchaseRow);
+  if (data) {
+    return { purchase: mapRow(data as PurchaseRow), newlyPaid: true };
+  }
 
-  return findCreditPurchaseByPaymentId(input.paymentId);
+  const fallback = await findCreditPurchaseByPaymentId(input.paymentId);
+  if (fallback?.status === "paid") {
+    return { purchase: fallback, newlyPaid: false };
+  }
+
+  const byOrder = await findCreditPurchaseByOrderId(input.orderId);
+  if (byOrder?.status === "paid") {
+    return { purchase: byOrder, newlyPaid: false };
+  }
+
+  return null;
 }
 
 export async function listCreditPurchases(
