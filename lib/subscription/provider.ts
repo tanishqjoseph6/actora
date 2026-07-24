@@ -104,6 +104,7 @@ export function toSubscriptionSnapshot(
       planId: subscription.planId,
       status: subscription.status,
       trial: trialFields,
+      currentPeriodEnd: subscription.currentPeriodEnd,
     }),
   };
 }

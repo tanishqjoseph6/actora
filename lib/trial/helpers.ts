@@ -77,19 +77,26 @@ export function isPaidPlanId(planId: PlanId): boolean {
 
 /**
  * Access rule for authenticated product routes:
- * paid active plan OR active trial → allowed.
+ * paid active plan OR cancelled-but-still-in-period OR active trial → allowed.
  * Expired trial (and free without access) → blocked.
  */
 export function hasProductAccess(input: {
   planId: PlanId;
   status: SubscriptionStatus;
   trial: TrialFields;
+  currentPeriodEnd?: string | null;
   now?: Date;
 }): boolean {
   const now = input.now ?? new Date();
 
   if (isPaidPlanId(input.planId) && input.status === "active") {
     return true;
+  }
+
+  // Cancelled subscriptions retain access until the paid period ends.
+  if (isPaidPlanId(input.planId) && input.status === "canceled") {
+    if (!input.currentPeriodEnd) return true;
+    return new Date(input.currentPeriodEnd).getTime() > now.getTime();
   }
 
   if (isTrialActive(input.trial, now)) {

@@ -1,5 +1,5 @@
 import type { DefaultSession } from "next-auth";
-import type { PlanId } from "@/lib/subscription";
+import type { PlanId, SubscriptionStatus } from "@/lib/subscription";
 
 declare module "next-auth" {
   interface Session {
@@ -8,6 +8,8 @@ declare module "next-auth" {
     isTrial?: boolean;
     trialEndsAt?: string | null;
     trialExpired?: boolean;
+    subscriptionStatus?: SubscriptionStatus;
+    currentPeriodEnd?: string | null;
     error?: string;
     user: DefaultSession["user"];
   }
@@ -22,6 +24,8 @@ declare module "next-auth/jwt" {
     isTrial?: boolean;
     trialEndsAt?: string | null;
     trialExpired?: boolean;
+    subscriptionStatus?: SubscriptionStatus;
+    currentPeriodEnd?: string | null;
     error?: string;
   }
 }

@@ -15,14 +15,24 @@ const BILLING_PATHS = new Set(["/billing"]);
 
 function tokenHasAccess(token: {
   planId?: PlanId | string;
+  subscriptionStatus?: string;
+  currentPeriodEnd?: string | null;
   isTrial?: boolean;
   trialEndsAt?: string | null;
   trialExpired?: boolean;
 }): boolean {
   const planId = (token.planId as PlanId) ?? "free";
+  const status =
+    token.subscriptionStatus === "canceled" ||
+    token.subscriptionStatus === "past_due" ||
+    token.subscriptionStatus === "trialing"
+      ? token.subscriptionStatus
+      : "active";
+
   return hasProductAccess({
     planId,
-    status: "active",
+    status,
+    currentPeriodEnd: token.currentPeriodEnd ?? null,
     trial: {
       isTrial: Boolean(token.isTrial),
       trialStartedAt: null,

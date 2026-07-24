@@ -1,7 +1,12 @@
 "use client";
 
 import type { SubscriptionSnapshot } from "@/lib/subscription";
-import { formatLimit, getPlanBadgeStyles, getUsagePercent } from "@/lib/subscription";
+import {
+  formatLimit,
+  getPlanBadgeStyles,
+  getSubscriptionStatusLabel,
+  getUsagePercent,
+} from "@/lib/subscription";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 
@@ -31,11 +36,14 @@ export function CurrentPlanBadge({
   const styles = getPlanBadgeStyles(
     subscription?.trialActive ? "trial" : planId
   );
-  const statusLabel = subscription?.trialActive
-    ? `${subscription.remainingTrialDays}d left`
-    : subscription?.trialExpired
-      ? "Expired"
-      : "Active";
+  const statusLabel = getSubscriptionStatusLabel({
+    status: subscription?.status ?? "active",
+    planId,
+    currentPeriodEnd: subscription?.currentPeriodEnd,
+    trialActive: subscription?.trialActive,
+    remainingTrialDays: subscription?.remainingTrialDays,
+    trialExpired: subscription?.trialExpired,
+  });
 
   const badgeClass = cn(
     "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all",

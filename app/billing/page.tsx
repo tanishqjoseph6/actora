@@ -12,8 +12,10 @@ import {
 } from "@/components/billing/PaymentToast";
 import {
   BillingHistoryTable,
-  RazorpayPlaceholder,
+  RazorpayStatusCard,
 } from "@/components/billing/BillingHistory";
+import { BillingOverviewSection } from "@/components/billing/BillingOverviewSection";
+import { BillingUsageSection } from "@/components/billing/BillingUsageSection";
 import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonTable } from "@/components/billing/premium/ComparisonTable";
 import { BillingFaq } from "@/components/billing/premium/BillingFaq";
@@ -35,6 +37,7 @@ function BillingPageActive() {
   const { subscription, loading, refresh } = useSubscription();
   const [toast, setToast] = useState<PaymentToastState>(null);
   const [proUpgradeRequest, setProUpgradeRequest] = useState(0);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   usePaymentToastFromUrl(setToast);
 
@@ -42,20 +45,25 @@ function BillingPageActive() {
     setProUpgradeRequest((n) => n + 1);
   }, []);
 
+  const handlePaymentSuccess = useCallback(async () => {
+    await refresh();
+    setHistoryRefreshKey((n) => n + 1);
+  }, [refresh]);
+
   const showTrialCard =
     Boolean(subscription?.trialActive) ||
     Boolean(subscription?.trialExpired && subscription.planId === "free");
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] text-white overflow-hidden">
+    <main className="min-h-screen overflow-hidden bg-[#0A0A0A] text-white">
       <AiCreditUsageAlerts onUpgradePlan={handleUpgradePlan} />
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-[#3B82F6]/10 blur-[200px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-0 right-0 w-[600px] h-[500px] bg-[#2563EB]/8 blur-[180px] rounded-full pointer-events-none" />
-      <div className="fixed top-1/3 -left-32 w-[400px] h-[400px] bg-[#3B82F6]/6 blur-[160px] rounded-full pointer-events-none" />
+      <div className="pointer-events-none fixed left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-[#3B82F6]/10 blur-[200px]" />
+      <div className="pointer-events-none fixed bottom-0 right-0 h-[500px] w-[600px] rounded-full bg-[#2563EB]/8 blur-[180px]" />
+      <div className="pointer-events-none fixed -left-32 top-1/3 h-[400px] w-[400px] rounded-full bg-[#3B82F6]/6 blur-[160px]" />
 
       <PaymentToast toast={toast} onDismiss={() => setToast(null)} />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
+      <div className="relative z-10 mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-16 lg:py-20">
         {loading ? (
           <BillingPageSkeleton />
         ) : (
@@ -64,11 +72,31 @@ function BillingPageActive() {
               <TrialBillingCard subscription={subscription} />
             )}
 
-            <div id="pricing">
+            <BillingOverviewSection
+              subscription={subscription}
+              loading={loading}
+            />
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="mb-16 space-y-8 lg:mb-20 lg:space-y-10"
+            >
+              <CurrentPlanSection
+                subscription={subscription}
+                loading={loading}
+                onUpgradePlan={handleUpgradePlan}
+                onRefresh={handlePaymentSuccess}
+              />
+            </motion.div>
+
+            <div id="pricing" className="scroll-mt-24">
               <PricingSection
-                badge="Billing"
-                title="Billing"
-                subtitle="Manage your subscription, invoices and usage."
+                badge="Subscription"
+                title="Choose your plan"
+                subtitle="Upgrade with Razorpay. Free includes 100 credits/month. Pro $20 · Team $69."
                 mode="billing"
                 currentPlanId={
                   subscription?.planId === "trial"
@@ -76,26 +104,11 @@ function BillingPageActive() {
                     : subscription?.planId
                 }
                 syncFromUrl
-                onPaymentSuccess={refresh}
+                onPaymentSuccess={handlePaymentSuccess}
                 proUpgradeRequest={proUpgradeRequest}
                 className="mb-16 lg:mb-20"
               />
             </div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              className="space-y-8 lg:space-y-10 mb-16 lg:mb-20"
-            >
-              <CurrentPlanSection
-                subscription={subscription}
-                loading={loading}
-                onUpgradePlan={handleUpgradePlan}
-                onRefresh={refresh}
-              />
-            </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
@@ -107,18 +120,24 @@ function BillingPageActive() {
             >
               <CreditTopUpSection
                 subscription={subscription}
-                onPurchaseSuccess={refresh}
+                onPurchaseSuccess={handlePaymentSuccess}
+                onToast={setToast}
               />
             </motion.div>
 
-            <div className="space-y-8 lg:space-y-10 mb-16 lg:mb-20">
+            <BillingUsageSection
+              subscription={subscription}
+              loading={loading}
+            />
+
+            <div className="mb-16 space-y-8 lg:mb-20 lg:space-y-10">
               <ComparisonTable />
               <BillingFaq />
             </div>
 
             <div className="space-y-6">
-              <BillingHistoryTable />
-              <RazorpayPlaceholder />
+              <BillingHistoryTable refreshKey={historyRefreshKey} />
+              <RazorpayStatusCard />
             </div>
           </>
         )}

@@ -1,5 +1,5 @@
 import type { BillingPeriod, PaidPlanId } from "@/components/billing/pricing-data";
-import { getRazorpayClient } from "@/lib/billing/razorpay";
+import { getRazorpayClient, cancelRazorpaySubscription } from "@/lib/billing/razorpay";
 import {
   isPaidAppPlan,
   parseBillingPeriod,
@@ -10,7 +10,10 @@ import { getChargeAmount } from "@/lib/billing/pricing";
 import { recordBillingPayment } from "@/lib/billing/payment-repository";
 import { isBillingCurrency, type BillingCurrency } from "@/lib/billing/currency";
 import { logApiError } from "@/lib/api/log-error";
-import { setStoredPlan } from "@/lib/subscription/repository";
+import {
+  getStoredSubscription,
+  setStoredPlan,
+} from "@/lib/subscription/repository";
 import type { BillingInterval, PlanId } from "@/lib/subscription/types";
 import {
   addPurchasedCreditsBalance,
@@ -226,6 +229,11 @@ export async function handleRazorpayWebhook(
     currentPeriodEnd: context.currentPeriodEnd,
   });
 
+  const previous = await getStoredSubscription(context.userId);
+  const previousSubscriptionId =
+    previous.razorpaySubscriptionId?.trim() || null;
+  const nextSubscriptionId = context.subscriptionId?.trim() || null;
+
   const stored = await setStoredPlan(
     context.userId,
     context.planId as PlanId,
@@ -237,6 +245,26 @@ export async function handleRazorpayWebhook(
       currentPeriodEnd: context.currentPeriodEnd,
     }
   );
+
+  if (
+    previousSubscriptionId &&
+    nextSubscriptionId &&
+    previousSubscriptionId !== nextSubscriptionId
+  ) {
+    try {
+      await cancelRazorpaySubscription(previousSubscriptionId);
+      console.log("[razorpay-webhook] step:cancel-previous — ok", {
+        previousSubscriptionId,
+        nextSubscriptionId,
+      });
+    } catch (cancelError) {
+      logApiError("razorpay-webhook", cancelError, {
+        operation: "cancelPreviousSubscription",
+        previousSubscriptionId,
+        nextSubscriptionId,
+      });
+    }
+  }
 
   if (context.paymentId) {
     try {

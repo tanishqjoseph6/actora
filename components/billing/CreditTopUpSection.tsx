@@ -16,6 +16,7 @@ import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 import type { RazorpayOrderPaymentResponse } from "@/types/razorpay";
+import type { PaymentToastState } from "@/components/billing/PaymentToast";
 
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -60,11 +61,13 @@ type PurchaseHistoryItem = {
 type CreditTopUpSectionProps = {
   subscription: SubscriptionSnapshot | null;
   onPurchaseSuccess?: () => void | Promise<void>;
+  onToast?: (toast: PaymentToastState) => void;
 };
 
 export function CreditTopUpSection({
   subscription,
   onPurchaseSuccess,
+  onToast,
 }: CreditTopUpSectionProps) {
   const { data: session } = useSession();
   const { currency } = useBillingCurrency();
@@ -165,6 +168,11 @@ export function CreditTopUpSection({
                     packName: pack.name,
                     credits: pack.credits,
                   });
+                  onToast?.({
+                    type: "success",
+                    title: "Credits added",
+                    message: `${pack.credits.toLocaleString("en-US")} credits are ready to use.`,
+                  });
                   await onPurchaseSuccess?.();
                   await loadHistory();
                   resolve();
@@ -174,28 +182,53 @@ export function CreditTopUpSection({
               })();
             },
             modal: {
-              ondismiss: () => resolve(),
+              ondismiss: () => {
+                onToast?.({
+                  type: "info",
+                  title: "Payment cancelled",
+                  message: "Checkout was closed before payment completed.",
+                });
+                resolve();
+              },
             },
           });
 
           rzp.on("payment.failed", (response) => {
-            reject(
-              new Error(
-                response.error?.description ?? "Payment failed. Please try again."
-              )
-            );
+            const message =
+              response.error?.description ??
+              "Payment failed. Please try again.";
+            onToast?.({
+              type: "error",
+              title: "Payment failed",
+              message,
+            });
+            reject(new Error(message));
           });
 
           rzp.open();
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Checkout failed.");
+        const message =
+          err instanceof Error ? err.message : "Checkout failed.";
+        setError(message);
+        onToast?.({
+          type: "error",
+          title: "Checkout error",
+          message,
+        });
       } finally {
         busyRef.current = false;
         setBuying(false);
       }
     },
-    [currency, loadHistory, onPurchaseSuccess, session?.user?.email, session?.user?.name]
+    [
+      currency,
+      loadHistory,
+      onPurchaseSuccess,
+      onToast,
+      session?.user?.email,
+      session?.user?.name,
+    ]
   );
 
   const packs = useMemo(() => AI_CREDIT_PACKS, []);
@@ -312,7 +345,7 @@ export function CreditTopUpSection({
                   "relative mt-5 w-full px-4 py-2.5 text-sm disabled:opacity-60"
                 )}
               >
-                {buying && selected === pack.id ? "Processing…" : "Buy Credits"}
+                {buying && selected === pack.id ? "Processing…" : "Buy Now"}
               </button>
             </motion.div>
           );

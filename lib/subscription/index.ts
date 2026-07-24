@@ -20,6 +20,11 @@ export {
 } from "./plans";
 
 export {
+  getSubscriptionStatusHint,
+  getSubscriptionStatusLabel,
+} from "./status-label";
+
+export {
   canConnectInbox,
   canUseAiAction,
   canAccessFeature,

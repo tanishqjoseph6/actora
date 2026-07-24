@@ -234,6 +234,8 @@ export const authOptions: NextAuthOptions = {
           token.isTrial = stored.isTrial;
           token.trialEndsAt = stored.trialEndsAt;
           token.trialExpired = stored.trialExpired;
+          token.subscriptionStatus = stored.status;
+          token.currentPeriodEnd = stored.currentPeriodEnd;
         } catch (error) {
           console.error("[next-auth] Failed to load subscription plan:", error);
         }
@@ -312,6 +314,8 @@ export const authOptions: NextAuthOptions = {
       session.isTrial = Boolean(token.isTrial);
       session.trialEndsAt = token.trialEndsAt ?? null;
       session.trialExpired = Boolean(token.trialExpired);
+      session.subscriptionStatus = token.subscriptionStatus ?? "active";
+      session.currentPeriodEnd = token.currentPeriodEnd ?? null;
 
       if (token.error === "RefreshAccessTokenError") {
         session.error = "RefreshAccessTokenError";

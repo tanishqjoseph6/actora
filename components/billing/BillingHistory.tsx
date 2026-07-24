@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { cn } from "@/lib/utils";
 
 type PaymentRow = {
   id: string;
   date: string;
-  plan: string;
+  type: "Subscription" | "Credit Pack";
+  label: string;
   amount: string;
   status: string;
+  paymentId: string | null;
+  invoiceId: string | null;
 };
 
 function formatPaymentDate(iso: string): string {
@@ -19,112 +23,136 @@ function formatPaymentDate(iso: string): string {
   });
 }
 
-export function BillingHistoryTable() {
+function statusClass(status: string): string {
+  const normalized = status.toLowerCase();
+  if (normalized === "paid") {
+    return "bg-emerald-500/15 border-emerald-400/25 text-emerald-400";
+  }
+  if (normalized === "failed") {
+    return "bg-red-500/15 border-red-400/25 text-red-300";
+  }
+  return "bg-white/5 border-white/10 text-[#A1A1AA]";
+}
+
+type BillingHistoryTableProps = {
+  refreshKey?: number;
+};
+
+export function BillingHistoryTable({ refreshKey = 0 }: BillingHistoryTableProps) {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPayments() {
-      try {
-        const response = await fetch("/api/billing/payments", { cache: "no-store" });
-        const data = (await response.json()) as { payments?: PaymentRow[] };
-        if (!cancelled) {
-          setPayments(
-            (data.payments ?? []).map((row) => ({
-              ...row,
-              date: formatPaymentDate(row.date),
-            }))
-          );
-        }
-      } catch {
-        if (!cancelled) setPayments([]);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const loadPayments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/billing/payments", {
+        cache: "no-store",
+      });
+      const data = (await response.json()) as { payments?: PaymentRow[] };
+      setPayments(
+        (data.payments ?? []).map((row) => ({
+          ...row,
+          date: formatPaymentDate(row.date),
+        }))
+      );
+    } catch {
+      setPayments([]);
+    } finally {
+      setLoading(false);
     }
-
-    void loadPayments();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
+  useEffect(() => {
+    setLoading(true);
+    void loadPayments();
+  }, [loadPayments, refreshKey]);
+
   return (
-    <div className="rounded-2xl bg-[#0B1220]/80 backdrop-blur-sm border border-[rgba(37, 99, 235,0.15)] shadow-lg shadow-black/20 overflow-hidden">
-      <div className="p-6 sm:p-8 border-b border-[rgba(37, 99, 235,0.1)]">
+    <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#111111]">
+      <div className="border-b border-white/[0.06] p-6 sm:p-8">
         <h3 className="text-lg font-bold text-white">Payment History</h3>
-        <p className="text-sm text-gray-400 mt-1">
-          View and download your past invoices
+        <p className="mt-1 text-sm text-[#A1A1AA]">
+          Subscriptions and credit pack purchases
         </p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
-            <tr className="border-b border-[rgba(37, 99, 235,0.1)] text-left text-gray-500">
-              <th className="px-6 sm:px-8 py-4 font-medium">Date</th>
-              <th className="px-6 sm:px-8 py-4 font-medium">Plan</th>
-              <th className="px-6 sm:px-8 py-4 font-medium">Amount</th>
-              <th className="px-6 sm:px-8 py-4 font-medium">Status</th>
-              <th className="px-6 sm:px-8 py-4 font-medium text-right">Invoice</th>
+            <tr className="border-b border-white/[0.06] text-left text-[#71717A]">
+              <th className="px-6 py-4 font-medium sm:px-8">Date</th>
+              <th className="px-6 py-4 font-medium sm:px-8">Type</th>
+              <th className="px-6 py-4 font-medium sm:px-8">Amount</th>
+              <th className="px-6 py-4 font-medium sm:px-8">Status</th>
+              <th className="px-6 py-4 font-medium sm:px-8">Payment ID</th>
+              <th className="px-6 py-4 text-right font-medium sm:px-8">
+                Invoice
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <tr key={i} className="border-b border-[rgba(37, 99, 235,0.05)]">
-                  <td className="px-6 sm:px-8 py-4">
-                    <Skeleton className="h-4 w-24" />
-                  </td>
-                  <td className="px-6 sm:px-8 py-4">
-                    <Skeleton className="h-4 w-20" />
-                  </td>
-                  <td className="px-6 sm:px-8 py-4">
-                    <Skeleton className="h-4 w-16" />
-                  </td>
-                  <td className="px-6 sm:px-8 py-4">
-                    <Skeleton className="h-6 w-16 rounded-full" />
-                  </td>
-                  <td className="px-6 sm:px-8 py-4 text-right">
-                    <Skeleton className="ml-auto h-8 w-24 rounded-lg" />
-                  </td>
+                <tr key={i} className="border-b border-white/[0.04]">
+                  {Array.from({ length: 6 }).map((__, j) => (
+                    <td key={j} className="px-6 py-4 sm:px-8">
+                      <Skeleton className="h-4 w-20" />
+                    </td>
+                  ))}
                 </tr>
               ))
             ) : payments.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 sm:px-8 py-10 text-center text-gray-500">
-                  No payments yet. Upgrade to a paid plan to see invoices here.
+                <td
+                  colSpan={6}
+                  className="px-6 py-10 text-center text-[#71717A] sm:px-8"
+                >
+                  No payments yet. Upgrade or buy credits to see history here.
                 </td>
               </tr>
             ) : (
               payments.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b border-[rgba(37, 99, 235,0.05)] last:border-0 hover:bg-[#111827]/40 transition-colors duration-200"
+                  className="border-b border-white/[0.04] last:border-0 transition-colors hover:bg-white/[0.02]"
                 >
-                  <td className="px-6 sm:px-8 py-4 text-gray-300 whitespace-nowrap">
+                  <td className="whitespace-nowrap px-6 py-4 text-[#D4D4D8] sm:px-8">
                     {row.date}
                   </td>
-                  <td className="px-6 sm:px-8 py-4 text-white font-medium">
-                    {row.plan}
+                  <td className="px-6 py-4 sm:px-8">
+                    <div className="font-medium text-white">{row.type}</div>
+                    <div className="mt-0.5 text-xs text-[#71717A]">
+                      {row.label}
+                    </div>
                   </td>
-                  <td className="px-6 sm:px-8 py-4 text-gray-300">{row.amount}</td>
-                  <td className="px-6 sm:px-8 py-4">
-                    <span className="inline-flex px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/25 text-emerald-400 text-xs font-medium">
+                  <td className="px-6 py-4 tabular-nums text-[#D4D4D8] sm:px-8">
+                    {row.amount}
+                  </td>
+                  <td className="px-6 py-4 sm:px-8">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize",
+                        statusClass(row.status)
+                      )}
+                    >
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-6 sm:px-8 py-4 text-right">
-                    <a
-                      href={`/api/billing/invoices/${row.id}`}
-                      download
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgba(37, 99, 235,0.15)] text-[#3B82F6] text-xs font-medium hover:bg-[#3B82F6]/10 transition-all duration-200 active:scale-[0.98]"
-                    >
-                      <DownloadIcon className="w-3.5 h-3.5" />
-                      Download
-                    </a>
+                  <td className="px-6 py-4 font-mono text-xs text-[#A1A1AA] sm:px-8">
+                    {row.paymentId ?? "—"}
+                  </td>
+                  <td className="px-6 py-4 text-right sm:px-8">
+                    {row.invoiceId ? (
+                      <a
+                        href={`/api/billing/invoices/${row.invoiceId}`}
+                        download
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-[#3B82F6] transition-all hover:bg-[#3B82F6]/10 active:scale-[0.98]"
+                      >
+                        <DownloadIcon className="h-3.5 w-3.5" />
+                        Download
+                      </a>
+                    ) : (
+                      <span className="text-xs text-[#52525B]">—</span>
+                    )}
                   </td>
                 </tr>
               ))
@@ -141,6 +169,7 @@ type RazorpayHealth = {
   keyId: boolean;
   keySecret: boolean;
   webhookSecret: boolean;
+  mode?: "TEST" | "LIVE" | "UNKNOWN";
 };
 
 function isRazorpayConnectedFromHealth(razorpay: RazorpayHealth | null): boolean {
@@ -151,10 +180,11 @@ function isRazorpayConnectedFromHealth(razorpay: RazorpayHealth | null): boolean
   );
 }
 
-export function RazorpayPlaceholder() {
+export function RazorpayStatusCard() {
   const [status, setStatus] = useState<"loading" | "connected" | "missing">(
     "loading"
   );
+  const [mode, setMode] = useState<"TEST" | "LIVE" | "UNKNOWN" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +197,7 @@ export function RazorpayPlaceholder() {
         };
         const razorpay = data.checks?.razorpay ?? null;
         if (!cancelled) {
+          setMode(razorpay?.mode ?? null);
           setStatus(
             isRazorpayConnectedFromHealth(razorpay) ? "connected" : "missing"
           );
@@ -189,43 +220,47 @@ export function RazorpayPlaceholder() {
 
   return (
     <div
-      className={`rounded-2xl backdrop-blur-sm p-6 sm:p-8 ${
+      className={`rounded-2xl p-6 sm:p-8 ${
         isConnected
-          ? "bg-[#0B1220]/80 border border-emerald-400/20"
-          : "bg-[#0B1220]/60 border border-dashed border-[rgba(37, 99, 235,0.2)]"
+          ? "border border-emerald-400/20 bg-[#111111]"
+          : "border border-dashed border-white/[0.12] bg-[#111111]/80"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#111827] border border-[rgba(37, 99, 235,0.15)] shrink-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-[#0A0A0A]">
           <PaymentIcon
-            className={`w-6 h-6 ${isConnected ? "text-emerald-400" : "text-[#3B82F6]"}`}
+            className={`h-6 w-6 ${isConnected ? "text-emerald-400" : "text-[#3B82F6]"}`}
           />
         </div>
         <div className="flex-1">
           <h3 className="text-base font-semibold text-white">
             Razorpay Payment Gateway
           </h3>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="mt-1 text-sm text-[#A1A1AA]">
             {isLoading
               ? "Checking payment gateway status…"
               : isConnected
-                ? "Secure payments powered by Razorpay. Checkout is active."
+                ? `Secure payments powered by Razorpay${mode ? ` (${mode} mode)` : ""}. Checkout is active.`
                 : "Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to enable payments."}
           </p>
         </div>
         <span
-          className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
             isLoading
-              ? "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-400"
+              ? "border border-white/[0.08] bg-[#0A0A0A] text-[#A1A1AA]"
               : isConnected
-                ? "bg-emerald-500/15 border border-emerald-400/30 text-emerald-400"
-                : "bg-[#111827] border border-[rgba(37, 99, 235,0.1)] text-gray-500"
+                ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-400"
+                : "border border-white/[0.08] bg-[#0A0A0A] text-[#71717A]"
           }`}
         >
           {isLoading
             ? "Checking…"
             : isConnected
-              ? "✅ Razorpay Connected"
+              ? mode === "TEST"
+                ? "✅ Razorpay TEST"
+                : mode === "LIVE"
+                  ? "✅ Razorpay LIVE"
+                  : "✅ Razorpay Connected"
               : "Not configured"}
         </span>
       </div>
@@ -233,18 +268,41 @@ export function RazorpayPlaceholder() {
   );
 }
 
+/** @deprecated Use RazorpayStatusCard */
+export const RazorpayPlaceholder = RazorpayStatusCard;
+
 function DownloadIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+      />
     </svg>
   );
 }
 
 function PaymentIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+      />
     </svg>
   );
 }

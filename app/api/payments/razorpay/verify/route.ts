@@ -6,6 +6,7 @@ import {
   verifyRazorpayPaymentSignature,
   verifyRazorpaySubscriptionSignature,
   getRazorpayClient,
+  cancelRazorpaySubscription,
 } from "@/lib/billing/razorpay";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isBillingCurrency } from "@/lib/billing/currency";
@@ -20,6 +21,7 @@ import {
   toSubscriptionSnapshot,
   type SubscriptionUpsertMetadata,
 } from "@/lib/subscription";
+import { getStoredSubscription } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { sendBillingPaymentConfirmationEmail } from "@/lib/email/billing-emails";
 import { getPlanDisplayName } from "@/lib/subscription/plans";
@@ -273,12 +275,40 @@ export async function POST(request: NextRequest) {
       upsertMetadata,
     });
 
+    // Cancel the previous Razorpay subscription on upgrade/swap to avoid double billing.
+    const previous = await getStoredSubscription(userId);
+    const previousSubscriptionId = previous.razorpaySubscriptionId?.trim() || null;
+    const nextSubscriptionId = razorpay_subscription_id?.trim() || null;
+
     const stored = await subscriptionProvider.setPlan(
       userId,
       planId,
       period,
       upsertMetadata
     );
+
+    if (
+      previousSubscriptionId &&
+      nextSubscriptionId &&
+      previousSubscriptionId !== nextSubscriptionId
+    ) {
+      try {
+        await cancelRazorpaySubscription(previousSubscriptionId);
+        console.log("[razorpay/verify] step:cancel-previous — ok", {
+          previousSubscriptionId,
+          nextSubscriptionId,
+        });
+      } catch (cancelError) {
+        // Payment already succeeded — log and continue; webhook/manual cleanup can follow.
+        console.error("[razorpay/verify] step:cancel-previous — failed", {
+          previousSubscriptionId,
+          error:
+            cancelError instanceof Error
+              ? cancelError.message
+              : String(cancelError),
+        });
+      }
+    }
 
     const chargeAmount = getChargeAmount(currency, planId, period) ?? 0;
     await recordBillingPayment({
