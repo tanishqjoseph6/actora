@@ -26,6 +26,7 @@ export function ContactForm() {
         onSubmit={onSubmit}
         className="rounded-[18px] border border-white/[0.06] bg-[#111111] p-6 sm:p-8"
         noValidate
+        aria-label="Contact Actora sales"
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="block">

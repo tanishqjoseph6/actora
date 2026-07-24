@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { LANDING_FAQ } from "./landing-data";
@@ -15,7 +15,24 @@ type LandingFaqProps = {
 
 export function LandingFaq({ limit, showHeader = true }: LandingFaqProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  const items = typeof limit === "number" ? LANDING_FAQ.slice(0, limit) : LANDING_FAQ;
+  const items =
+    typeof limit === "number" ? LANDING_FAQ.slice(0, limit) : LANDING_FAQ;
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+
+    const index = items.findIndex((item) => item.id === hash);
+    if (index < 0) return;
+
+    setOpenIndex(index);
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [items]);
 
   return (
     <section id="faq" className="scroll-mt-24 border-t border-white/[0.06] py-20 sm:py-28">
@@ -32,6 +49,7 @@ export function LandingFaq({ limit, showHeader = true }: LandingFaqProps) {
           <div className="divide-y divide-white/[0.06] rounded-[18px] border border-white/[0.06] bg-[#111111] px-5 sm:px-6">
             {items.map((item, index) => {
               const isOpen = openIndex === index;
+              const answerId = `${item.id}-answer`;
               return (
                 <div key={item.id} id={item.id} className="scroll-mt-28 py-1">
                   <button
@@ -39,6 +57,7 @@ export function LandingFaq({ limit, showHeader = true }: LandingFaqProps) {
                     onClick={() => setOpenIndex(isOpen ? null : index)}
                     className="flex w-full items-center justify-between gap-4 py-5 text-left"
                     aria-expanded={isOpen}
+                    aria-controls={answerId}
                   >
                     <span className="text-sm font-medium text-white sm:text-base">
                       {item.question}
@@ -54,6 +73,9 @@ export function LandingFaq({ limit, showHeader = true }: LandingFaqProps) {
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div
+                        id={answerId}
+                        role="region"
+                        aria-labelledby={item.id}
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}

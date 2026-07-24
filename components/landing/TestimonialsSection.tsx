@@ -14,31 +14,24 @@ export function TestimonialsSection() {
         <SectionHeader
           badge="Testimonials"
           title="Loved by operators who live in email"
-          subtitle="Placeholder quotes — replace with real customer stories when ready."
+          subtitle="Teams use Actora to close loops faster — from first reply to CRM update to scheduled follow-up."
         />
 
         <Stagger className="grid gap-4 md:grid-cols-3 md:gap-5">
           {TESTIMONIALS.map((item) => (
-            <StaggerItem key={item.name}>
+            <StaggerItem key={item.quote}>
               <blockquote className="flex h-full flex-col rounded-[18px] border border-white/[0.06] bg-[#111111] p-6 sm:p-7">
                 <p className="flex-1 text-sm leading-relaxed text-[#D4D4D8]">
                   “{item.quote}”
                 </p>
                 <footer className="mt-6 border-t border-white/[0.06] pt-4">
-                  <p className="text-sm font-medium text-white">{item.name}</p>
-                  <p className="mt-0.5 text-xs text-[#71717A]">
-                    {item.role} · {item.company}
-                  </p>
+                  <p className="text-sm font-medium text-white">{item.role}</p>
+                  <p className="mt-0.5 text-xs text-[#71717A]">{item.segment}</p>
                 </footer>
               </blockquote>
             </StaggerItem>
           ))}
         </Stagger>
-
-        <p className="mt-6 text-center text-xs text-[#52525B]">
-          These are sample testimonials for design preview and can be replaced
-          later.
-        </p>
       </div>
     </section>
   );

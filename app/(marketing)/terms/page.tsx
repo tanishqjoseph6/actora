@@ -18,7 +18,7 @@ export default function TermsPage() {
       <MarketingPageHero
         badge="Legal"
         title="Terms of Service"
-        subtitle="Last updated: July 22, 2026. By using Actora you agree to these terms."
+        subtitle="Last updated: July 24, 2026. By using Actora you agree to these terms."
       />
       <LegalProse>
         <p>

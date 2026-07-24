@@ -179,7 +179,7 @@ export function AiCreditsCard({
           )}
         >
           {balance.warning === "exhausted"
-            ? "Monthly AI credits exhausted. Buy more credits or upgrade to keep Roxxx AI running."
+            ? "Monthly AI credits exhausted. Buy more credits or upgrade to keep Roxx AI running."
             : balance.warning === "critical_10"
               ? "Only 10% of your monthly AI credits remain this billing cycle."
               : "You're down to 20% of your monthly AI credits for this cycle."}

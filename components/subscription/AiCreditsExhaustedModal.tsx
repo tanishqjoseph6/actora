@@ -82,7 +82,7 @@ export function AiCreditsExhaustedModal({
                   ) : (
                     <>
                       {" "}
-                      Purchase additional AI credits to continue using Roxxx AI
+                      Purchase additional AI credits to continue using Roxx AI
                       immediately.
                     </>
                   )}

@@ -210,7 +210,8 @@ export function CreditTopUpSection({
           Buy AI Credits
         </h2>
         <p className={`mt-2 text-sm sm:text-base ${dashboard.muted} max-w-xl`}>
-          Never run out of AI. Purchase additional credits anytime.
+          Top up anytime. Purchased credits stack on your monthly plan allotment and
+          are used after monthly credits are exhausted.
         </p>
       </div>
 
@@ -449,7 +450,8 @@ function SuccessModal({
               <span className="font-semibold text-white">
                 {credits.toLocaleString("en-US")}
               </span>{" "}
-              AI credits from the {packName} pack are ready to use.
+              AI credits from {packName} are ready to use alongside your monthly
+              allotment.
             </p>
             <button
               type="button"

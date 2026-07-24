@@ -11,18 +11,18 @@ export const USD_CHARGE_AMOUNTS: Record<
   Record<PaidPlanId, number>
 > = {
   monthly: {
-    pro: 2500,
+    pro: 2000,
     starter: 6900,
   },
   yearly: {
-    pro: 25500,
+    pro: 20400,
     starter: 70400,
   },
 };
 
 /**
  * Explicit INR display/charge amounts in paise.
- * Monthly values match the public pricing page (₹2,199 / ₹6,072).
+ * Monthly values match the public pricing page (₹1,760 / ₹6,072).
  * Yearly applies the same 15% annual discount on those monthly rates.
  */
 export const INR_CHARGE_AMOUNTS: Record<
@@ -30,11 +30,11 @@ export const INR_CHARGE_AMOUNTS: Record<
   Record<PaidPlanId, number>
 > = {
   monthly: {
-    pro: 219_900,
+    pro: 176_000,
     starter: 607_200,
   },
   yearly: {
-    pro: Math.round(2199 * 12 * 0.85) * 100,
+    pro: Math.round(1760 * 12 * 0.85) * 100,
     starter: Math.round(6072 * 12 * 0.85) * 100,
   },
 };

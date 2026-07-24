@@ -17,8 +17,8 @@ export function LandingFooter() {
               wordmarkClassName="text-[15px] font-semibold tracking-tight text-white"
             />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#71717A]">
-              Where conversations become execution. AI Inbox for operators who
-              turn email into outcomes.
+              AI Inbox, Roxx AI, CRM, and automations for operators who turn
+              email into outcomes — not open tabs.
             </p>
           </div>
 

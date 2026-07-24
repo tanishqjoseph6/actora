@@ -38,6 +38,7 @@ export const MENU_GROUPS: MenuGroup[] = [
       { label: "Contact", href: "/contact" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
+      { label: "Cookie Policy", href: "/cookies" },
     ],
   },
   {
@@ -195,37 +196,33 @@ export const COMPARISONS = [
   },
 ] as const;
 
-export const TRUSTED_COMPANIES = [
-  "Northline",
-  "Stackform",
-  "Meridian",
-  "Orbit Labs",
-  "Plainfield",
-  "Cascade",
+export const TRUSTED_SEGMENTS = [
+  "Revenue Ops",
+  "Founders",
+  "B2B SaaS",
+  "Agencies",
+  "Consultancies",
+  "Sales Teams",
 ] as const;
 
-/** Placeholder testimonials — replace with real quotes later. */
 export const TESTIMONIALS = [
   {
     quote:
       "Actora finally made our inbox feel like an operating system. Emails stop being noise and start becoming work.",
-    name: "Aisha Rahman",
     role: "Head of Revenue Ops",
-    company: "Meridian",
+    segment: "B2B SaaS team",
   },
   {
     quote:
       "Roxx drafts the reply, updates the deal, and creates the follow-up before I’ve finished reading the thread.",
-    name: "Jordan Lee",
     role: "Founder",
-    company: "Orbit Labs",
+    segment: "Early-stage startup",
   },
   {
     quote:
       "We replaced three tools with one workspace. The team actually uses it every day.",
-    name: "Priya Nair",
     role: "COO",
-    company: "Cascade",
+    segment: "Services company",
   },
 ] as const;
 
@@ -240,7 +237,7 @@ export const LANDING_FAQ = [
     id: "ai-credits",
     question: "How do AI credits work?",
     answer:
-      "Credits belong to your workspace. Monthly allotments refresh with your plan; purchased top-ups never expire mid-cycle. Every member consumes from the shared workspace pool.",
+      "Credits belong to your workspace. Free includes 100 credits per month, Pro includes 1,000, and Team workspaces share 5,000 per month. Purchased top-ups stack on top of your monthly allotment and follow our existing credit policy. Every member consumes from the shared workspace pool.",
   },
   {
     id: "billing",
@@ -258,7 +255,7 @@ export const LANDING_FAQ = [
     id: "privacy",
     question: "What about data privacy?",
     answer:
-      "We process inbox and CRM data only to deliver product features you enable. See our Privacy Policy for retention, subprocessors, and your rights.",
+      "We process inbox and CRM data only to deliver product features you enable. See our Privacy Policy and Cookie Policy for retention, subprocessors, cookies, and your rights.",
   },
   {
     id: "trial",
@@ -295,6 +292,7 @@ export const FOOTER_LINKS = {
   legal: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
+    { label: "Cookie Policy", href: "/cookies" },
   ],
   social: [
     { label: "X / Twitter", href: "https://twitter.com/useactora", external: true },

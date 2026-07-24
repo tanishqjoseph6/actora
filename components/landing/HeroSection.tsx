@@ -18,28 +18,29 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl"
+            className="text-sm font-medium uppercase tracking-[0.18em] text-[#3B82F6]"
           >
-            Actora
+            AI Inbox for operators
           </motion.p>
 
           <motion.h1
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.06 }}
-            className="mt-5 text-xl font-medium tracking-tight text-[#E4E4E7] sm:text-2xl lg:text-[1.75rem] lg:leading-snug"
+            className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.08]"
           >
-            Where conversations become execution.
+            Where conversations become execution
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.12 }}
-            className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#A1A1AA] sm:text-lg"
+            className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#A1A1AA] sm:text-lg"
           >
-            AI Inbox, Roxx AI, CRM, and automations — so every email turns into
-            outcomes, not open tabs.
+            Actora connects Gmail, Roxx AI, CRM, calendar, and tasks in one
+            workspace — so every thread moves from reply to outcome without
+            switching tabs.
           </motion.p>
 
           <motion.div
@@ -50,16 +51,16 @@ export function HeroSection() {
           >
             <Link
               href="/signup"
-              className="inline-flex h-12 items-center justify-center rounded-xl bg-[#3B82F6] px-7 text-sm font-medium text-white transition-all hover:bg-[#2563EB] active:scale-[0.98]"
+              className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-[#3B82F6] px-7 text-sm font-medium text-white transition-all hover:bg-[#2563EB] active:scale-[0.98]"
             >
-              Get Started
+              Start free trial
             </Link>
-            <a
-              href="mailto:sales@useactora.com?subject=Actora%20Demo"
-              className="inline-flex h-12 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] px-7 text-sm font-medium text-white transition-all hover:border-white/[0.18] hover:bg-white/[0.04] active:scale-[0.98]"
+            <Link
+              href="/pricing"
+              className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] px-7 text-sm font-medium text-white transition-all hover:border-white/[0.18] hover:bg-white/[0.04] active:scale-[0.98]"
             >
-              Book a Demo
-            </a>
+              View pricing
+            </Link>
           </motion.div>
 
           <motion.p
@@ -68,7 +69,7 @@ export function HeroSection() {
             transition={{ duration: 0.5, delay: 0.28 }}
             className="mt-5 text-xs text-[#71717A]"
           >
-            14-day free trial · No credit card required
+            14-day free trial · 100 AI credits included · No credit card required
           </motion.p>
         </div>
 

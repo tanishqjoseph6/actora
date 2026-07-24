@@ -31,7 +31,7 @@ export function LandingPage() {
           <SectionHeader
             badge="Pricing"
             title="Simple pricing for serious operators"
-            subtitle="Start a free 14-day trial. No credit card required."
+            subtitle="Start free with 100 AI credits. Pro from $20/mo. Team plans from $69/mo with shared credits."
           />
           <FadeUp>
             <PricingSection

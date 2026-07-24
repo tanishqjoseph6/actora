@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/contact",
     "/privacy",
     "/terms",
+    "/cookies",
   ] as const;
 
   const now = new Date();
@@ -19,6 +20,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: path === "/" ? base : `${base}${path}`,
     lastModified: now,
     changeFrequency: path === "/" ? "weekly" : "monthly",
-    priority: path === "/" ? 1 : path === "/pricing" || path === "/features" ? 0.9 : 0.6,
+    priority: path === "/" ? 1 : path === "/pricing" || path === "/features" ? 0.9 : path === "/privacy" || path === "/terms" || path === "/cookies" ? 0.4 : 0.6,
   }));
 }

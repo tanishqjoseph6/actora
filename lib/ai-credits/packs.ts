@@ -16,41 +16,40 @@ export type AiCreditPack = {
   credits: number;
   /** USD price in cents */
   usdCents: number;
-  badge?: "5% OFF";
+  badge?: string;
   highlight?: "most_popular" | "best_value";
   description: string;
 };
 
+/** Production top-up packs — purchased credits stack on monthly allotment. */
 export const AI_CREDIT_PACKS: AiCreditPack[] = [
   {
     id: "starter",
-    name: "Starter",
+    name: "1,000 Credits",
     credits: 1_000,
-    usdCents: 400,
-    description: "A light top-up for occasional AI bursts.",
+    usdCents: 500,
+    description: "Light top-up for occasional AI bursts.",
   },
   {
     id: "growth",
-    name: "Growth",
+    name: "5,000 Credits",
     credits: 5_000,
-    usdCents: 900,
+    usdCents: 1900,
     description: "Keep Roxx AI and inbox automation flowing.",
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "10,000 Credits",
     credits: 10_000,
-    usdCents: 1500,
-    badge: "5% OFF",
+    usdCents: 3900,
     highlight: "most_popular",
     description: "Best for daily AI-powered operators.",
   },
   {
     id: "enterprise",
-    name: "Enterprise",
-    credits: 50_000,
-    usdCents: 2200,
-    badge: "5% OFF",
+    name: "25,000 Credits",
+    credits: 25_000,
+    usdCents: 5000,
     highlight: "best_value",
     description: "Maximum runway for teams and heavy workflows.",
   },

@@ -45,7 +45,7 @@ export function MarketingCtaBand({
             href="/signup"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-[#3B82F6] px-6 text-sm font-medium text-white transition-all hover:bg-[#2563EB] active:scale-[0.98]"
           >
-            Get Started
+            Start free trial
           </Link>
           <Link
             href="/contact"

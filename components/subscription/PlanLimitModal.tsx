@@ -25,9 +25,9 @@ const LIMIT_HEADINGS: Record<LimitType, string> = {
 
 const LIMIT_FEATURES: Record<LimitType, string[]> = {
   ai_actions: [
-    "5,000 AI credits / cycle on Pro",
-    "50,000 AI credits / cycle on Team",
-    "Full Roxx AI, inbox replies, and CRM insights",
+    "1,000 AI credits / month on Pro",
+    "5,000 shared AI credits / month on Team",
+    "GPT-5 Mini on Pro · GPT-5 on Team",
   ],
   inboxes: [
     "Up to 5 Gmail accounts on Pro",

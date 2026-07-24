@@ -10,6 +10,13 @@ export const metadata = createPageMetadata({
   description:
     "Explore Actora features: AI Inbox, Roxx AI, CRM, Calendar, Tasks, Automations, Analytics, and Team Workspace.",
   path: "/features",
+  keywords: [
+    "AI Inbox",
+    "Roxx AI",
+    "CRM automation",
+    "email workflows",
+    "team workspace",
+  ],
 });
 
 export default function FeaturesPage() {

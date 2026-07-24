@@ -2,7 +2,7 @@ import Providers from "./providers";
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { getSiteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
-import { SITE_TAGLINE } from "@/lib/marketing/seo";
+import { SITE_TAGLINE, TWITTER_HANDLE } from "@/lib/marketing/seo";
 import "./globals.css";
 
 const siteUrl = getSiteUrl();
@@ -49,6 +49,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: TWITTER_HANDLE,
+    creator: TWITTER_HANDLE,
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     images: ["/icon.png"],

@@ -5,7 +5,7 @@ export const DEFAULT_PLAN_ID: PlanId = "free";
 
 /**
  * AI credit allotments per billing cycle + inbox caps.
- * Trial: 100 credits / 14 days. Pro: 5,000. Team: 50,000.
+ * Free/Trial: 100 / month. Pro: 1,000. Team: 5,000 shared.
  */
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
@@ -19,12 +19,12 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     unlimited: false,
   },
   starter: {
-    aiActionsPerMonth: 50_000,
+    aiActionsPerMonth: 5_000,
     inboxes: Infinity,
     unlimited: false,
   },
   pro: {
-    aiActionsPerMonth: 5_000,
+    aiActionsPerMonth: 1_000,
     inboxes: 5,
     unlimited: false,
   },

@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <MarketingPageHero
         badge="Legal"
         title="Privacy Policy"
-        subtitle="Last updated: July 22, 2026. This policy explains what we collect, why we collect it, and the choices you have."
+        subtitle="Last updated: July 24, 2026. This policy explains what we collect, why we collect it, and the choices you have."
       />
       <LegalProse>
         <p>
@@ -88,7 +88,15 @@ export default function PrivacyPage() {
           continuously improve safeguards.
         </p>
 
-        <h2>7. Your rights</h2>
+        <h2>7. Cookies & similar technologies</h2>
+        <p>
+          We use cookies and similar technologies for authentication, security,
+          preferences, and analytics. See our{" "}
+          <Link href="/cookies">Cookie Policy</Link> for details and your
+          choices.
+        </p>
+
+        <h2>8. Your rights</h2>
         <p>
           Depending on your location, you may have rights to access, correct,
           export, or delete personal data, or to object to certain processing.
@@ -96,19 +104,19 @@ export default function PrivacyPage() {
           <a href="mailto:privacy@useactora.com">privacy@useactora.com</a>.
         </p>
 
-        <h2>8. Children</h2>
+        <h2>9. Children</h2>
         <p>
           Actora is not directed to children under 16. We do not knowingly
           collect personal information from children.
         </p>
 
-        <h2>9. Changes</h2>
+        <h2>10. Changes</h2>
         <p>
           We may update this policy. Material changes will be posted on this
           page with an updated date.
         </p>
 
-        <h2>10. Contact</h2>
+        <h2>11. Contact</h2>
         <p>
           Privacy questions:{" "}
           <a href="mailto:privacy@useactora.com">privacy@useactora.com</a>.

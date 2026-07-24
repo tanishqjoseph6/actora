@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { LandingFaq } from "@/components/landing/LandingFaq";
+import { LANDING_FAQ } from "@/components/landing/landing-data";
 import {
   MarketingCtaBand,
   MarketingPageHero,
 } from "@/components/landing/MarketingPrimitives";
+import { faqPageJsonLd } from "@/lib/marketing/schema";
 import { createPageMetadata } from "@/lib/marketing/seo";
 
 export const metadata = createPageMetadata({
@@ -11,11 +13,24 @@ export const metadata = createPageMetadata({
   description:
     "Answers about Actora security, AI credits, billing, team plans, Gmail OAuth, and data privacy.",
   path: "/faq",
+  keywords: [
+    "Actora FAQ",
+    "AI credits",
+    "Gmail OAuth",
+    "workspace billing",
+    "data privacy",
+  ],
 });
 
 export default function FaqPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqPageJsonLd(LANDING_FAQ)),
+        }}
+      />
       <MarketingPageHero
         badge="FAQ"
         title="Frequently asked questions"
