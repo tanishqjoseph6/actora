@@ -14,11 +14,11 @@ import {
   Check,
   Copy,
   History,
-  Loader2,
   Plus,
   RefreshCw,
   Send,
   Sparkles,
+  Square,
   Trash2,
   X,
 } from "lucide-react";
@@ -33,7 +33,7 @@ import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
 import { formatLimit, type PlanId } from "@/lib/subscription";
 import {
   defaultRoxxModelForPlan,
-  isRoxxModelId,
+  normalizeRoxxModelId,
   planAllowsRoxxModel,
   type RoxxModelId,
 } from "@/lib/assistant/models";
@@ -116,7 +116,13 @@ function loadSavedModel(planId: PlanId): RoxxModelId {
   if (typeof window === "undefined") return defaultRoxxModelForPlan(planId);
   try {
     const raw = localStorage.getItem(MODEL_STORAGE_KEY);
-    if (isRoxxModelId(raw) && planAllowsRoxxModel(planId, raw)) return raw;
+    const normalized = normalizeRoxxModelId(raw);
+    if (normalized && planAllowsRoxxModel(planId, normalized)) {
+      if (raw !== normalized) {
+        localStorage.setItem(MODEL_STORAGE_KEY, normalized);
+      }
+      return normalized;
+    }
   } catch {
     /* ignore */
   }
@@ -263,7 +269,12 @@ export function AiAssistantPanel() {
   );
 
   const runChat = useCallback(
-    async (history: UiMessage[], conversationId: string, title: string) => {
+    async (
+      history: UiMessage[],
+      conversationId: string,
+      title: string,
+      options?: { regenerate?: boolean }
+    ) => {
       if (fairUsageBlocked) return;
       if (!checkAiAction()) return;
 
@@ -300,6 +311,8 @@ export function AiAssistantPanel() {
         );
       };
 
+      let streamed = "";
+
       try {
         const res = await fetch("/api/assistant/chat", {
           method: "POST",
@@ -311,6 +324,7 @@ export function AiAssistantPanel() {
               content: m.content,
             })),
             model: selectedModelRef.current,
+            regenerate: Boolean(options?.regenerate),
           }),
         });
 
@@ -361,7 +375,6 @@ export function AiAssistantPanel() {
 
         const decoder = new TextDecoder();
         let buffer = "";
-        let full = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -386,8 +399,8 @@ export function AiAssistantPanel() {
             }
 
             if (event.type === "token") {
-              full += event.text;
-              patchAssistant({ content: full, toolStatus: null });
+              streamed += event.text;
+              patchAssistant({ content: streamed, toolStatus: null });
             } else if (event.type === "tool_start") {
               patchAssistant({
                 toolStatus:
@@ -396,8 +409,8 @@ export function AiAssistantPanel() {
             } else if (event.type === "tool_result") {
               patchAssistant({ toolStatus: null });
             } else if (event.type === "done") {
-              full = event.content || full;
-              patchAssistant({ content: full, toolStatus: null });
+              streamed = event.content || streamed;
+              patchAssistant({ content: streamed, toolStatus: null });
             } else if (event.type === "error") {
               patchAssistant({
                 content: event.message || "Assistant error.",
@@ -410,7 +423,13 @@ export function AiAssistantPanel() {
         void refreshSubscription();
         void refreshFairUsage();
       } catch (error) {
-        if ((error as Error).name === "AbortError") return;
+        if ((error as Error).name === "AbortError") {
+          patchAssistant({
+            content: streamed || "Generation stopped.",
+            toolStatus: null,
+          });
+          return;
+        }
         patchAssistant({
           content:
             error instanceof Error
@@ -420,6 +439,9 @@ export function AiAssistantPanel() {
         });
       } finally {
         setStreaming(false);
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
       }
     },
     [checkAiAction, fairUsageBlocked, refreshFairUsage, refreshSubscription, showLimitModal, upsertConversation]
@@ -479,7 +501,16 @@ export function AiAssistantPanel() {
       .find((x) => x.m.role === "user")?.i;
     if (lastUserIdx == null) return;
     const history = active.messages.slice(0, lastUserIdx + 1);
-    await runChat(history, active.id, active.title);
+    await runChat(history, active.id, active.title, { regenerate: true });
+  };
+
+  const stopGeneration = () => {
+    abortRef.current?.abort();
+  };
+
+  const runSmartAction = (prompt: string) => {
+    if (streaming || fairUsageBlocked) return;
+    void sendPrompt(prompt);
   };
 
   const lastAssistant = [...messages]
@@ -704,28 +735,70 @@ export function AiAssistantPanel() {
                     )}
 
                     {m.content && !streaming && (
-                      <div className="mt-2 flex items-center gap-1 border-t border-white/[0.06] pt-2">
-                        <button
-                          type="button"
-                          onClick={() => void copyMessage(m.id, m.content)}
-                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
-                        >
-                          {copiedId === m.id ? (
-                            <Check className="h-3 w-3 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                          {copiedId === m.id ? "Copied" : "Copy"}
-                        </button>
-                        {lastAssistant?.id === m.id && (
+                      <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
+                        <div className="flex flex-wrap items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => void regenerate()}
+                            onClick={() => void copyMessage(m.id, m.content)}
                             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
                           >
-                            <RefreshCw className="h-3 w-3" />
-                            Regenerate
+                            {copiedId === m.id ? (
+                              <Check className="h-3 w-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            {copiedId === m.id ? "Copied" : "Copy"}
                           </button>
+                          {lastAssistant?.id === m.id && (
+                            <button
+                              type="button"
+                              onClick={() => void regenerate()}
+                              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-[#71717A] hover:bg-white/[0.04] hover:text-white"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              Regenerate
+                            </button>
+                          )}
+                        </div>
+                        {lastAssistant?.id === m.id && (
+                          <div className="flex flex-wrap gap-1">
+                            {[
+                              {
+                                label: "Create Task",
+                                prompt:
+                                  "Create a clear follow-up task from your last answer. Confirm what you created.",
+                              },
+                              {
+                                label: "Schedule Meeting",
+                                prompt:
+                                  "Propose scheduling a meeting based on your last answer. Use calendar tools if helpful.",
+                              },
+                              {
+                                label: "Create CRM Contact",
+                                prompt:
+                                  "If a person or company was mentioned, create or update a CRM contact and confirm.",
+                              },
+                              {
+                                label: "Follow Up Tomorrow",
+                                prompt:
+                                  "Create a reminder task to follow up tomorrow based on your last answer.",
+                              },
+                              {
+                                label: "Summarize",
+                                prompt:
+                                  "Summarize your last answer in 3 crisp bullets.",
+                              },
+                            ].map((action) => (
+                              <button
+                                key={action.label}
+                                type="button"
+                                onClick={() => runSmartAction(action.prompt)}
+                                className="rounded-lg border border-white/[0.06] px-2 py-1 text-[10px] text-[#71717A] transition-colors hover:border-[#3B82F6]/30 hover:text-white"
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )}
@@ -769,18 +842,25 @@ export function AiAssistantPanel() {
               disabled={streaming || fairUsageBlocked}
               className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-white placeholder:text-[#71717A] focus:outline-none disabled:opacity-60"
             />
-            <button
-              type="submit"
-              disabled={streaming || fairUsageBlocked || !input.trim()}
-              className={`${dashboard.btnPrimary} h-10 w-10 shrink-0 disabled:cursor-not-allowed disabled:opacity-40`}
-              aria-label="Send"
-            >
-              {streaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+            {streaming ? (
+              <button
+                type="button"
+                onClick={stopGeneration}
+                className={`${dashboard.btnSecondary} h-10 w-10 shrink-0`}
+                aria-label="Stop generation"
+              >
+                <Square className="h-3.5 w-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={fairUsageBlocked || !input.trim()}
+                className={`${dashboard.btnPrimary} h-10 w-10 shrink-0 disabled:cursor-not-allowed disabled:opacity-40`}
+                aria-label="Send"
+              >
                 <Send className="h-4 w-4" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
           <p className="mt-2 text-[10px] text-[#52525B]">
             Enter to send · Shift+Enter for new line

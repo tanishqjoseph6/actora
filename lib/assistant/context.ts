@@ -22,6 +22,11 @@ export type WorkspaceContext = {
   meetings: { id: string; title: string; startAt: string; status: string }[];
 };
 
+type CacheEntry = { at: number; value: WorkspaceContext };
+
+const CONTEXT_CACHE_TTL_MS = 45_000;
+const contextCache = new Map<string, CacheEntry>();
+
 function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -29,6 +34,19 @@ function startOfToday(): Date {
 }
 
 export async function buildWorkspaceContext(
+  userId: string
+): Promise<WorkspaceContext> {
+  const cached = contextCache.get(userId);
+  if (cached && Date.now() - cached.at < CONTEXT_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
+  const value = await buildWorkspaceContextFresh(userId);
+  contextCache.set(userId, { at: Date.now(), value });
+  return value;
+}
+
+async function buildWorkspaceContextFresh(
   userId: string
 ): Promise<WorkspaceContext> {
   const db = getSupabaseAdmin();

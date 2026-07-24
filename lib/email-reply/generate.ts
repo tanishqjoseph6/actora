@@ -19,24 +19,32 @@ function getOpenAIClient() {
   return new OpenAI({ apiKey });
 }
 
+function resolveModel(input: ReplyGenerateInput): string {
+  return input.model?.trim() || OPENAI_MODEL;
+}
+
 export async function generateEmailReply(
   input: ReplyGenerateInput
 ): Promise<string> {
   const openai = getOpenAIClient();
+  const model = resolveModel(input);
   const response = await openai.chat.completions.create(
-    withModelSafeParams({
-      model: OPENAI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: buildReplySystemPrompt(input),
-        },
-        {
-          role: "user",
-          content: buildReplyUserPrompt(input),
-        },
-      ],
-    })
+    withModelSafeParams(
+      {
+        model,
+        messages: [
+          {
+            role: "system",
+            content: buildReplySystemPrompt(input),
+          },
+          {
+            role: "user",
+            content: buildReplyUserPrompt(input),
+          },
+        ],
+      },
+      { model }
+    )
   );
 
   const reply = response.choices[0]?.message?.content?.trim();
@@ -65,26 +73,30 @@ export async function* streamEmailReply(
   input: ReplyGenerateInput
 ): AsyncGenerator<string> {
   const openai = getOpenAIClient();
+  const model = resolveModel(input);
   const stream = await openai.chat.completions.create(
-    withModelSafeParams({
-      model: OPENAI_MODEL,
-      stream: true as const,
-      messages: [
-        {
-          role: "system",
-          content: buildReplySystemPrompt(input),
-        },
-        {
-          role: "user",
-          content: buildReplyUserPrompt(input),
-        },
-      ],
-    })
+    withModelSafeParams(
+      {
+        model,
+        stream: true as const,
+        messages: [
+          {
+            role: "system",
+            content: buildReplySystemPrompt(input),
+          },
+          {
+            role: "user",
+            content: buildReplyUserPrompt(input),
+          },
+        ],
+      },
+      { model }
+    )
   );
 
-  for await (const part of stream) {
-    const text = part.choices[0]?.delta?.content ?? "";
-    if (text) yield text;
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta?.content;
+    if (delta) yield delta;
   }
 }
 
@@ -92,21 +104,25 @@ export async function generateReplySuggestions(
   input: ReplyGenerateInput
 ): Promise<string[]> {
   const openai = getOpenAIClient();
+  const model = resolveModel(input);
   const response = await openai.chat.completions.create(
-    withModelSafeParams({
-      model: OPENAI_MODEL,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: buildSuggestionsSystemPrompt(input),
-        },
-        {
-          role: "user",
-          content: buildReplyUserPrompt(input),
-        },
-      ],
-    })
+    withModelSafeParams(
+      {
+        model,
+        response_format: { type: "json_object" as const },
+        messages: [
+          {
+            role: "system",
+            content: buildSuggestionsSystemPrompt(input),
+          },
+          {
+            role: "user",
+            content: buildReplyUserPrompt(input),
+          },
+        ],
+      },
+      { model }
+    )
   );
 
   const raw = response.choices[0]?.message?.content?.trim();
@@ -115,14 +131,15 @@ export async function generateReplySuggestions(
   try {
     const parsed = JSON.parse(raw) as { suggestions?: unknown };
     const list = Array.isArray(parsed.suggestions)
-      ? parsed.suggestions.filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+      ? parsed.suggestions.filter(
+          (s): s is string => typeof s === "string" && s.trim().length > 0
+        )
       : [];
     if (list.length >= 1) return list.slice(0, 3);
   } catch {
     /* fall through */
   }
 
-  // Fallback: three parallel singles
   const results = await Promise.all([
     generateEmailReply(input),
     generateEmailReply(input),
@@ -135,8 +152,10 @@ export async function transformEmailReply(input: {
   draft: string;
   action: ReplyAction;
   translateTo?: string;
+  model?: string;
 }): Promise<string> {
   const openai = getOpenAIClient();
+  const model = input.model?.trim() || OPENAI_MODEL;
   const extra =
     input.action === "translate" && input.translateTo
       ? `\nTarget language: ${input.translateTo}`
@@ -145,19 +164,22 @@ export async function transformEmailReply(input: {
         : "";
 
   const response = await openai.chat.completions.create(
-    withModelSafeParams({
-      model: OPENAI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: buildTransformSystemPrompt(input.action) + extra,
-        },
-        {
-          role: "user",
-          content: `Revise this email draft:\n\n${input.draft.slice(0, 12000)}`,
-        },
-      ],
-    })
+    withModelSafeParams(
+      {
+        model,
+        messages: [
+          {
+            role: "system",
+            content: buildTransformSystemPrompt(input.action) + extra,
+          },
+          {
+            role: "user",
+            content: `Revise this email draft:\n\n${input.draft.slice(0, 12000)}`,
+          },
+        ],
+      },
+      { model }
+    )
   );
 
   const reply = response.choices[0]?.message?.content?.trim();

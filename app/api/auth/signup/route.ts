@@ -6,6 +6,7 @@ import {
   validatePassword,
 } from "@/lib/auth/password-reset";
 import { logSupabaseProjectValidation } from "@/lib/supabase/config";
+import { sendVerificationEmail } from "@/lib/email/auth-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,6 +118,12 @@ export async function POST(request: Request) {
       confirmationSentAt: data.user.confirmation_sent_at,
       hasSession: Boolean(data.session),
     });
+
+    if (!data.user.email_confirmed_at) {
+      void sendVerificationEmail(email, { password }).catch((err) => {
+        console.error("[auth/signup] Resend verification email failed", err);
+      });
+    }
 
     return NextResponse.json({
       ok: true,

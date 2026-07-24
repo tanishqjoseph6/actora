@@ -2,12 +2,14 @@ import { NextRequest } from "next/server";
 import {
   canInviteMembers,
   createInvitation,
+  getWorkspaceById,
   listInvitations,
   requireWorkspaceMembership,
   revokeInvitation,
   WORKSPACE_ROLES,
   type WorkspaceRole,
 } from "@/lib/workspace";
+import { sendWorkspaceInvitationEmail } from "@/lib/email/workspace-invite";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -65,9 +67,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       invitedBy: auth.email,
     });
 
-    // Invite link for product UI (email delivery can be wired later)
     const origin = request.nextUrl.origin;
     const inviteUrl = `${origin}/dashboard/settings?invite=${invitation.token}#workspace-members`;
+
+    const workspace = await getWorkspaceById(id);
+    void sendWorkspaceInvitationEmail({
+      to: email,
+      workspaceName: workspace?.name ?? "Actora workspace",
+      inviterEmail: auth.email,
+      roleLabel: role === "admin" ? "Admin" : role === "viewer" ? "Viewer" : "Member",
+      inviteUrl,
+    }).catch((err) => {
+      console.error("[api/workspaces/invites] email failed", err);
+    });
 
     return Response.json({ invitation, inviteUrl }, { status: 201 });
   } catch (error) {

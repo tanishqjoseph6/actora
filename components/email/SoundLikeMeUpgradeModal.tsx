@@ -50,7 +50,7 @@ export function SoundLikeMeUpgradeModal({
               Unlock Sound Like Me
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-[#A1A1AA]">
-              Write emails in your own writing style.
+              Write emails exactly like you.
             </p>
 
             <ul className="mt-6 space-y-2.5 text-sm text-[#D4D4D8]">

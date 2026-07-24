@@ -16,6 +16,7 @@ import {
   requireWorkspacePermission,
 } from "@/lib/workspace";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { sendCreditPurchaseConfirmationEmail } from "@/lib/email/billing-emails";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -152,6 +153,20 @@ export async function POST(request: NextRequest) {
     }
 
     const subscription = await subscriptionProvider.getSubscription(pending.userId);
+
+    const amountLabel =
+      paid.currency === "USD"
+        ? `$${(paid.amount / 100).toFixed(2)}`
+        : `₹${Math.round(paid.amount / 100).toLocaleString("en-IN")}`;
+
+    void sendCreditPurchaseConfirmationEmail({
+      to: sessionEmail,
+      packName: pack.name,
+      credits: paid.credits,
+      amountLabel,
+    }).catch((err) => {
+      console.error("[ai-credits/verify] credit purchase email failed:", err);
+    });
 
     return NextResponse.json({
       ok: true,

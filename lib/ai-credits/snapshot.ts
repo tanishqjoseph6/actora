@@ -1,4 +1,4 @@
-import { resolveCreditCycle } from "@/lib/ai-credits/consume";
+import { resolveCreditCycle } from "@/lib/ai-credits/cycle";
 import { computeMonthlyPercentUsed } from "@/lib/ai-credits/milestones";
 import { isUnlimited } from "@/lib/subscription/plans";
 import type { PlanId } from "@/lib/subscription/types";

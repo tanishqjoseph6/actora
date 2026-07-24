@@ -21,6 +21,8 @@ import {
   type SubscriptionUpsertMetadata,
 } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
+import { sendBillingPaymentConfirmationEmail } from "@/lib/email/billing-emails";
+import { getPlanDisplayName } from "@/lib/subscription/plans";
 
 function noteMatches(
   actual: string | undefined,
@@ -299,6 +301,20 @@ export async function POST(request: NextRequest) {
     });
 
     const snapshot = toSubscriptionSnapshot(stored);
+
+    const amountLabel =
+      currency === "USD"
+        ? `$${(chargeAmount / 100).toFixed(2)}`
+        : `₹${Math.round(chargeAmount / 100).toLocaleString("en-IN")}`;
+
+    void sendBillingPaymentConfirmationEmail({
+      to: sessionEmail,
+      planName: getPlanDisplayName(planId),
+      billingInterval: period === "yearly" ? "Yearly" : "Monthly",
+      amountLabel,
+    }).catch((err) => {
+      console.error("[razorpay/verify] billing email failed", err);
+    });
 
     return NextResponse.json({
       success: true,

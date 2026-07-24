@@ -7,7 +7,7 @@ import type {
 import { DEFAULT_PLAN_ID, getPlanDisplayName, getPlanLimits } from "./plans";
 import { getUserUsage, recordAiAction as persistAiAction } from "@/lib/dashboard/user-usage";
 import { computeCreditBalance } from "@/lib/ai-credits/balance";
-import { resolveCreditCycle } from "@/lib/ai-credits/consume";
+import { resolveCreditCycle } from "@/lib/ai-credits/cycle";
 import { gmailAccountRepository } from "@/lib/gmail/repository";
 import { logApiError } from "@/lib/api/log-error";
 import {

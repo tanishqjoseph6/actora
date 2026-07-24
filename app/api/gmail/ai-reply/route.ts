@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
 import { requireAiCredits } from "@/lib/ai-credits/require";
+import { bestRoxxModelForPlan, getRoxxModel } from "@/lib/assistant/models";
 import {
   generateReplySuggestions,
   getWritingStyleProfileInternal,
-  isReplyLength,
   normalizeLegacyTone,
+  normalizeReplyLength,
   streamEmailReply,
   type ReplyLength,
   type ReplyTone,
 } from "@/lib/email-reply";
+import { buildReplyBusinessContext } from "@/lib/email-reply/business-context";
 import { hasPlanFeature, subscriptionProvider } from "@/lib/subscription";
 import type { PlanId } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
@@ -53,12 +55,13 @@ export async function POST(request: NextRequest) {
 
     const legacy = normalizeLegacyTone(body.tone);
     const tone: ReplyTone = legacy.tone;
-    const length: ReplyLength = isReplyLength(body.length)
-      ? body.length
+    const length: ReplyLength = body.length
+      ? normalizeReplyLength(body.length)
       : legacy.length ?? "medium";
 
     const subscription = await subscriptionProvider.getSubscription(userId);
     const planId = (subscription.planId ?? "free") as PlanId;
+    const model = getRoxxModel(bestRoxxModelForPlan(planId)).apiModel;
 
     let soundLikeMe = Boolean(body.soundLikeMe);
     let styleProfile:
@@ -100,8 +103,11 @@ export async function POST(request: NextRequest) {
       soundLikeMe,
       tone,
       length,
+      model,
     });
     if ("error" in creditGate && creditGate.error) return creditGate.error;
+
+    const businessContext = await buildReplyBusinessContext(userId, sender);
 
     const generateInput = {
       sender,
@@ -117,6 +123,8 @@ export async function POST(request: NextRequest) {
           : undefined,
       soundLikeMe,
       styleProfile,
+      businessContext,
+      model,
     };
 
     const wantVariants = Number(body.variants) === 3;
@@ -197,7 +205,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Non-stream fallback
     const { generateEmailReplyWithRetry } = await import("@/lib/email-reply");
     const reply = await generateEmailReplyWithRetry(generateInput);
     const refreshed = await subscriptionProvider.getSubscription(userId);

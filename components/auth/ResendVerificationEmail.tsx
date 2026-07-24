@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
-import {
-  getEmailVerificationRedirectUrl,
-  mapVerificationError,
-} from "@/lib/auth/email-verification";
+import { mapVerificationError } from "@/lib/auth/email-verification";
 import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
-import { supabase } from "@/lib/supabase";
 
 type ResendVerificationEmailProps = {
   email: string;
@@ -35,22 +31,18 @@ export function ResendVerificationEmail({
     setSuccess(false);
 
     try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: trimmed,
-        options: {
-          emailRedirectTo: getEmailVerificationRedirectUrl(),
-        },
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
       });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
 
-      if (resendError) {
+      if (!res.ok) {
         setError(
           mapVerificationError(
-            mapSupabaseAuthError(
-              resendError.message,
-              (resendError as { code?: string }).code
-            ),
-            (resendError as { code?: string }).code
+            mapSupabaseAuthError(data.error ?? "Resend failed."),
+            null
           )
         );
         return;

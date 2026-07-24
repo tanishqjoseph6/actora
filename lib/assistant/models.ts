@@ -3,7 +3,7 @@ import type { PlanId } from "@/lib/subscription/types";
 export const ROXX_MODEL_IDS = [
   "gpt-4o-mini",
   "gpt-5-mini",
-  "gpt-5-mini-priority",
+  "gpt-5",
 ] as const;
 
 export type RoxxModelId = (typeof ROXX_MODEL_IDS)[number];
@@ -25,13 +25,13 @@ export type RoxxModelDefinition = {
 
 /**
  * Catalog for Roxx AI model selector.
- * Free → 4o mini · Pro → + 5 mini · Team → + 5 mini Priority
+ * Free → GPT-4o Mini · Pro → + GPT-5 Mini · Team → + GPT-5
  */
 export const ROXX_MODELS: readonly RoxxModelDefinition[] = [
   {
     id: "gpt-4o-mini",
     apiModel: "gpt-4o-mini",
-    label: "GPT-4o mini",
+    label: "GPT-4o Mini",
     planLabel: "Included in Free",
     minPlan: "free",
     upgradePlan: "free",
@@ -39,15 +39,15 @@ export const ROXX_MODELS: readonly RoxxModelDefinition[] = [
   {
     id: "gpt-5-mini",
     apiModel: "gpt-5-mini",
-    label: "GPT-5 mini",
+    label: "GPT-5 Mini",
     planLabel: "Upgrade to Pro",
     minPlan: "pro",
     upgradePlan: "pro",
   },
   {
-    id: "gpt-5-mini-priority",
-    apiModel: "gpt-5-mini",
-    label: "GPT-5 mini (Priority)",
+    id: "gpt-5",
+    apiModel: "gpt-5",
+    label: "GPT-5",
     planLabel: "Upgrade to Team",
     minPlan: "starter",
     upgradePlan: "starter",
@@ -68,11 +68,21 @@ const MIN_RANK: Record<RoxxModelDefinition["minPlan"], number> = {
   starter: 3,
 };
 
+/** Legacy IDs persisted before Roxxx AI V2. */
+const LEGACY_MODEL_MAP: Record<string, RoxxModelId> = {
+  "gpt-5-mini-priority": "gpt-5",
+};
+
+export function normalizeRoxxModelId(value: unknown): RoxxModelId | null {
+  if (typeof value !== "string") return null;
+  if ((ROXX_MODEL_IDS as readonly string[]).includes(value)) {
+    return value as RoxxModelId;
+  }
+  return LEGACY_MODEL_MAP[value] ?? null;
+}
+
 export function isRoxxModelId(value: unknown): value is RoxxModelId {
-  return (
-    typeof value === "string" &&
-    (ROXX_MODEL_IDS as readonly string[]).includes(value)
-  );
+  return normalizeRoxxModelId(value) !== null;
 }
 
 export function getRoxxModel(id: RoxxModelId): RoxxModelDefinition {
@@ -86,16 +96,24 @@ export function planAllowsRoxxModel(planId: PlanId, modelId: RoxxModelId): boole
   return PLAN_RANK[planId] >= MIN_RANK[model.minPlan];
 }
 
-export function defaultRoxxModelForPlan(planId: PlanId): RoxxModelId {
-  // Prefer the highest allowed model the user previously… no — default to free tier model
-  // unless they have access; UX: Free starts on 4o mini. Pro/Team still default to 4o mini
-  // until they pick; persistence handles preference.
+/** Default chat selection — always start on Free-tier model; preference persists separately. */
+export function defaultRoxxModelForPlan(_planId: PlanId): RoxxModelId {
+  return "gpt-4o-mini";
+}
+
+/**
+ * Best model automatically used for email AI / non-selector flows.
+ * Free/Trial → 4o Mini · Pro → 5 Mini · Team/Enterprise → GPT-5
+ */
+export function bestRoxxModelForPlan(planId: PlanId): RoxxModelId {
+  if (PLAN_RANK[planId] >= MIN_RANK.starter) return "gpt-5";
+  if (PLAN_RANK[planId] >= MIN_RANK.pro) return "gpt-5-mini";
   return "gpt-4o-mini";
 }
 
 /**
  * Resolve a client-requested model against the subscription plan.
- * Never trusts the client: locked models fall back to the default allowed model.
+ * Never trusts the client: locked models are rejected (caller returns 403).
  */
 export function resolveRoxxModelForPlan(
   planId: PlanId,
@@ -105,7 +123,7 @@ export function resolveRoxxModelForPlan(
   allowed: boolean;
   requestedId: RoxxModelId | null;
 } {
-  const requestedId = isRoxxModelId(requested) ? requested : null;
+  const requestedId = normalizeRoxxModelId(requested);
 
   if (requestedId && planAllowsRoxxModel(planId, requestedId)) {
     return {

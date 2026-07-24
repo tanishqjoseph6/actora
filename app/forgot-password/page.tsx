@@ -5,11 +5,7 @@ import Link from "next/link";
 import { AuthBackLink, AuthCard, AuthField } from "@/components/auth/AuthCard";
 import { AuthMessage } from "@/components/auth/AuthMessage";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
-import {
-  getPasswordResetRedirectUrl,
-  mapSupabaseAuthError,
-} from "@/lib/auth/password-reset";
-import { supabase } from "@/lib/supabase";
+import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -22,10 +18,17 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError(null);
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      { redirectTo: getPasswordResetRedirectUrl() }
-    );
+    const { error: resetError } = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim() }),
+    }).then(async (res) => {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        return { error: { message: data.error ?? "Failed to send reset email." } };
+      }
+      return { error: null };
+    });
 
     setLoading(false);
 

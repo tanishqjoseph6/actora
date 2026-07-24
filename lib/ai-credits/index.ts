@@ -24,10 +24,11 @@ export {
 
 export { formatCredits, formatNextResetDate } from "./format";
 
+export { resolveCreditCycle } from "./cycle";
+
 export {
   consumeAiCredits,
   getAiCreditLedger,
-  resolveCreditCycle,
   type AiCreditLedgerEntry,
   type ConsumeCreditsResult,
 } from "./consume";

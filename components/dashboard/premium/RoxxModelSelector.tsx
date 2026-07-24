@@ -132,7 +132,11 @@ export function RoxxModelSelector({
                           </span>
                         </div>
                         <p className="mt-0.5 text-[10px] text-[#71717A]">
-                          {model.planLabel}
+                          {model.locked
+                            ? model.minPlan === "pro"
+                              ? "🔒 Upgrade to Pro"
+                              : "🔒 Upgrade to Team"
+                            : model.planLabel}
                         </p>
                       </div>
                       {isSelected && !model.locked ? (

@@ -33,9 +33,12 @@ import {
   REPLY_LENGTHS,
   REPLY_TONE_LABELS,
   REPLY_TONES,
+  SMART_REPLY_ACTION_LABELS,
+  SMART_REPLY_ACTIONS,
   type ReplyAction,
   type ReplyLength,
   type ReplyTone,
+  type SmartReplyAction,
 } from "@/lib/email-reply/tones";
 import type { EmailInsights } from "@/lib/openai/types";
 import { AppToast, type AppToastState } from "@/components/ui/AppToast";
@@ -867,6 +870,44 @@ export function EmailDetailPanel({
     onClose();
   };
 
+  const handleSmartReplyAction = (action: SmartReplyAction) => {
+    if (action === "copy") {
+      void handleCopy();
+      return;
+    }
+    if (action === "insert") {
+      setToast({
+        type: "success",
+        title: "Inserted",
+        message: "Reply is ready in the composer.",
+      });
+      return;
+    }
+    if (action === "summarize_thread") {
+      if (detail) void generateSummary(detail, { skipCache: true });
+      return;
+    }
+    if (action === "follow_up_tomorrow") {
+      handleSnooze(24);
+      return;
+    }
+    if (action === "schedule_meeting") {
+      setToast({
+        type: "success",
+        title: "Schedule Meeting",
+        message: "Use scheduling actions below to book time.",
+      });
+      return;
+    }
+    if (action === "create_task" || action === "add_reminder") {
+      window.open("/dashboard/tasks", "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (action === "create_crm_contact") {
+      window.open("/dashboard/crm/contacts", "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleNextAction = (type: EmailInsights["nextActions"][0]["type"]) => {
     if (type === "reply" || type === "follow_up") {
       setShowTonePicker(true);
@@ -1463,6 +1504,27 @@ export function EmailDetailPanel({
                             </button>
                           )
                         )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {SMART_REPLY_ACTIONS.map((action) => (
+                          <button
+                            key={action}
+                            type="button"
+                            disabled={
+                              action !== "summarize_thread" &&
+                              action !== "schedule_meeting" &&
+                              action !== "create_task" &&
+                              action !== "add_reminder" &&
+                              action !== "create_crm_contact" &&
+                              action !== "follow_up_tomorrow" &&
+                              isComposerEmpty(reply.plain, reply.html)
+                            }
+                            onClick={() => handleSmartReplyAction(action)}
+                            className="rounded-lg border border-[#3B82F6]/20 bg-[#3B82F6]/5 px-2 py-1 text-[10px] text-[#93C5FD] transition-colors hover:border-[#3B82F6]/40 hover:text-white disabled:opacity-40"
+                          >
+                            {SMART_REPLY_ACTION_LABELS[action]}
+                          </button>
+                        ))}
                       </div>
                     </>
                   )}
