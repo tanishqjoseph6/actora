@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth-options";
 import { requireAiCredits } from "@/lib/ai-credits/require";
+import { bestRoxxModelForPlan, getRoxxModel } from "@/lib/assistant/models";
 import {
   isReplyAction,
   transformEmailReply,
 } from "@/lib/email-reply";
+import { subscriptionProvider } from "@/lib/subscription";
+import type { PlanId } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export async function POST(request: NextRequest) {
@@ -31,8 +34,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid action." }, { status: 400 });
     }
 
+    const subscription = await subscriptionProvider.getSubscription(userId);
+    const planId = (subscription.planId ?? "free") as PlanId;
+    const model = getRoxxModel(bestRoxxModelForPlan(planId)).apiModel;
+
     const creditGate = await requireAiCredits(userId, "email_reply", {
       action: body.action,
+      model,
     });
     if ("error" in creditGate && creditGate.error) return creditGate.error;
 
@@ -41,6 +49,7 @@ export async function POST(request: NextRequest) {
       action: body.action,
       translateTo:
         typeof body.translateTo === "string" ? body.translateTo : undefined,
+      model,
     });
 
     return NextResponse.json({
