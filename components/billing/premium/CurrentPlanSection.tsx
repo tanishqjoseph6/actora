@@ -168,11 +168,20 @@ export function CurrentPlanSection({
               )}
             </div>
 
+            {isPaid && !isCanceled && (
+              <p className={`mt-4 max-w-xl text-xs leading-relaxed ${dashboard.subtle}`}>
+                Canceling your subscription stops future renewals only. Your
+                subscription remains active until the end of the current billing
+                period. No refunds are issued for canceled subscriptions.
+              </p>
+            )}
+
             {showCancelConfirm && (
               <div className={`mt-4 p-4 rounded-[18px] bg-[#0A0A0A] border ${dashboard.border}`}>
                 <p className={`text-sm ${dashboard.muted}`}>
                   Cancel at the end of your billing period? You will keep access until{" "}
-                  <span className="text-white">{renewalDate}</span>.
+                  <span className="text-white">{renewalDate}</span>. No refund
+                  will be issued for the unused portion of this period.
                 </p>
                 <div className="flex gap-3 mt-4">
                   <button

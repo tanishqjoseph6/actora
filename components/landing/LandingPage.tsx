@@ -2,6 +2,7 @@
 
 import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonSection } from "./ComparisonSection";
+import { LinearComparisonSection } from "./LinearComparisonSection";
 import { FeaturesGrid } from "./FeaturesGrid";
 import { HeroSection } from "./HeroSection";
 import { HowItWorksSection } from "./HowItWorksSection";
@@ -22,6 +23,7 @@ export function LandingPage() {
       <HowItWorksSection />
       <ProductShowcase />
       <ComparisonSection />
+      <LinearComparisonSection />
 
       <section
         id="pricing"

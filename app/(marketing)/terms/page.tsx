@@ -18,7 +18,7 @@ export default function TermsPage() {
       <MarketingPageHero
         badge="Legal"
         title="Terms of Service"
-        subtitle="Last updated: July 24, 2026. By using Actora you agree to these terms."
+        subtitle="Last updated: July 24, 2026. By using Actora you agree to these terms, including our no-refund billing policy."
       />
       <LegalProse>
         <p>
@@ -81,25 +81,58 @@ export default function TermsPage() {
         <h2>6. Subscriptions & payments</h2>
         <p>
           Paid plans renew until canceled. Fees are charged via our payment
-          provider. Taxes may apply. Refunds, if any, are handled according to
-          our billing policies and applicable law. Trial conversions and plan
-          changes are reflected in your workspace billing settings.
+          provider. Taxes may apply. All subscription payments and AI Credit
+          purchases are subject to the Refund Policy in Section 7. Trial
+          conversions and plan changes are reflected in your workspace billing
+          settings.
         </p>
 
-        <h2>7. Third-party services</h2>
+        <h2 id="refund-policy">7. Refund Policy</h2>
+        <p>
+          All subscription payments made to Actora are final and non-refundable.
+        </p>
+        <p>Users may cancel their subscription at any time. Upon cancellation:</p>
+        <ul>
+          <li>
+            The subscription remains active until the end of the current billing
+            period.
+          </li>
+          <li>Future renewals are stopped.</li>
+          <li>
+            No full or partial refund will be issued for any unused subscription
+            period.
+          </li>
+        </ul>
+        <p>
+          Purchased AI Credits are non-refundable, non-transferable, and cannot
+          be exchanged for cash, account balance, or any other form of credit.
+        </p>
+        <p>
+          Refunds may only be considered in exceptional situations such as:
+        </p>
+        <ul>
+          <li>Duplicate payments</li>
+          <li>Unauthorized transactions</li>
+          <li>Technical billing errors</li>
+        </ul>
+        <p>
+          Any refund decision is made solely at Actora&apos;s discretion.
+        </p>
+
+        <h2>8. Third-party services</h2>
         <p>
           Integrations (such as Google) are subject to those providers’ terms.
           Actora is not responsible for third-party outages or policy changes
           that affect connected accounts.
         </p>
 
-        <h2>8. Confidentiality & privacy</h2>
+        <h2>9. Confidentiality & privacy</h2>
         <p>
           Our handling of personal data is described in the{" "}
           <Link href="/privacy">Privacy Policy</Link>.
         </p>
 
-        <h2>9. Disclaimers</h2>
+        <h2>10. Disclaimers</h2>
         <p>
           THE SERVICE IS PROVIDED “AS IS” WITHOUT WARRANTIES OF ANY KIND,
           EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A
@@ -107,7 +140,7 @@ export default function TermsPage() {
           PERMITTED BY LAW.
         </p>
 
-        <h2>10. Limitation of liability</h2>
+        <h2>11. Limitation of liability</h2>
         <p>
           TO THE MAXIMUM EXTENT PERMITTED BY LAW, ACTORA WILL NOT BE LIABLE FOR
           INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR
@@ -116,7 +149,7 @@ export default function TermsPage() {
           ACTORA IN THE TWELVE MONTHS BEFORE THE CLAIM.
         </p>
 
-        <h2>11. Termination</h2>
+        <h2>12. Termination</h2>
         <p>
           You may stop using the Service at any time. We may suspend or
           terminate access for violations of these Terms or risk to the Service
@@ -124,14 +157,14 @@ export default function TermsPage() {
           termination.
         </p>
 
-        <h2>12. Changes</h2>
+        <h2>13. Changes</h2>
         <p>
           We may update these Terms. Continued use after changes become
           effective constitutes acceptance. Material changes will be indicated
           by updating the date above.
         </p>
 
-        <h2>13. Contact</h2>
+        <h2>14. Contact</h2>
         <p>
           Questions about these Terms:{" "}
           <a href="mailto:legal@useactora.com">legal@useactora.com</a> or our{" "}

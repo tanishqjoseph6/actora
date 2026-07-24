@@ -196,6 +196,26 @@ export const COMPARISONS = [
   },
 ] as const;
 
+/** Actora vs Linear feature comparison (landing table). */
+export const LINEAR_COMPARISON_ROWS = [
+  { feature: "AI Email Inbox", actora: "yes", linear: "no" },
+  { feature: "AI Email Reply", actora: "yes", linear: "no" },
+  { feature: "AI Meeting Assistant", actora: "yes", linear: "no" },
+  { feature: "AI Task Creation", actora: "yes", linear: "partial" },
+  { feature: "AI CRM", actora: "yes", linear: "no" },
+  { feature: "Calendar Integration", actora: "yes", linear: "partial" },
+  { feature: "Daily AI Summary", actora: "yes", linear: "no" },
+  { feature: "Gmail & Outlook Integration", actora: "yes", linear: "no" },
+  { feature: "AI Workflow Automation", actora: "yes", linear: "no" },
+  { feature: "Team Workspace", actora: "yes", linear: "yes" },
+  { feature: "Project Management", actora: "yes", linear: "yes" },
+  { feature: "Analytics Dashboard", actora: "yes", linear: "partial" },
+  { feature: "Built-in Billing", actora: "yes", linear: "no" },
+  { feature: "AI Credits System", actora: "yes", linear: "no" },
+] as const;
+
+export type ComparisonCellValue = "yes" | "no" | "partial";
+
 export const TRUSTED_SEGMENTS = [
   "Revenue Ops",
   "Founders",
