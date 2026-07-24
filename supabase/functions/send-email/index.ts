@@ -3,7 +3,7 @@ import { Resend } from "npm:resend@4.8.0";
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-actora-email-secret",
 };
 
 type SendEmailBody = {
@@ -14,6 +14,31 @@ type SendEmailBody = {
   tags?: { name: string; value: string }[];
 };
 
+function decodeJwtRole(authHeader: string | null): string | null {
+  if (!authHeader?.toLowerCase().startsWith("bearer ")) return null;
+  const token = authHeader.slice(7).trim();
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload?.role === "string" ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
+function isAuthorized(req: Request): boolean {
+  const shared = Deno.env.get("SEND_EMAIL_SECRET")?.trim();
+  if (shared) {
+    const headerSecret = req.headers.get("x-actora-email-secret")?.trim();
+    if (headerSecret && headerSecret === shared) return true;
+  }
+
+  const role = decodeJwtRole(req.headers.get("Authorization"));
+  // Only service_role may send mail. Anon JWT must never be enough.
+  return role === "service_role";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -22,6 +47,13 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: "Unauthorized." }), {
+      status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

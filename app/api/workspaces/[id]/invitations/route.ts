@@ -10,8 +10,26 @@ import {
   type WorkspaceRole,
 } from "@/lib/workspace";
 import { sendWorkspaceInvitationEmail } from "@/lib/email/workspace-invite";
+import { getAppUrl } from "@/lib/email/config";
 
 type Params = { params: Promise<{ id: string }> };
+
+function publicInvitation(invitation: {
+  id: string;
+  workspace_id: string;
+  email: string;
+  role_id: string;
+  invited_by: string;
+  status: string;
+  expires_at: string;
+  accepted_at: string | null;
+  accepted_user_id: string | null;
+  created_at: string;
+  token?: string;
+}) {
+  const { token: _token, ...rest } = invitation;
+  return rest;
+}
 
 export async function GET(request: NextRequest, { params }: Params) {
   const { id } = await params;
@@ -24,7 +42,9 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   try {
     const invitations = await listInvitations(id);
-    return Response.json({ invitations });
+    return Response.json({
+      invitations: invitations.map(publicInvitation),
+    });
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Failed to list invitations." },
@@ -67,8 +87,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       invitedBy: auth.email,
     });
 
-    const origin = request.nextUrl.origin;
-    const inviteUrl = `${origin}/dashboard/settings?invite=${invitation.token}#workspace-members`;
+    const inviteUrl = `${getAppUrl()}/dashboard/settings?invite=${invitation.token}#workspace-members`;
 
     const workspace = await getWorkspaceById(id);
     void sendWorkspaceInvitationEmail({
@@ -81,7 +100,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       console.error("[api/workspaces/invites] email failed", err);
     });
 
-    return Response.json({ invitation, inviteUrl }, { status: 201 });
+    return Response.json(
+      { invitation: publicInvitation(invitation), inviteSent: true },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("[api/workspaces/invites POST]", error);
     return Response.json(

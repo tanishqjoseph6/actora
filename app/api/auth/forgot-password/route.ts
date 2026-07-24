@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import {
-  mapSupabaseAuthError,
-} from "@/lib/auth/password-reset";
 import { sendPasswordResetEmail } from "@/lib/email/auth-emails";
 
 export const runtime = "nodejs";
@@ -25,19 +22,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await sendPasswordResetEmail(email);
-
-  if (result.error) {
-    return NextResponse.json(
-      { error: mapSupabaseAuthError(result.error) },
-      { status: 400 }
-    );
+  try {
+    const result = await sendPasswordResetEmail(email);
+    if (!result.sent && result.error) {
+      console.error("[auth/forgot-password] send failed", {
+        email,
+        error: result.error,
+        skipped: result.skipped,
+      });
+    }
+  } catch (error) {
+    console.error("[auth/forgot-password] unexpected", error);
   }
 
-  // Always return success to avoid email enumeration.
-  return NextResponse.json({
-    ok: true,
-    sent: result.sent,
-    skipped: result.skipped ?? null,
-  });
+  // Always succeed to avoid email enumeration.
+  return NextResponse.json({ ok: true });
 }

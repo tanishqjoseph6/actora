@@ -12,6 +12,7 @@ import { getAiCreditPack } from "@/lib/ai-credits/packs";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { subscriptionProvider, toSubscriptionSnapshot } from "@/lib/subscription";
 import {
+  canPurchaseCredits,
   logWorkspaceActivity,
   requireWorkspacePermission,
 } from "@/lib/workspace";
@@ -26,19 +27,18 @@ export async function POST(request: NextRequest) {
   }
 
   const actorId = normalizeSubscriptionUserId(sessionEmail);
-
   const wsAuth = await requireWorkspacePermission("credits", request);
-  const creditOwnerId = wsAuth.ok
-    ? wsAuth.ctx.workspace.owner_user_id
-    : actorId;
-  const workspaceId = wsAuth.ok ? wsAuth.ctx.workspaceId : null;
+  if (!wsAuth.ok) return wsAuth.response;
 
-  if (wsAuth.ok && wsAuth.ctx.role !== "owner" && wsAuth.ctx.role !== "admin") {
+  if (!canPurchaseCredits(wsAuth.ctx.role)) {
     return NextResponse.json(
       { error: "Only owners and admins can purchase credits.", code: "FORBIDDEN" },
       { status: 403 }
     );
   }
+
+  const creditOwnerId = wsAuth.ctx.workspace.owner_user_id;
+  const workspaceId = wsAuth.ctx.workspaceId;
 
   try {
     const body = (await request.json()) as {
@@ -109,24 +109,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const paid = await markCreditPurchasePaid({
+    const marked = await markCreditPurchasePaid({
       orderId,
       paymentId,
       userId: pending.userId,
     });
 
-    if (!paid || paid.status !== "paid") {
+    if (!marked || marked.purchase.status !== "paid") {
       return NextResponse.json(
         { error: "Unable to finalize purchase." },
         { status: 500 }
       );
     }
 
-    if (!alreadyPaid) {
-      await addPurchasedCreditsBalance(pending.userId, paid.credits);
-    }
+    const paid = marked.purchase;
 
-    if (workspaceId) {
+    if (marked.newlyPaid) {
+      await addPurchasedCreditsBalance(pending.userId, paid.credits);
+
       try {
         await logWorkspaceActivity({
           workspaceId,
@@ -150,28 +150,29 @@ export async function POST(request: NextRequest) {
           .update({ workspace_id: workspaceId })
           .eq("id", paid.id);
       }
+
+      const amountLabel =
+        paid.currency === "USD"
+          ? `$${(paid.amount / 100).toFixed(2)}`
+          : `₹${Math.round(paid.amount / 100).toLocaleString("en-IN")}`;
+
+      void sendCreditPurchaseConfirmationEmail({
+        to: sessionEmail,
+        packName: pack.name,
+        credits: paid.credits,
+        amountLabel,
+      }).catch((err) => {
+        console.error("[ai-credits/verify] credit purchase email failed:", err);
+      });
     }
 
     const subscription = await subscriptionProvider.getSubscription(pending.userId);
 
-    const amountLabel =
-      paid.currency === "USD"
-        ? `$${(paid.amount / 100).toFixed(2)}`
-        : `₹${Math.round(paid.amount / 100).toLocaleString("en-IN")}`;
-
-    void sendCreditPurchaseConfirmationEmail({
-      to: sessionEmail,
-      packName: pack.name,
-      credits: paid.credits,
-      amountLabel,
-    }).catch((err) => {
-      console.error("[ai-credits/verify] credit purchase email failed:", err);
-    });
-
     return NextResponse.json({
       ok: true,
       purchase: paid,
-      creditsAdded: paid.credits,
+      creditsAdded: marked.newlyPaid ? paid.credits : 0,
+      alreadyProcessed: !marked.newlyPaid,
       packName: pack.name,
       subscription: toSubscriptionSnapshot(subscription),
     });

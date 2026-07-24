@@ -1,5 +1,6 @@
 import { ContactForm } from "@/components/landing/ContactForm";
 import { MarketingPageHero } from "@/components/landing/MarketingPrimitives";
+import { SocialLinks } from "@/components/landing/SocialLinks";
 import { createPageMetadata } from "@/lib/marketing/seo";
 
 export const metadata = createPageMetadata({
@@ -46,6 +47,15 @@ export default function ContactPage() {
             <p className="mt-3 text-sm text-[#A1A1AA]">
               Account help, billing questions, and product issues.
             </p>
+          </div>
+          <div className="rounded-[18px] border border-white/[0.06] bg-[#111111] p-6">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[#52525B]">
+              Social
+            </p>
+            <p className="mt-2 text-sm text-[#A1A1AA]">
+              Follow Actora for product updates and operator tips.
+            </p>
+            <SocialLinks orientation="horizontal" className="mt-4" />
           </div>
         </aside>
         <ContactForm />

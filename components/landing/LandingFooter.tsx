@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ActoraLogo } from "@/components/branding/ActoraLogo";
 import { FOOTER_LINKS } from "./landing-data";
+import { SocialLinks } from "./SocialLinks";
 
 export function LandingFooter() {
   return (
@@ -84,20 +85,7 @@ export function LandingFooter() {
             <p className="mb-3 mt-8 text-xs font-medium uppercase tracking-[0.14em] text-[#52525B]">
               Social
             </p>
-            <ul className="space-y-3">
-              {FOOTER_LINKS.social.map((link) => (
-                <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#A1A1AA] transition-colors hover:text-white"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <SocialLinks orientation="vertical" />
           </div>
         </div>
 
