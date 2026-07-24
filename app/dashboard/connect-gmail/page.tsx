@@ -8,6 +8,7 @@ import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
+import { clearGmailClientSessionCache } from "@/hooks/useGmailReconnect";
 import { fetchJson } from "@/lib/api/fetch-json";
 import {
   GMAIL_OAUTH_CALLBACK_URL,
@@ -139,39 +140,9 @@ function ConnectGmailContent() {
 
   const handleReconnect = async (email: string) => {
     setStatusMessage(null);
-    setIsConnecting(true);
-
-    const result = await fetchJson<{
-      account: { email: string };
-      syncedCount: number;
-      code?: string;
-      error?: string;
-    }>("/api/gmail/connect", { method: "POST" });
-
-    setIsConnecting(false);
-
-    if (result.ok) {
-      if (result.data.account.email === email) {
-        await refreshAccounts();
-        setStatusTone("success");
-        setStatusMessage(`Reconnected ${email}. Synced ${result.data.syncedCount} emails.`);
-        return;
-      }
-
-      setStatusTone("error");
-      setStatusMessage(
-        `Authorized as ${result.data.account.email}. Sign in with ${email} to reconnect that inbox.`
-      );
-      return;
-    }
-
-    if (result.error.code === "OAUTH_DENIED" || result.error.status === 403) {
-      await startGoogleOAuth(email);
-      return;
-    }
-
-    setStatusTone("error");
-    setStatusMessage(result.error.message);
+    clearGmailClientSessionCache();
+    await disconnectAccount(email);
+    await startGoogleOAuth(email);
   };
 
   const handleDisconnect = async (email: string) => {

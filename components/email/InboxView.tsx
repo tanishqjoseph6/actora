@@ -1,16 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { PenSquare } from "lucide-react";
+import { Loader2, PenSquare } from "lucide-react";
 import { EmailCard } from "@/components/email/EmailCard";
 import { EmailDetailPanel } from "@/components/email/EmailDetailPanel";
+import { InboxContentSkeleton } from "@/components/email/InboxContentSkeleton";
 import { CurrentPlanBadge } from "@/components/subscription/CurrentPlanBadge";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
+import {
+  isGmailReconnectRequired,
+  useGmailReconnect,
+} from "@/hooks/useGmailReconnect";
+import { useGmailOAuthCallback } from "@/hooks/useGmailOAuthCallback";
 import { useInbox } from "@/hooks/useInbox";
 import { useInboxKeyboardShortcuts } from "@/hooks/useInboxKeyboardShortcuts";
+import { useToast } from "@/providers/ToastProvider";
 import { SNOOZE_OPTIONS } from "@/lib/email/snooze-store";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -22,12 +28,90 @@ type InboxViewProps = {
 };
 
 export function InboxView({ compact = false }: InboxViewProps) {
+  return (
+    <Suspense fallback={<InboxContentSkeleton compact={compact} />}>
+      <InboxViewInner compact={compact} />
+    </Suspense>
+  );
+}
+
+function InboxViewInner({ compact = false }: InboxViewProps) {
   const { subscription, loading: planLoading } = usePlanGate();
-  const { connected, loading: accountsLoading, accounts, selectedEmail: activeAccountEmail, setSelectedEmail: setActiveAccount } = useGmailAccounts();
+  const { showToast } = useToast();
+  const {
+    connected,
+    loading: accountsLoading,
+    accounts,
+    selectedEmail: activeAccountEmail,
+    setSelectedEmail: setActiveAccount,
+    refresh: refreshAccounts,
+  } = useGmailAccounts();
+  const { reconnectGmail, reconnecting } = useGmailReconnect();
   const inbox = useInbox();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const oauthCallback = useGmailOAuthCallback({
+    onSuccess: async (data) => {
+      await refreshAccounts();
+      await inbox.loadEmails(false, true);
+      showToast({
+        type: "success",
+        title: data.reconnected ? "Gmail reconnected" : "Gmail connected",
+        message: data.reconnected
+          ? `${data.account.email} is linked again. Your inbox is refreshing.`
+          : `${data.account.email} is ready. Your inbox is loading.`,
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (oauthCallback.tone === "error" && oauthCallback.message) {
+      showToast({
+        type: "error",
+        title: "Gmail reconnect failed",
+        message: oauthCallback.message,
+      });
+    }
+  }, [oauthCallback.message, oauthCallback.tone, showToast]);
 
   const showConnectPrompt = !accountsLoading && !connected;
+  const sessionBusy = reconnecting || oauthCallback.connecting;
+
+  const handleReconnect = useCallback(async () => {
+    if (reconnecting || oauthCallback.connecting) return;
+    try {
+      await reconnectGmail(activeAccountEmail);
+    } catch {
+      showToast({
+        type: "error",
+        title: "Could not start reconnect",
+        message: "Please try again in a moment.",
+      });
+    }
+  }, [
+    activeAccountEmail,
+    oauthCallback.connecting,
+    reconnectGmail,
+    reconnecting,
+    showToast,
+  ]);
+
+  const handleRetry = useCallback(async () => {
+    if (
+      sessionBusy ||
+      isGmailReconnectRequired(inbox.error, inbox.errorCode) ||
+      !connected
+    ) {
+      await handleReconnect();
+      return;
+    }
+
+    await inbox.loadEmails(false, true);
+  }, [
+    connected,
+    handleReconnect,
+    inbox,
+    sessionBusy,
+  ]);
 
   const handleSnooze = useCallback(
     (email: Parameters<typeof inbox.snoozeEmailById>[0]) => {
@@ -206,7 +290,12 @@ export function InboxView({ compact = false }: InboxViewProps) {
         )}
 
         {showConnectPrompt && (
-          <ConnectGmailState error={inbox.error} />
+          <ConnectGmailState
+            error={inbox.error}
+            errorCode={inbox.errorCode}
+            onReconnect={() => void handleReconnect()}
+            reconnecting={sessionBusy}
+          />
         )}
 
         {!showConnectPrompt && inbox.fetchState === "loading" && (
@@ -216,7 +305,10 @@ export function InboxView({ compact = false }: InboxViewProps) {
         {!showConnectPrompt && inbox.fetchState === "error" && (
           <ErrorState
             error={inbox.error}
-            onRetry={() => inbox.loadEmails()}
+            errorCode={inbox.errorCode}
+            onRetry={() => void handleRetry()}
+            onReconnect={() => void handleReconnect()}
+            reconnecting={sessionBusy}
           />
         )}
 
@@ -371,7 +463,37 @@ function FilterChip({
   );
 }
 
-function ConnectGmailState({ error }: { error: string | null }) {
+function ConnectGmailState({
+  error,
+  errorCode,
+  onReconnect,
+  reconnecting,
+}: {
+  error: string | null;
+  errorCode: string | null;
+  onReconnect: () => void;
+  reconnecting: boolean;
+}) {
+  const needsReconnect = isGmailReconnectRequired(error, errorCode);
+
+  if (needsReconnect) {
+    return (
+      <PremiumEmptyState
+        illustration="inbox"
+        title="Gmail session expired"
+        description={
+          error ??
+          "Your Gmail authorization expired. Reconnect to resume syncing and AI inbox features."
+        }
+        cta={{
+          label: reconnecting ? "Reconnecting…" : "Reconnect Gmail",
+          onClick: onReconnect,
+        }}
+        className="border-dashed bg-[#0A0A0A]/50"
+      />
+    );
+  }
+
   return (
     <PremiumEmptyState
       illustration="inbox"
@@ -388,28 +510,43 @@ function ConnectGmailState({ error }: { error: string | null }) {
 
 function ErrorState({
   error,
+  errorCode,
   onRetry,
+  onReconnect,
+  reconnecting,
 }: {
   error: string | null;
+  errorCode: string | null;
   onRetry: () => void;
+  onReconnect: () => void;
+  reconnecting: boolean;
 }) {
-  const needsReconnect =
-    error?.toLowerCase().includes("reconnect") ||
-    error?.toLowerCase().includes("expired") ||
-    error?.toLowerCase().includes("not connected");
+  const needsReconnect = isGmailReconnectRequired(error, errorCode);
 
   return (
     <div className={`${dashboard.cardBase} border-[#EF4444]/20 p-6`}>
       <p className="text-[#FCA5A5] font-medium mb-2">Could not load Gmail inbox</p>
       <p className={`${dashboard.muted} text-sm mb-4`}>{error}</p>
       <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={onRetry} className={`${dashboard.btnSecondary} px-4 py-2 text-sm`}>
-          Try again
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={reconnecting}
+          className={`${dashboard.btnSecondary} inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60`}
+        >
+          {reconnecting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {reconnecting ? "Reconnecting…" : "Try again"}
         </button>
         {needsReconnect && (
-          <Link href="/dashboard/connect-gmail" className={`${dashboard.btnPrimary} px-4 py-2 text-sm`}>
-            Reconnect Gmail
-          </Link>
+          <button
+            type="button"
+            onClick={onReconnect}
+            disabled={reconnecting}
+            className={`${dashboard.btnPrimary} inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60`}
+          >
+            {reconnecting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {reconnecting ? "Opening Google…" : "Reconnect Gmail"}
+          </button>
         )}
       </div>
     </div>

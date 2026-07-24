@@ -11,7 +11,7 @@ import {
   type SnoozeEntry,
 } from "@/lib/email/snooze-store";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
-import { fetchCached } from "@/lib/client-data/query-cache";
+import { fetchCached, invalidateCachedPrefix } from "@/lib/client-data/query-cache";
 
 type FetchState = "loading" | "error" | "success";
 export type InboxFilter = "all" | "unread" | "starred" | "priority" | "snoozed";
@@ -29,6 +29,7 @@ export function useInbox() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [fetchState, setFetchState] = useState<FetchState>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -64,10 +65,11 @@ export function useInbox() {
   }, [refreshSnoozed]);
 
   const loadEmails = useCallback(
-    async (silent = false) => {
+    async (silent = false, force = false) => {
       if (!connected) {
         setFetchState("error");
         setError("Gmail is not connected. Connect your account to load the inbox.");
+        setErrorCode("GMAIL_NOT_CONNECTED");
         setEmails([]);
         setUnreadCount(0);
         return;
@@ -76,6 +78,8 @@ export function useInbox() {
       if (activeFilter === "snoozed") {
         refreshSnoozed();
         setFetchState("success");
+        setError(null);
+        setErrorCode(null);
         setEmails([]);
         setUnreadCount(0);
         return;
@@ -85,6 +89,11 @@ export function useInbox() {
       else setIsRefreshing(true);
 
       setError(null);
+      setErrorCode(null);
+
+      if (force) {
+        invalidateCachedPrefix(`inbox:${activeAccountEmail ?? "default"}`);
+      }
 
       const params = new URLSearchParams();
       if (activeAccountEmail) params.set("account", activeAccountEmail);
@@ -104,9 +113,17 @@ export function useInbox() {
           cacheKey,
           async () => {
             const res = await fetch(fetchUrl);
-            const body = await res.json();
+            const body = (await res.json()) as {
+              error?: string;
+              code?: string;
+              emails?: InboxEmail[];
+              unreadCount?: number;
+            };
             if (!res.ok) {
-              throw new Error(body.error ?? "Failed to load emails");
+              const message = body.error ?? "Failed to load emails";
+              const err = new Error(message) as Error & { code?: string };
+              err.code = body.code;
+              throw err;
             }
             return {
               emails: (body.emails ?? []) as InboxEmail[],
@@ -115,7 +132,7 @@ export function useInbox() {
           },
           {
             ttlMs: INBOX_TTL_MS,
-            force: silent || Boolean(debouncedSearch.trim()),
+            force: force || silent || Boolean(debouncedSearch.trim()),
           }
         );
 
@@ -132,7 +149,12 @@ export function useInbox() {
         setEmails(nextEmails);
         setUnreadCount(data.unreadCount);
         setFetchState("success");
+        setErrorCode(null);
       } catch (err) {
+        const code =
+          err instanceof Error
+            ? (err as Error & { code?: string }).code ?? null
+            : null;
         if (!silent) {
           setFetchState("error");
           setError(
@@ -140,6 +162,7 @@ export function useInbox() {
               ? err.message
               : "Failed to load emails. Check your connection and try again."
           );
+          setErrorCode(code);
           setEmails([]);
           setUnreadCount(0);
         }
@@ -392,6 +415,7 @@ export function useInbox() {
     readySnoozes: listReadySnoozes(activeAccountEmail),
     fetchState,
     error,
+    errorCode,
     isRefreshing,
     searchQuery,
     setSearchQuery,

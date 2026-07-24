@@ -8,8 +8,8 @@ import type { GmailAccountPublic } from "@/lib/gmail/types";
 
 export const GMAIL_OAUTH_CALLBACK_PARAM = "gmail_connected";
 export const GMAIL_OAUTH_CALLBACK_URL = `/dashboard/connect-gmail?${GMAIL_OAUTH_CALLBACK_PARAM}=1`;
-
-const CONNECT_IDEMPOTENCY_KEY = "actora_gmail_connect_attempt";
+export const GMAIL_INBOX_CALLBACK_URL = `/dashboard/inbox?${GMAIL_OAUTH_CALLBACK_PARAM}=1`;
+export const CONNECT_IDEMPOTENCY_KEY = "actora_gmail_connect_attempt";
 const MAX_CONNECT_RETRIES = 4;
 const RETRY_DELAY_MS = 1200;
 
