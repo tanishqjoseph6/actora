@@ -109,23 +109,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const marked = await markCreditPurchasePaid({
+    const result = await markCreditPurchasePaid({
       orderId,
       paymentId,
       userId: pending.userId,
     });
 
-    if (!marked || marked.purchase.status !== "paid") {
+    if (!result || result.purchase.status !== "paid") {
       return NextResponse.json(
         { error: "Unable to finalize purchase." },
         { status: 500 }
       );
     }
 
-    const paid = marked.purchase;
+    const { purchase, newlyPaid } = result;
 
-    if (marked.newlyPaid) {
-      await addPurchasedCreditsBalance(pending.userId, paid.credits);
+    if (newlyPaid) {
+      await addPurchasedCreditsBalance(pending.userId, purchase.credits);
 
       try {
         await logWorkspaceActivity({
@@ -133,10 +133,10 @@ export async function POST(request: NextRequest) {
           actorUserId: actorId,
           action: "credits.purchased",
           metadata: {
-            credits: paid.credits,
-            packId: paid.packId,
-            amount: paid.amount,
-            currency: paid.currency,
+            credits: purchase.credits,
+            packId: purchase.packId,
+            amount: purchase.amount,
+            currency: purchase.currency,
           },
         });
       } catch (err) {
@@ -148,18 +148,18 @@ export async function POST(request: NextRequest) {
         await db
           .from("ai_credit_purchases")
           .update({ workspace_id: workspaceId })
-          .eq("id", paid.id);
+          .eq("id", purchase.id);
       }
 
       const amountLabel =
-        paid.currency === "USD"
-          ? `$${(paid.amount / 100).toFixed(2)}`
-          : `₹${Math.round(paid.amount / 100).toLocaleString("en-IN")}`;
+        purchase.currency === "USD"
+          ? `$${(purchase.amount / 100).toFixed(2)}`
+          : `₹${Math.round(purchase.amount / 100).toLocaleString("en-IN")}`;
 
       void sendCreditPurchaseConfirmationEmail({
         to: sessionEmail,
         packName: pack.name,
-        credits: paid.credits,
+        credits: purchase.credits,
         amountLabel,
       }).catch((err) => {
         console.error("[ai-credits/verify] credit purchase email failed:", err);
@@ -170,9 +170,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      purchase: paid,
-      creditsAdded: marked.newlyPaid ? paid.credits : 0,
-      alreadyProcessed: !marked.newlyPaid,
+      purchase,
+      creditsAdded: newlyPaid ? purchase.credits : 0,
+      alreadyProcessed: !newlyPaid,
       packName: pack.name,
       subscription: toSubscriptionSnapshot(subscription),
     });
