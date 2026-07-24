@@ -181,7 +181,10 @@ export function AiAssistantPanel() {
   const stickToBottomRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   const selectedModelRef = useRef<RoxxModelId>(selectedModel);
-  selectedModelRef.current = selectedModel;
+
+  useEffect(() => {
+    selectedModelRef.current = selectedModel;
+  }, [selectedModel]);
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const messages = active?.messages ?? [];
@@ -836,7 +839,7 @@ export function AiAssistantPanel() {
               rows={1}
               placeholder={
                 fairUsageBlocked
-                  ? "Roxxx AI cooldown active…"
+                  ? "Roxx AI cooldown active…"
                   : "Ask Roxx AI anything…"
               }
               disabled={streaming || fairUsageBlocked}

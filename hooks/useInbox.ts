@@ -165,6 +165,17 @@ export function useInbox() {
           setErrorCode(code);
           setEmails([]);
           setUnreadCount(0);
+        } else if (
+          code === "OAUTH_EXPIRED" ||
+          code === "GMAIL_NOT_CONNECTED" ||
+          code === "OAUTH_DENIED"
+        ) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Inbox sync failed. Reconnect Gmail to continue."
+          );
+          setErrorCode(code);
         }
       } finally {
         setIsRefreshing(false);
@@ -172,6 +183,13 @@ export function useInbox() {
     },
     [activeAccountEmail, activeFilter, connected, debouncedSearch, refreshSnoozed]
   );
+
+  useEffect(() => {
+    setSelectedEmail(null);
+    setOpenAiReply(false);
+    setSelectedIds(new Set());
+    setListFocusIndex(0);
+  }, [activeAccountEmail]);
 
   useEffect(() => {
     queueMicrotask(() => {

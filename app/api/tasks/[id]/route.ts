@@ -1,21 +1,13 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapTaskRow, TASK_SELECT, type TaskInput } from "@/lib/tasks/live";
+import { requireTasksWriteUserId } from "@/lib/tasks/session";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function getUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
-}
-
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireTasksWriteUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {
@@ -58,10 +50,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireTasksWriteUserId(_request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

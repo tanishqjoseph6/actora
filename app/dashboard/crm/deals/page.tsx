@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DealListItem } from "@/components/crm/DealListItem";
 import { CrmEmptyState } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
@@ -47,27 +47,37 @@ export default function DealsPage() {
   const [activeFilter, setActiveFilter] = useState<DealFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", value: "", companyName: "" });
 
-  useEffect(() => {
-    void loadDeals();
-  }, []);
-
-  async function loadDeals() {
+  const loadDeals = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/crm/deals");
-      const json = (await res.json()) as { deals?: CrmDeal[] };
+      const json = (await res.json()) as { deals?: CrmDeal[]; error?: string };
+      if (!res.ok) {
+        setFormError(json.error ?? "Could not load deals.");
+        setDeals([]);
+        return;
+      }
       setDeals(json.deals ?? []);
+    } catch {
+      setFormError("Could not load deals.");
+      setDeals([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadDeals();
+  }, [loadDeals]);
 
   async function createDeal() {
     const title = form.title.trim();
     if (!title || saving) return;
     setSaving(true);
+    setFormError(null);
     try {
       const res = await fetch("/api/crm/deals", {
         method: "POST",
@@ -77,11 +87,16 @@ export default function DealsPage() {
           value: Number(form.value) || 0,
         }),
       });
-      if (res.ok) {
-        setShowForm(false);
-        setForm({ title: "", value: "", companyName: "" });
-        await loadDeals();
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setFormError(json.error ?? "Could not create deal.");
+        return;
       }
+      setShowForm(false);
+      setForm({ title: "", value: "", companyName: "" });
+      await loadDeals();
+    } catch {
+      setFormError("Could not create deal.");
     } finally {
       setSaving(false);
     }
@@ -203,6 +218,11 @@ export default function DealsPage() {
 
           {showForm && (
             <div className="mb-6 p-4 rounded-xl border border-white/[0.06] bg-[#111111] space-y-3">
+              {formError && (
+                <p className="text-sm text-red-400" role="alert">
+                  {formError}
+                </p>
+              )}
               <input
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}

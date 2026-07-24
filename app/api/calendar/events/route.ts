@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
 import { getCalendarAuthClient } from "@/lib/calendar/auth";
 import {
   listStoredCalendarEvents,
@@ -15,13 +13,13 @@ import type { CreateCalendarEventInput } from "@/lib/calendar/types";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { logApiError } from "@/lib/api/log-error";
 import { dispatchAutomationTrigger } from "@/lib/automations/dispatcher";
+import { requireWorkspacePermission, requireWritableWorkspacePermission } from "@/lib/workspace/require";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const wsAuth = await requireWorkspacePermission("calendar", request);
+  if (!wsAuth.ok) return wsAuth.response;
+
+  const email = wsAuth.email;
 
   const userId = normalizeSubscriptionUserId(email);
   const from = request.nextUrl.searchParams.get("from") ?? undefined;
@@ -38,11 +36,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const wsAuth = await requireWritableWorkspacePermission("calendar", request);
+  if (!wsAuth.ok) return wsAuth.response;
+
+  const email = wsAuth.email;
 
   const userId = normalizeSubscriptionUserId(email);
   const body = (await request.json()) as CreateCalendarEventInput;

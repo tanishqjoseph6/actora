@@ -1,22 +1,19 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapTaskRow, TASK_SELECT, type TaskInput } from "@/lib/tasks/live";
+import {
+  requireTasksUserId,
+  requireTasksWriteUserId,
+} from "@/lib/tasks/session";
 
-async function getUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.email ?? null;
-}
-
-export async function GET() {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+export async function GET(request: NextRequest) {
+  const userId = await requireTasksUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
-  if (!db) return NextResponse.json({ tasks: [] });
+  if (!db) {
+    return NextResponse.json({ error: "Database not configured." }, { status: 503 });
+  }
 
   const { data, error } = await db
     .from("tasks")
@@ -30,10 +27,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getUserId();
-  if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const userId = await requireTasksWriteUserId(request);
+  if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
   if (!db) {

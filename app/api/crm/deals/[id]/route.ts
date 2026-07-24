@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clampScore } from "@/lib/crm/auth";
-import { requireCrmUserId } from "@/lib/crm/session";
+import { requireCrmUserId, requireCrmWriteUserId } from "@/lib/crm/session";
 import {
   crmSupabaseErrorResponse,
   runCrmRoute,
@@ -16,7 +16,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 const VALID_STAGES = new Set(PIPELINE_STAGES.map((s) => s.id));
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
@@ -116,7 +116,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();

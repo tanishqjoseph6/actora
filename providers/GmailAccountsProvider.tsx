@@ -15,6 +15,7 @@ import type { GmailAccountPublic } from "@/lib/gmail/types";
 import {
   getCachedData,
   invalidateCachedData,
+  invalidateCachedPrefix,
   fetchCached,
 } from "@/lib/client-data/query-cache";
 
@@ -126,11 +127,21 @@ export function GmailAccountsProvider({ children }: { children: ReactNode }) {
   }, [setSelectedEmail]);
 
   useEffect(() => {
-    if (status !== "authenticated") {
-      setLoading(false);
+    if (status === "authenticated") {
+      queueMicrotask(() => {
+        void refresh(false);
+      });
       return;
     }
-    void refresh(false);
+
+    setAccounts([]);
+    setSelectedEmailState(null);
+    setError(null);
+    invalidateCachedData(CACHE_KEY);
+    invalidateCachedPrefix("inbox:");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(SELECTED_ACCOUNT_KEY);
+    }
   }, [status, refresh]);
 
   const disconnectAccount = useCallback(
@@ -158,18 +169,28 @@ export function GmailAccountsProvider({ children }: { children: ReactNode }) {
   const syncAccount = useCallback(
     async (email?: string) => {
       setActionEmail(email ?? selectedEmail ?? accounts[0]?.email ?? null);
+      const targetEmail = email ?? selectedEmail ?? accounts[0]?.email ?? null;
       const result = await fetchJson<{
         accounts?: GmailAccountPublic[];
         error?: string;
+        results?: Array<{ email: string; error?: string; code?: string }>;
       }>("/api/gmail/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ account: email ?? selectedEmail }),
+        body: JSON.stringify({ email: targetEmail }),
       });
       setActionEmail(null);
 
       if (!result.ok) {
         setError(result.error.message);
+        return false;
+      }
+
+      const failed = result.data.results?.find(
+        (row) => row.error && (!targetEmail || row.email === targetEmail)
+      );
+      if (failed?.error) {
+        setError(failed.error);
         return false;
       }
 
@@ -188,6 +209,8 @@ export function GmailAccountsProvider({ children }: { children: ReactNode }) {
 
   const refreshAccounts = useCallback(() => refresh(true), [refresh]);
 
+  const effectiveLoading = status === "authenticated" ? loading : false;
+
   const value = useMemo<GmailAccountsContextValue>(
     () => ({
       accounts,
@@ -195,7 +218,7 @@ export function GmailAccountsProvider({ children }: { children: ReactNode }) {
       primaryAccount,
       selectedEmail,
       actionEmail,
-      loading,
+      loading: effectiveLoading,
       error,
       refresh: refreshAccounts,
       setSelectedEmail,
@@ -207,7 +230,7 @@ export function GmailAccountsProvider({ children }: { children: ReactNode }) {
       primaryAccount,
       selectedEmail,
       actionEmail,
-      loading,
+      effectiveLoading,
       error,
       refreshAccounts,
       setSelectedEmail,

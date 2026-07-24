@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CompanyListItem } from "@/components/crm/CompanyListItem";
 import { CrmEmptyState } from "@/components/crm/CrmEmptyState";
 import { CrmFilterChips } from "@/components/crm/CrmFilterChips";
@@ -53,27 +53,37 @@ export default function CompaniesPage() {
   const [sort, setSort] = useState<CompanySort>("name-asc");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", industry: "" });
 
-  useEffect(() => {
-    void loadCompanies();
-  }, []);
-
-  async function loadCompanies() {
+  const loadCompanies = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/crm/companies");
-      const json = (await res.json()) as { companies?: CrmCompany[] };
+      const json = (await res.json()) as { companies?: CrmCompany[]; error?: string };
+      if (!res.ok) {
+        setFormError(json.error ?? "Could not load companies.");
+        setCompanies([]);
+        return;
+      }
       setCompanies(json.companies ?? []);
+    } catch {
+      setFormError("Could not load companies.");
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadCompanies();
+  }, [loadCompanies]);
 
   async function createCompany() {
     const name = form.name.trim();
     if (!name || saving) return;
     setSaving(true);
+    setFormError(null);
     try {
       const res = await fetch("/api/crm/companies", {
         method: "POST",
@@ -83,11 +93,16 @@ export default function CompaniesPage() {
           industry: form.industry.trim(),
         }),
       });
-      if (res.ok) {
-        setShowForm(false);
-        setForm({ name: "", industry: "" });
-        await loadCompanies();
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setFormError(json.error ?? "Could not create company.");
+        return;
       }
+      setShowForm(false);
+      setForm({ name: "", industry: "" });
+      await loadCompanies();
+    } catch {
+      setFormError("Could not create company.");
     } finally {
       setSaving(false);
     }
@@ -207,6 +222,11 @@ export default function CompaniesPage() {
 
           {showForm && (
             <div className="mb-6 p-4 rounded-xl border border-white/[0.06] bg-[#111111] space-y-3">
+              {formError && (
+                <p className="text-sm text-red-400" role="alert">
+                  {formError}
+                </p>
+              )}
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}

@@ -16,19 +16,18 @@ export default async function ContactProfilePage({
   const db = getSupabaseAdmin();
   if (!db) notFound();
 
+  let contact;
   try {
-    const { contact, error } = await fetchContactForUser(db, userId, id);
-    if (error) {
+    const result = await fetchContactForUser(db, userId, id);
+    if (result.error) {
       console.error("[crm/contacts/[id]/page]", {
         userId,
         contactId: id,
-        error: error.message,
+        error: result.error.message,
       });
       notFound();
     }
-    if (!contact) notFound();
-
-    return <ContactProfileView contact={contact} />;
+    contact = result.contact;
   } catch (error) {
     console.error("[crm/contacts/[id]/page] unexpected error:", {
       userId,
@@ -37,4 +36,8 @@ export default async function ContactProfilePage({
     });
     notFound();
   }
+
+  if (!contact) notFound();
+
+  return <ContactProfileView contact={contact} />;
 }

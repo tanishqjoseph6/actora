@@ -104,16 +104,34 @@ export default function TasksPage() {
       const task = tasks.find((t) => t.id === id);
       if (!task) return;
       const nextStatus = task.status === "done" ? "todo" : "done";
-      const res = await fetch(`/api/tasks/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      if (!res.ok) return;
-      const json = (await res.json()) as { task: Task };
-      setTasks((prev) => prev.map((t) => (t.id === id ? json.task : t)));
+      try {
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const friendly = friendlyError(body.error ?? "Update failed.", "server");
+          showToast({
+            type: "error",
+            title: friendly.title,
+            message: friendly.message,
+          });
+          return;
+        }
+        const json = (await res.json()) as { task: Task };
+        setTasks((prev) => prev.map((t) => (t.id === id ? json.task : t)));
+      } catch (err) {
+        const friendly = friendlyError(err, "server");
+        showToast({
+          type: "error",
+          title: friendly.title,
+          message: friendly.message,
+        });
+      }
     },
-    [tasks]
+    [tasks, showToast]
   );
 
   function openCreate() {
@@ -185,8 +203,27 @@ export default function TasksPage() {
   async function deleteTask(task: Task) {
     const confirmed = window.confirm(`Delete "${task.title}"?`);
     if (!confirmed) return;
-    await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
-    await loadTasks();
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const friendly = friendlyError(body.error ?? "Delete failed.", "server");
+        showToast({
+          type: "error",
+          title: friendly.title,
+          message: friendly.message,
+        });
+        return;
+      }
+      await loadTasks();
+    } catch (err) {
+      const friendly = friendlyError(err, "server");
+      showToast({
+        type: "error",
+        title: friendly.title,
+        message: friendly.message,
+      });
+    }
   }
 
   const chips = [

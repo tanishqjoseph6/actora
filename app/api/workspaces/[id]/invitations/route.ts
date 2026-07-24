@@ -101,7 +101,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
 
     return Response.json(
-      { invitation: publicInvitation(invitation), inviteSent: true },
+      { invitation: publicInvitation(invitation), inviteSent: true, inviteUrl },
       { status: 201 }
     );
   } catch (error) {

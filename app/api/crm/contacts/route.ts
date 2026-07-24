@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clampScore } from "@/lib/crm/auth";
-import { requireCrmUserId } from "@/lib/crm/session";
+import { requireCrmUserId, requireCrmWriteUserId } from "@/lib/crm/session";
 import {
   crmErrorResponse,
   crmSupabaseErrorResponse,
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const db = getSupabaseAdmin();
   if (!db) {
-    return NextResponse.json({ contacts: [] });
+    return NextResponse.json({ error: "Database not configured." }, { status: 503 });
   }
 
   const result = await runCrmRoute("crm/contacts GET", async () => {
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();

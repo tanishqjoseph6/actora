@@ -141,7 +141,6 @@ function ConnectGmailContent() {
   const handleReconnect = async (email: string) => {
     setStatusMessage(null);
     clearGmailClientSessionCache();
-    await disconnectAccount(email);
     await startGoogleOAuth(email);
   };
 

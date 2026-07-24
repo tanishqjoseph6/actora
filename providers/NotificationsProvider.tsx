@@ -83,12 +83,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [applyResponse]);
 
   useEffect(() => {
-    if (status !== "authenticated") {
-      setLoading(false);
-      return;
-    }
+    if (status !== "authenticated") return;
 
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
     const timer = window.setInterval(() => {
       void refresh();
     }, POLL_MS);
@@ -149,11 +148,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }, [applyResponse]);
 
+  const effectiveLoading = status === "authenticated" ? loading : false;
+
   const value = useMemo<NotificationsContextValue>(
     () => ({
       items,
       unreadCount,
-      loading,
+      loading: effectiveLoading,
       error,
       refresh,
       markRead,
@@ -165,7 +166,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [
       items,
       unreadCount,
-      loading,
+      effectiveLoading,
       error,
       refresh,
       markRead,

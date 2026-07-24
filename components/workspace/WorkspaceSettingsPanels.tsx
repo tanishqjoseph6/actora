@@ -226,15 +226,25 @@ export function WorkspaceMembersSection() {
     const token = params.get("invite");
     if (!token) return;
     void (async () => {
-      const res = await fetch("/api/workspaces/invitations/accept", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      if (res.ok) {
+      try {
+        const res = await fetch("/api/workspaces/invitations/accept", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(friendlyErrorMessage(data.error ?? "Could not accept invite.", "workspace"));
+          window.history.replaceState({}, "", "/dashboard/settings#workspace-members");
+          return;
+        }
         await refresh();
         await load();
+        setError(null);
+        window.history.replaceState({}, "", "/dashboard/settings#workspace-members");
+      } catch (err) {
+        setError(friendlyErrorMessage(err, "workspace"));
         window.history.replaceState({}, "", "/dashboard/settings#workspace-members");
       }
     })();
@@ -512,7 +522,7 @@ export function WorkspaceBillingSection() {
         the workspace level.
       </p>
       <Link
-        href="/dashboard/billing"
+        href="/billing"
         className={`${dashboard.btnPrimary} inline-flex px-4 py-2 text-sm`}
       >
         Open billing
@@ -529,7 +539,7 @@ export function WorkspaceCreditsSection() {
       <AiCreditsCard subscription={subscription} loading={loading} detailed />
       {hasPermission("credits") ? (
         <Link
-          href="/dashboard/billing#buy-credits"
+          href="/billing#ai-credits"
           className="text-sm text-[#60A5FA] hover:underline"
         >
           Purchase credit packs →

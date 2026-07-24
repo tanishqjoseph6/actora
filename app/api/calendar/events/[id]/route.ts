@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth/auth-options";
+import { requireWritableWorkspacePermission } from "@/lib/workspace/require";
 import { getCalendarAuthClient } from "@/lib/calendar/auth";
 import {
   listStoredCalendarEvents,
@@ -21,14 +20,11 @@ async function loadMeeting(userId: string, id: string) {
 }
 
 export async function PATCH(request: NextRequest, context: Ctx) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const wsAuth = await requireWritableWorkspacePermission("calendar", request);
+  if (!wsAuth.ok) return wsAuth.response;
 
   const { id } = await context.params;
-  const userId = normalizeSubscriptionUserId(email);
+  const userId = normalizeSubscriptionUserId(wsAuth.email);
   const body = (await request.json()) as UpdateCalendarEventInput;
   const existing = await loadMeeting(userId, id);
 
@@ -151,14 +147,11 @@ export async function PATCH(request: NextRequest, context: Ctx) {
 }
 
 export async function DELETE(request: NextRequest, context: Ctx) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
+  const wsAuth = await requireWritableWorkspacePermission("calendar", request);
+  if (!wsAuth.ok) return wsAuth.response;
 
   const { id } = await context.params;
-  const userId = normalizeSubscriptionUserId(email);
+  const userId = normalizeSubscriptionUserId(wsAuth.email);
   const existing = await loadMeeting(userId, id);
 
   if (!existing) {

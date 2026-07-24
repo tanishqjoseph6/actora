@@ -6,7 +6,7 @@ import {
 } from "@/lib/auth/get-api-user";
 import { shouldUseSecureCookies } from "@/lib/auth/nextauth-url";
 import { WORKSPACE_COOKIE, workspaceCookieOptions } from "./cookie";
-import { roleHasPermission } from "./permissions";
+import { roleHasPermission, isWritableRole } from "./permissions";
 import {
   ensurePersonalWorkspace,
   getMembershipContext,
@@ -120,6 +120,29 @@ export async function requireWorkspacePermission(
   }
 
   return { ok: true, email, ctx };
+}
+
+export async function requireWritableWorkspacePermission(
+  permission: WorkspacePermission,
+  request?: NextRequest
+): Promise<WorkspaceAuthOk | WorkspaceAuthErr> {
+  const auth = await requireWorkspacePermission(permission, request);
+  if (!auth.ok) return auth;
+  if (!isWritableRole(auth.ctx.role)) {
+    return {
+      ok: false,
+      response: Response.json(
+        {
+          error: "You do not have permission for this action.",
+          code: "FORBIDDEN",
+          required: permission,
+          role: auth.ctx.role,
+        },
+        { status: 403 }
+      ),
+    };
+  }
+  return auth;
 }
 
 export async function requireWorkspaceMembership(

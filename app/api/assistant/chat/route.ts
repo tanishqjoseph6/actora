@@ -14,6 +14,7 @@ import { requireAiCreditsResponse } from "@/lib/ai-credits/require";
 import { refundAiCredits } from "@/lib/ai-credits/consume";
 import { getServerSession } from "next-auth";
 import { subscriptionProvider } from "@/lib/subscription";
+import { requireWorkspacePermission } from "@/lib/workspace/require";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import type { PlanId } from "@/lib/subscription";
 
@@ -21,6 +22,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const wsAuth = await requireWorkspacePermission("roxx_ai", request);
+  if (!wsAuth.ok) return wsAuth.response;
+
   const session = await getServerSession(authOptions);
   const sessionEmail = session?.user?.email;
   if (!sessionEmail) {

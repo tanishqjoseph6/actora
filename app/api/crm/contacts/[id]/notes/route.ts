@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireCrmUserId } from "@/lib/crm/session";
+import { requireCrmUserId, requireCrmWriteUserId } from "@/lib/crm/session";
 import {
   crmSupabaseErrorResponse,
   runCrmRoute,
 } from "@/lib/crm/api-response";
+import { fetchContactForUser } from "@/lib/crm/contacts-query";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
@@ -73,6 +74,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const noteBody = body.body?.trim();
       if (!noteBody) {
         return NextResponse.json({ error: "Note body is required." }, { status: 400 });
+      }
+
+      const { contact, error: contactError } = await fetchContactForUser(
+        db,
+        userId,
+        id
+      );
+      if (contactError || !contact) {
+        return NextResponse.json({ error: "Contact not found." }, { status: 404 });
       }
 
       const { data, error } = await db

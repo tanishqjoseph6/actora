@@ -28,6 +28,8 @@ import {
   type PipelineDeal,
 } from "@/lib/crm/pipeline";
 import { fetchCached, invalidateCachedData } from "@/lib/client-data/query-cache";
+import { useToast } from "@/providers/ToastProvider";
+import { friendlyError } from "@/lib/errors/friendly";
 
 const DEFAULT_FILTERS: PipelineFilters = {
   search: "",
@@ -47,6 +49,7 @@ type DealPipelineBoardProps = {
 };
 
 export function DealPipelineBoard({ onDealsChange }: DealPipelineBoardProps) {
+  const { showToast } = useToast();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
@@ -115,12 +118,36 @@ export function DealPipelineBoard({ onDealsChange }: DealPipelineBoardProps) {
   }, [filtered, visibleStages]);
 
   async function moveDeal(dealId: string, stage: PipelineDeal["stage"]) {
+    const previous = deals.find((d) => d.id === dealId);
+    if (!previous || previous.stage === stage) return;
+
+    setDeals((prev) => {
+      const next = prev.map((d) =>
+        d.id === dealId ? { ...d, stage, lastActivity: "Just now" } : d
+      );
+      onDealsChange?.(next);
+      return next;
+    });
+    setSelectedDeal((prev) =>
+      prev?.id === dealId ? { ...prev, stage } : prev
+    );
+
     const res = await fetch(`/api/crm/deals/${dealId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stage }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      invalidateCachedData(DEALS_CACHE_KEY);
+      await loadDeals(true);
+      const friendly = friendlyError("Could not move deal.", "server");
+      showToast({
+        type: "error",
+        title: friendly.title,
+        message: friendly.message,
+      });
+      return;
+    }
     const json = (await res.json()) as {
       deal?: {
         id: string;
@@ -128,7 +155,11 @@ export function DealPipelineBoard({ onDealsChange }: DealPipelineBoardProps) {
         lastActivityAt: string;
       };
     };
-    if (!json.deal) return;
+    if (!json.deal) {
+      invalidateCachedData(DEALS_CACHE_KEY);
+      await loadDeals(true);
+      return;
+    }
 
     invalidateCachedData(DEALS_CACHE_KEY);
     setDeals((prev) => {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clampScore } from "@/lib/crm/auth";
-import { requireCrmUserId } from "@/lib/crm/session";
+import { requireCrmWriteUserId } from "@/lib/crm/session";
 import {
   crmErrorResponse,
   crmSupabaseErrorResponse,
@@ -17,7 +17,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();
@@ -102,7 +102,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const db = getSupabaseAdmin();

@@ -19,6 +19,7 @@ import {
   subscriptionProvider,
   toSubscriptionSnapshot,
 } from "@/lib/subscription";
+import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export const maxDuration = 60;
 
@@ -63,6 +64,19 @@ export async function POST(request: NextRequest) {
     console.log("[gmail/connect] step:gmail-profile");
     const gmailEmail = await getGmailProfileEmail(oauth2Client);
     console.log("[gmail/connect] step:gmail-profile-ok", { gmailEmail });
+
+    if (
+      normalizeSubscriptionUserId(gmailEmail) !== normalizeSubscriptionUserId(userId)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Connect the Google account that matches your Actora login email.",
+          code: "EMAIL_MISMATCH",
+        },
+        { status: 403 }
+      );
+    }
 
     const existing = await gmailAccountRepository.getAccount(
       userId,

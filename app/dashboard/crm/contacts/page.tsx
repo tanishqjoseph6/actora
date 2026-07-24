@@ -47,10 +47,7 @@ export default function ContactsPage() {
     status: "lead",
     aiLeadScore: 0,
   });
-
-  useEffect(() => {
-    void loadContacts();
-  }, []);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function loadContacts() {
     setLoading(true);
@@ -75,7 +72,12 @@ export default function ContactsPage() {
     }
   }
 
+  useEffect(() => {
+    void loadContacts();
+  }, []);
+
   function openCreate() {
+    setFormError(null);
     setEditing(null);
     setForm({
       name: "",
@@ -97,6 +99,7 @@ export default function ContactsPage() {
   }) {
     const full = contacts.find((c) => c.id === contact.id);
     if (!full) return;
+    setFormError(null);
     setEditing(full);
     setForm({
       name: full.name,
@@ -111,29 +114,48 @@ export default function ContactsPage() {
   async function saveContact() {
     if (!form.name?.trim()) return;
     setSaving(true);
+    setFormError(null);
     const url = editing ? `/api/crm/contacts/${editing.id}` : "/api/crm/contacts";
     const method = editing ? "PATCH" : "POST";
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setSaving(false);
-    if (!res.ok) return;
-    setShowForm(false);
-    await loadContacts();
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setFormError(json.error ?? "Could not save contact.");
+        return;
+      }
+      setShowForm(false);
+      await loadContacts();
+    } catch {
+      setFormError("Could not save contact.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteContact(contact: { id: string; name: string }) {
     const confirmed = window.confirm(`Delete ${contact.name}?`);
     if (!confirmed) return;
-    await fetch(`/api/crm/contacts/${contact.id}`, { method: "DELETE" });
-    await loadContacts();
+    try {
+      const res = await fetch(`/api/crm/contacts/${contact.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(json.error ?? "Could not delete contact.");
+        return;
+      }
+      await loadContacts();
+    } catch {
+      setError("Could not delete contact.");
+    }
   }
 
-  useEffect(() => {
+  function resetPageOnFilterChange() {
     setPage(1);
-  }, [searchQuery, activeFilter, companyFilter, sort]);
+  }
 
   const companies = useMemo(
     () => Array.from(new Set(contacts.map((c) => c.companyName).filter(Boolean))).sort(),
@@ -278,7 +300,10 @@ export default function ContactsPage() {
         <div className="mb-4">
           <CrmSearchInput
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              resetPageOnFilterChange();
+            }}
             placeholder="Search by name, email, or company..."
           />
         </div>
@@ -287,7 +312,10 @@ export default function ContactsPage() {
           <CrmFilterChips
             chips={chips}
             activeId={activeFilter}
-            onChange={(id) => setActiveFilter(id as ContactFilter)}
+            onChange={(id) => {
+              setActiveFilter(id as ContactFilter);
+              resetPageOnFilterChange();
+            }}
           />
         </div>
 
@@ -295,7 +323,10 @@ export default function ContactsPage() {
           <CrmSelectFilter
             label="Company"
             value={companyFilter}
-            onChange={setCompanyFilter}
+            onChange={(value) => {
+              setCompanyFilter(value);
+              resetPageOnFilterChange();
+            }}
             options={[
               { value: "all", label: "All companies" },
               ...companies.map((name) => ({ value: name, label: name })),
@@ -304,7 +335,10 @@ export default function ContactsPage() {
           <CrmSelectFilter
             label="Sort"
             value={sort}
-            onChange={(v) => setSort(v as CrmContactSort)}
+            onChange={(v) => {
+              setSort(v as CrmContactSort);
+              resetPageOnFilterChange();
+            }}
             options={[
               { value: "name-asc", label: "Name A -> Z" },
               { value: "name-desc", label: "Name Z -> A" },
@@ -358,7 +392,10 @@ export default function ContactsPage() {
               pageSize={pageSize}
               totalItems={filteredContacts.length}
               onPageChange={setPage}
-              onPageSizeChange={setPageSize}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                resetPageOnFilterChange();
+              }}
             />
           </>
         )}
@@ -373,6 +410,11 @@ export default function ContactsPage() {
         <h3 id="contact-form-title" className="text-xl font-bold text-white mb-4">
           {editing ? "Edit contact" : "Create contact"}
         </h3>
+        {formError && (
+          <p className="mb-4 text-sm text-red-400" role="alert">
+            {formError}
+          </p>
+        )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 value={form.name ?? ""}

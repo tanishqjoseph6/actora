@@ -1,6 +1,6 @@
 /**
  * Temporary frontend kill-switch for billing / checkout / upgrades.
- * Flip to `false` to re-enable the full billing experience.
- * Backend, Razorpay, and DB remain intact.
+ * Set NEXT_PUBLIC_BILLING_PAUSED=true to disable checkout in staging.
  */
-export const BILLING_TEMPORARILY_DISABLED = true;
+export const BILLING_TEMPORARILY_DISABLED =
+  process.env.NEXT_PUBLIC_BILLING_PAUSED === "true";

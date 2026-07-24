@@ -18,26 +18,23 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError(null);
 
-    const { error: resetError } = await fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim() }),
-    }).then(async (res) => {
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        return { error: { message: data.error ?? "Failed to send reset email." } };
+        setError(mapSupabaseAuthError(data.error ?? "Failed to send reset email."));
+        return;
       }
-      return { error: null };
-    });
-
-    setLoading(false);
-
-    if (resetError) {
-      setError(mapSupabaseAuthError(resetError.message));
-      return;
+      setSuccess(true);
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setSuccess(true);
   };
 
   return (

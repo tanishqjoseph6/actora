@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireCrmUserId } from "@/lib/crm/session";
+import { requireCrmWriteUserId } from "@/lib/crm/session";
 import { linkInboxEmailsToCrm } from "@/lib/crm/email-link";
 
 export async function POST(request: NextRequest) {
-  const userId = await requireCrmUserId(request);
+  const userId = await requireCrmWriteUserId(request);
   if (userId instanceof NextResponse) return userId;
 
   const body = (await request.json()) as {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import {
   CONNECT_IDEMPOTENCY_KEY,
@@ -42,11 +42,8 @@ export function clearGmailClientSessionCache(): void {
 }
 
 export function useGmailReconnect() {
-  const {
-    accounts,
-    selectedEmail,
-    disconnectAccount,
-  } = useGmailAccounts();
+  const { data: session } = useSession();
+  const { accounts, selectedEmail } = useGmailAccounts();
   const [reconnecting, setReconnecting] = useState(false);
 
   const reconnectGmail = useCallback(
@@ -57,13 +54,9 @@ export function useGmailReconnect() {
       clearGmailClientSessionCache();
 
       const targetEmail =
-        email ?? selectedEmail ?? accounts[0]?.email ?? null;
+        email ?? selectedEmail ?? accounts[0]?.email ?? session?.user?.email ?? null;
 
       try {
-        if (targetEmail) {
-          await disconnectAccount(targetEmail);
-        }
-
         await signIn(
           "google",
           { callbackUrl: GMAIL_INBOX_CALLBACK_URL },
@@ -77,7 +70,7 @@ export function useGmailReconnect() {
         throw new Error("Could not start Gmail reconnect.");
       }
     },
-    [accounts, disconnectAccount, reconnecting, selectedEmail]
+    [accounts, reconnecting, selectedEmail, session?.user?.email]
   );
 
   return {

@@ -732,12 +732,29 @@ function AgendaView({
   events: CalendarEvent[];
   onSelectEvent: (e: CalendarEvent) => void;
 }) {
-  const upcoming = events
-    .filter((e) => new Date(e.endAt).getTime() >= Date.now())
-    .sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-    )
-    .slice(0, 40);
+  const [nowMs, setNowMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNowMs(Date.now());
+  }, [events]);
+
+  const upcoming = useMemo(() => {
+    if (nowMs === null) return [];
+    return events
+      .filter((e) => new Date(e.endAt).getTime() >= nowMs)
+      .sort(
+        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+      )
+      .slice(0, 40);
+  }, [events, nowMs]);
+
+  if (nowMs === null) {
+    return (
+      <p className={`py-10 text-center text-sm ${dashboard.subtle}`} aria-busy="true">
+        Loading agenda…
+      </p>
+    );
+  }
 
   if (!upcoming.length) {
     return (
