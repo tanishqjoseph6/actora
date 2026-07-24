@@ -218,6 +218,11 @@ export function RazorpayStatusCard() {
   const isConnected = status === "connected";
   const isLoading = status === "loading";
 
+  // Hide developer env diagnostics from customers when payments are live.
+  if (!isLoading && isConnected && mode === "LIVE") {
+    return null;
+  }
+
   return (
     <div
       className={`rounded-2xl p-6 sm:p-8 ${
@@ -234,14 +239,16 @@ export function RazorpayStatusCard() {
         </div>
         <div className="flex-1">
           <h3 className="text-base font-semibold text-white">
-            Razorpay Payment Gateway
+            Secure payments
           </h3>
           <p className="mt-1 text-sm text-[#A1A1AA]">
             {isLoading
               ? "Checking payment gateway status…"
               : isConnected
-                ? `Secure payments powered by Razorpay${mode ? ` (${mode} mode)` : ""}. Checkout is active.`
-                : "Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to enable payments."}
+                ? mode === "TEST"
+                  ? "Checkout is connected in test mode. Switch to live keys for production charges."
+                  : "Secure checkout is ready for subscriptions and credit packs."
+                : "Payments are not configured yet. Contact support if checkout fails."}
           </p>
         </div>
         <span
@@ -257,11 +264,9 @@ export function RazorpayStatusCard() {
             ? "Checking…"
             : isConnected
               ? mode === "TEST"
-                ? "✅ Razorpay TEST"
-                : mode === "LIVE"
-                  ? "✅ Razorpay LIVE"
-                  : "✅ Razorpay Connected"
-              : "Not configured"}
+                ? "Test mode"
+                : "Connected"
+              : "Unavailable"}
         </span>
       </div>
     </div>

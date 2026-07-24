@@ -1,4 +1,5 @@
 import { getGoogleOAuthCallbackUrl, resolveAuthUrl } from "@/lib/auth/nextauth-url";
+import { PRODUCTION_APP_URL } from "@/lib/auth/public-oauth";
 import {
   SUPABASE_ENV,
   validateSupabaseProject,
@@ -47,14 +48,20 @@ export function checkGmailAuthEnv(): GmailAuthEnvStatus {
     ),
   };
 
+  const googleCallbackUrl = getGoogleOAuthCallbackUrl();
+  const productionOAuthCanonical =
+    process.env.NODE_ENV !== "production" ||
+    googleCallbackUrl === `${PRODUCTION_APP_URL}/api/auth/callback/google`;
+
   return {
     ok:
       missing.length === 0 &&
       supabaseProject.ok &&
-      supabaseProject.sameProject,
+      supabaseProject.sameProject &&
+      productionOAuthCanonical,
     missing: [...missing],
     appUrl,
-    googleCallbackUrl: getGoogleOAuthCallbackUrl(),
+    googleCallbackUrl,
     checks,
     supabaseProjectRef: supabaseProject.projectRef,
     supabaseSameProject: supabaseProject.sameProject,
@@ -89,11 +96,21 @@ export function logGmailAuthEnv(scope: string): GmailAuthEnvStatus {
 
   if (
     process.env.NODE_ENV === "production" &&
-    status.appUrl !== "https://useactora.com"
+    status.appUrl !== PRODUCTION_APP_URL
   ) {
     console.warn(`[${scope}] NEXT_PUBLIC_APP_URL / auth URL is not canonical:`, {
-      expected: "https://useactora.com",
+      expected: PRODUCTION_APP_URL,
       actual: status.appUrl,
+    });
+  }
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    status.googleCallbackUrl !== `${PRODUCTION_APP_URL}/api/auth/callback/google`
+  ) {
+    console.error(`[${scope}] Google OAuth callback is not canonical:`, {
+      expected: `${PRODUCTION_APP_URL}/api/auth/callback/google`,
+      actual: status.googleCallbackUrl,
     });
   }
 

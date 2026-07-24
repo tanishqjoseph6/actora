@@ -44,26 +44,8 @@ export function resolveAuthUrl(): string {
     return LOCAL_AUTH_URL;
   }
 
-  const explicit = process.env.NEXTAUTH_URL?.trim();
-  const netlifyUrl = process.env.URL?.trim();
-  const vercelUrl = process.env.VERCEL_URL?.trim();
-  const vercelEnv = process.env.VERCEL_ENV?.trim();
-
-  const platformUrl = netlifyUrl
-    ? normalizeOrigin(netlifyUrl)
-    : vercelUrl
-      ? normalizeOrigin(`https://${vercelUrl}`)
-      : undefined;
-
-  // Canonical production deployment must always use the primary domain.
-  if (vercelEnv === "production") {
-    return PRODUCTION_URL;
-  }
-
-  if (explicit && !explicit.includes("localhost")) {
-    return normalizeOrigin(explicit);
-  }
-  if (platformUrl) return platformUrl;
+  // Production builds always use the canonical domain for OAuth callbacks.
+  // Never preview deploy URLs (e.g. *.vercel.app) — they are not registered in Google Cloud Console.
   return PRODUCTION_URL;
 }
 

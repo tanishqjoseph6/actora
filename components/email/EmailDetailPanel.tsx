@@ -335,9 +335,13 @@ export function EmailDetailPanel({
   }, [onClose]);
 
   const openComposerWithContent = useCallback((content: ReplyContent) => {
-    composerRef.current?.setContent(content.plain);
-    setReply(content);
     setComposerOpen(true);
+    setReply(content);
+    // Composer may mount on next paint — apply content immediately and again after mount.
+    composerRef.current?.setContent(content.plain);
+    requestAnimationFrame(() => {
+      composerRef.current?.setContent(content.plain);
+    });
   }, []);
 
   useEffect(() => {
@@ -407,6 +411,10 @@ export function EmailDetailPanel({
       setShowTonePicker(false);
       setComposerOpen(true);
       setSuggestions([]);
+      setReply({ plain: "", html: "" });
+      requestAnimationFrame(() => {
+        composerRef.current?.setContent("");
+      });
 
       try {
         const res = await fetch("/api/gmail/ai-reply", {
@@ -533,7 +541,8 @@ export function EmailDetailPanel({
 
             if (event.type === "token" && event.text) {
               full += event.text;
-              openComposerWithContent({ plain: full, html: "" });
+              setReply({ plain: full, html: "" });
+              composerRef.current?.setContent(full);
             } else if (event.type === "done") {
               full = event.reply ?? full;
               openComposerWithContent({ plain: full, html: "" });
@@ -1423,13 +1432,26 @@ export function EmailDetailPanel({
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                       <SparkleIcon className="w-5 h-5 text-[#3B82F6]" />
-                      {isGenerating ? "Generating…" : "Compose Reply"}
+                      {isGenerating
+                        ? reply.plain.trim()
+                          ? "Writing reply…"
+                          : "Thinking…"
+                        : "Compose Reply"}
                     </h3>
                     {selectedTone && !isGenerating && (
                       <span className="text-xs px-2.5 py-1 rounded-full bg-[#3B82F6]/10 border border-white/[0.06] text-[#93C5FD]">
                         {REPLY_TONE_LABELS[selectedTone]} ·{" "}
                         {REPLY_LENGTH_LABELS[selectedLength]}
                         {soundLikeMe ? " · Sound Like Me" : ""}
+                      </span>
+                    )}
+                    {isGenerating && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-[#93C5FD]">
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3B82F6] opacity-60" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3B82F6]" />
+                        </span>
+                        Roxx AI
                       </span>
                     )}
                     {!isGenerating && isComposerEmpty(reply.plain, reply.html) && (
@@ -1443,11 +1465,31 @@ export function EmailDetailPanel({
                     )}
                   </div>
 
-                  {isGenerating ? (
-                    <ComposerSkeleton />
-                  ) : (
-                    <>
-                      {suggestions.length > 1 && (
+                  {isGenerating && !reply.plain.trim() && (
+                    <div
+                      className="mb-3 flex items-center gap-3 rounded-2xl border border-[#3B82F6]/20 bg-[#3B82F6]/5 px-4 py-3"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+                        <span className="absolute inset-0 animate-ping rounded-full bg-[#3B82F6]/25" />
+                        <span className="relative flex h-8 w-8 items-center justify-center rounded-full border border-[#3B82F6]/35 bg-[#0A0A0A]">
+                          <SparkleIcon className="h-4 w-4 text-[#3B82F6]" />
+                        </span>
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-white">
+                          Crafting your reply…
+                        </p>
+                        <p className="mt-0.5 text-xs text-[#A1A1AA]">
+                          Tokens appear as Roxx thinks — hang tight.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <>
+                      {suggestions.length > 1 && !isGenerating && (
                         <div className="mb-3 flex flex-wrap gap-2">
                           {suggestions.map((suggestion, index) => (
                             <button
@@ -1472,9 +1514,10 @@ export function EmailDetailPanel({
                       )}
                       <ReplyComposer
                         ref={composerRef}
+                        streaming={isGenerating}
                         onChange={(content) => {
                           setReply(content);
-                          if (detail) {
+                          if (detail && !isGenerating) {
                             setCachedReply(
                               email.id,
                               selectedTone,
@@ -1485,7 +1528,11 @@ export function EmailDetailPanel({
                           }
                         }}
                         disabled={isGenerating || isSending || isTransforming}
-                        placeholder="Your reply will appear here…"
+                        placeholder={
+                          isGenerating
+                            ? "Roxx is writing…"
+                            : "Your reply will appear here…"
+                        }
                       />
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {REPLY_ACTIONS.filter((a) => a !== "regenerate").map(
@@ -1494,6 +1541,7 @@ export function EmailDetailPanel({
                               key={action}
                               type="button"
                               disabled={
+                                isGenerating ||
                                 isTransforming ||
                                 isComposerEmpty(reply.plain, reply.html)
                               }
@@ -1527,7 +1575,6 @@ export function EmailDetailPanel({
                         ))}
                       </div>
                     </>
-                  )}
 
                   {!isGenerating && (
                     <div className="flex flex-wrap gap-3 mt-4">
@@ -1587,21 +1634,6 @@ export function EmailDetailPanel({
         onClose={() => setSoundLikeMeModalOpen(false)}
       />
     </>
-  );
-}
-
-function ComposerSkeleton() {
-  return (
-    <div
-      className="rounded-2xl border border-white/[0.06] bg-[#111111]/60 overflow-hidden"
-      aria-busy="true"
-      aria-label="Loading composer"
-    >
-      <Skeleton className="h-10 w-full rounded-none" />
-      <div className="p-4 space-y-3 min-h-[180px]">
-        <SkeletonText lines={5} />
-      </div>
-    </div>
   );
 }
 

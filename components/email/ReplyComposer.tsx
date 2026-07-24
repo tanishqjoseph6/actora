@@ -24,11 +24,18 @@ type ReplyComposerProps = {
   onChange?: (content: ReplyContent) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** When true, show a caret and keep the editor visually "live" during AI stream. */
+  streaming?: boolean;
 };
 
 export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>(
   function ReplyComposer(
-    { onChange, placeholder = "Click AI Reply to generate a response…", disabled },
+    {
+      onChange,
+      placeholder = "Click AI Reply to generate a response…",
+      disabled,
+      streaming = false,
+    },
     ref
   ) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -95,7 +102,13 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
     };
 
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-[#111111]/60 overflow-hidden focus-within:border-[#3B82F6]/40 focus-within:ring-1 focus-within:ring-[#2563EB]/20 transition-all">
+      <div
+        className={`rounded-2xl border bg-[#111111]/60 overflow-hidden transition-all ${
+          streaming
+            ? "border-[#3B82F6]/40 ring-1 ring-[#3B82F6]/25"
+            : "border-white/[0.06] focus-within:border-[#3B82F6]/40 focus-within:ring-1 focus-within:ring-[#2563EB]/20"
+        }`}
+      >
         <div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.06] bg-[#0A0A0A]/40">
           <ToolbarButton
             label="Bold"
@@ -126,6 +139,11 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
           >
             <ListIcon className="w-4 h-4" />
           </ToolbarButton>
+          {streaming && (
+            <span className="ml-auto pr-1 text-[10px] font-medium uppercase tracking-wider text-[#93C5FD]">
+              Streaming
+            </span>
+          )}
         </div>
 
         <div className="relative min-h-[180px] max-h-[280px] overflow-y-auto">
@@ -135,10 +153,19 @@ export const ReplyComposer = forwardRef<ReplyComposerHandle, ReplyComposerProps>
             suppressContentEditableWarning
             role="textbox"
             aria-multiline
+            aria-busy={streaming}
             aria-label="Email reply composer"
             data-placeholder={placeholder}
-            className="reply-composer px-4 py-3 text-sm text-gray-200 leading-relaxed outline-none min-h-[180px]"
+            className={`reply-composer px-4 py-3 text-sm text-gray-200 leading-relaxed outline-none min-h-[180px] ${
+              streaming ? "caret-[#3B82F6]" : ""
+            }`}
           />
+          {streaming && (
+            <span
+              className="pointer-events-none absolute bottom-3 right-4 h-4 w-0.5 animate-pulse bg-[#3B82F6]"
+              aria-hidden
+            />
+          )}
         </div>
       </div>
     );

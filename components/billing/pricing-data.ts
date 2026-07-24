@@ -281,7 +281,7 @@ export const BILLING_FAQ = [
   {
     question: "What happens if I cancel?",
     answer:
-      "You keep access until the end of your billing period. After that, your workspace moves to the Free plan and premium features are paused.",
+      "Canceling stops future renewals only. Your subscription remains active until the end of the current billing period. No refunds are issued for the unused portion. After the period ends, your workspace moves to Free.",
   },
   {
     question: "Can I upgrade anytime?",
@@ -291,12 +291,12 @@ export const BILLING_FAQ = [
   {
     question: "Do you offer refunds?",
     answer:
-      "We handle refund requests case by case. Contact support within 7 days of a charge if something went wrong.",
+      "Subscription payments and purchased AI Credits are non-refundable. Refunds are only considered for duplicate charges, unauthorized payments, or technical billing errors, solely at Actora’s discretion. See Terms → Refund Policy.",
   },
   {
     question: "How many Gmail accounts can I connect?",
     answer:
-      "Free includes 1 inbox. Pro includes 20 Gmail accounts. Team and above include unlimited Gmail accounts.",
+      "Free includes 1 inbox. Pro includes up to 5 Gmail accounts. Team and above include unlimited Gmail accounts.",
   },
   {
     question: "Can I switch plans later?",

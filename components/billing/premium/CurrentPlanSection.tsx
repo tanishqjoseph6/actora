@@ -171,7 +171,7 @@ export function CurrentPlanSection({
             {isPaid && !isCanceled && (
               <p className={`mt-4 max-w-xl text-xs leading-relaxed ${dashboard.subtle}`}>
                 Canceling your subscription stops future renewals only. Your
-                subscription remains active until the end of the current billing
+                subscription remains active until the end of your billing
                 period. No refunds are issued for canceled subscriptions.
               </p>
             )}

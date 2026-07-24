@@ -87,6 +87,40 @@ export async function createRazorpayOrder({
   });
 
   const razorpay = getRazorpayClient();
+
+  // Reject leftover ₹1 / $0.01 test plans so production never charges ₹1 for Pro.
+  try {
+    const remotePlan = await razorpay.plans.fetch(razorpayPlanId);
+    const remoteAmount = Number(
+      (remotePlan as { item?: { amount?: number } }).item?.amount ?? 0
+    );
+    if (remoteAmount > 0 && remoteAmount <= 100) {
+      throw new Error(
+        `Razorpay plan ${razorpayPlanId} is priced at ${remoteAmount} (₹1/$0.01 test plan). ` +
+          `Update RAZORPAY_*_PLAN_ID to the production Pro ($20 / ₹1,760) or Team ($69 / ₹6,072) plan.`
+      );
+    }
+    if (remoteAmount > 0 && amount > 0) {
+      const drift = Math.abs(remoteAmount - amount) / amount;
+      if (drift > 0.2) {
+        console.warn("[razorpay] Plan amount differs from app pricing", {
+          razorpayPlanId,
+          remoteAmount,
+          expectedAmount: amount,
+          currency,
+        });
+      }
+    }
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("test plan")
+    ) {
+      throw error;
+    }
+    console.warn("[razorpay] Could not pre-validate plan amount:", error);
+  }
+
   const subscription = await razorpay.subscriptions.create(subscriptionPayload);
 
   return {

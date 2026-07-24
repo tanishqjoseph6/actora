@@ -16,6 +16,7 @@ import { ResendVerificationEmail } from "@/components/auth/ResendVerificationEma
 import { VerificationStatusBadge } from "@/components/auth/VerificationStatusBadge";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
+import { getPublicGoogleOAuthCallbackUrl } from "@/lib/auth/public-oauth";
 import { resolveSafeCallbackUrl } from "@/lib/auth/safe-redirect";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -140,13 +141,9 @@ function LoginContent() {
             <span className="block mt-2 text-xs opacity-80">
               Check server logs for{" "}
               <code className="font-mono">[next-auth] OAuth callback failure details</code>.
-              Local callback:{" "}
+              Expected Google OAuth callback:{" "}
               <code className="font-mono">
-                http://localhost:3000/api/auth/callback/google
-              </code>
-              . Production callback:{" "}
-              <code className="font-mono">
-                https://useactora.com/api/auth/callback/google
+                {getPublicGoogleOAuthCallbackUrl()}
               </code>
               .
             </span>
