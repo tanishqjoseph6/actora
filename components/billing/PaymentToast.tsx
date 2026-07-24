@@ -59,7 +59,9 @@ export function PaymentToast({ toast, onDismiss }: PaymentToastProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-white">{toast.title}</p>
-            <p className="text-sm text-gray-400 mt-1">{toast.message}</p>
+            {toast.message ? (
+              <p className="text-sm text-gray-400 mt-1">{toast.message}</p>
+            ) : null}
           </div>
           <button
             onClick={onDismiss}

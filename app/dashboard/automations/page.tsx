@@ -13,6 +13,9 @@ import { AutomationCardSkeleton } from "@/components/automations/AutomationCardS
 import { AutomationHistoryList, MarketplaceComingSoon } from "@/components/automations/AutomationHistory";
 import { WorkflowEditorToolbar } from "@/components/automations/WorkflowEditorToolbar";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
+import { ProductionAlert } from "@/components/ui/ProductionAlert";
+import { useToast } from "@/providers/ToastProvider";
+import { friendlyError, friendlyErrorMessage } from "@/lib/errors/friendly";
 import { useAutomations } from "@/hooks/useAutomations";
 import { MOCK_TEMPLATES } from "@/lib/automations/mock-data";
 import { blockToNode, getBlockById } from "@/lib/automations/constants";
@@ -83,7 +86,7 @@ export default function AutomationsPage() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Automation | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { showToast: pushToast } = useToast();
   const [lastTestRun, setLastTestRun] = useState<AutomationRun | null>(null);
   const [lastTestLogs, setLastTestLogs] = useState<ExecutionLog[]>([]);
   const [versions, setVersions] = useState<WorkflowVersion[]>([]);
@@ -94,10 +97,24 @@ export default function AutomationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3500);
-  }, []);
+  const showToast = useCallback(
+    (title: string, type: "success" | "error" | "info" = "success") => {
+      pushToast({ type, title, message: "" });
+    },
+    [pushToast]
+  );
+
+  const showError = useCallback(
+    (err: unknown, fallback = "Something went wrong") => {
+      const friendly = friendlyError(err, "server");
+      pushToast({
+        type: "error",
+        title: friendly.title,
+        message: friendly.message || fallback,
+      });
+    },
+    [pushToast]
+  );
 
   const loadVersions = useCallback(
     async (workflowId: string) => {
@@ -140,7 +157,7 @@ export default function AutomationsPage() {
       setActiveView("my-automations");
       showToast("New workflow created");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Failed to create workflow");
+      showError(err, "Failed to create workflow");
     } finally {
       setSaving(false);
     }
@@ -160,7 +177,7 @@ export default function AutomationsPage() {
         setActiveView("my-automations");
         showToast(`Workflow started with ${trigger.label}`);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Failed to create workflow");
+        showError(err, "Failed to create workflow");
       } finally {
         setSaving(false);
       }
@@ -189,7 +206,7 @@ export default function AutomationsPage() {
         setActiveView("my-automations");
         showToast(`Template "${template.name}" created`);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Failed to use template");
+        showError(err, "Failed to use template");
       } finally {
         setSaving(false);
       }
@@ -211,7 +228,7 @@ export default function AutomationsPage() {
       await loadVersions(updated.id);
       showToast("Draft saved");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Save failed");
+      showError(err, "Save failed");
     } finally {
       setSaving(false);
     }
@@ -232,7 +249,7 @@ export default function AutomationsPage() {
       await loadVersions(updated.id);
       showToast("Workflow published and active");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Publish failed");
+      showError(err, "Publish failed");
     } finally {
       setSaving(false);
     }
@@ -246,7 +263,7 @@ export default function AutomationsPage() {
       await loadVersions(updated.id);
       showToast("Workflow paused");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Pause failed");
+      showError(err, "Pause failed");
     }
   }, [selectedWorkflow, pauseWorkflow, showToast]);
 
@@ -274,7 +291,7 @@ export default function AutomationsPage() {
       );
       showToast(`Test run ${result.run.status}`);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Test run failed");
+      showError(err, "Test run failed");
     } finally {
       setTesting(false);
     }
@@ -288,7 +305,7 @@ export default function AutomationsPage() {
       openWorkflow(copy);
       showToast("Workflow duplicated — saved to Drafts");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Duplicate failed");
+      showError(err, "Duplicate failed");
     }
   }, [selectedWorkflow, duplicateWorkflow, openWorkflow, showToast]);
 
@@ -303,7 +320,7 @@ export default function AutomationsPage() {
       setVersions([]);
       showToast("Workflow deleted");
     } catch (err) {
-      showToast(err instanceof Error ? err.message : "Delete failed");
+      showError(err, "Delete failed");
     }
   }, [selectedWorkflow, deleteWorkflow, showToast]);
 
@@ -321,7 +338,7 @@ export default function AutomationsPage() {
         await loadVersions(updated.id);
         showToast(`Restored to v${version.version}`);
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Restore failed");
+        showError(err, "Restore failed");
       } finally {
         setRestoringVersionId(null);
       }
@@ -358,7 +375,7 @@ export default function AutomationsPage() {
           }
         }
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Toggle failed");
+        showError(err, "Toggle failed");
       } finally {
         setActionBusy(false);
       }
@@ -375,7 +392,7 @@ export default function AutomationsPage() {
         openWorkflow(copy);
         showToast("Workflow duplicated");
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Duplicate failed");
+        showError(err, "Duplicate failed");
       } finally {
         setActionBusy(false);
       }
@@ -396,7 +413,7 @@ export default function AutomationsPage() {
         }
         showToast("Workflow deleted");
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Delete failed");
+        showError(err, "Delete failed");
       } finally {
         setActionBusy(false);
       }
@@ -437,9 +454,12 @@ export default function AutomationsPage() {
                 )}
 
                 {error && (
-                  <p className="text-sm text-rose-400 mb-4 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-400/20">
-                    {error}
-                  </p>
+                  <ProductionAlert
+                    variant="error"
+                    title="Automations unavailable"
+                    message={friendlyErrorMessage(error, "server")}
+                    className="mb-4"
+                  />
                 )}
 
                 <AutomationMetricsBar {...displayMetrics} />
@@ -566,21 +586,8 @@ export default function AutomationsPage() {
                   </AnimatePresence>
                 )}
               </div>
-            </div>
           </div>
-
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[14px] bg-[#111827] border border-[#1E293B] text-sm text-white shadow-xl "
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
     </FeatureGate>
   );
 }

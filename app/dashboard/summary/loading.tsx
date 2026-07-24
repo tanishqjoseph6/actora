@@ -1,5 +1,5 @@
-import { DashboardPageSkeleton } from "@/components/ui/DashboardPageSkeleton";
+import { AnalyticsContentSkeleton } from "@/components/analytics/AnalyticsContentSkeleton";
 
 export default function SummaryLoading() {
-  return <DashboardPageSkeleton statCards={6} showTable={false} />;
+  return <AnalyticsContentSkeleton />;
 }

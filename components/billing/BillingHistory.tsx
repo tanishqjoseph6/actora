@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type PaymentRow = {
   id: string;
@@ -72,11 +73,25 @@ export function BillingHistoryTable() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={5} className="px-6 sm:px-8 py-10 text-center text-gray-500">
-                  Loading payment history…
-                </td>
-              </tr>
+              Array.from({ length: 4 }).map((_, i) => (
+                <tr key={i} className="border-b border-[rgba(37, 99, 235,0.05)]">
+                  <td className="px-6 sm:px-8 py-4">
+                    <Skeleton className="h-4 w-24" />
+                  </td>
+                  <td className="px-6 sm:px-8 py-4">
+                    <Skeleton className="h-4 w-20" />
+                  </td>
+                  <td className="px-6 sm:px-8 py-4">
+                    <Skeleton className="h-4 w-16" />
+                  </td>
+                  <td className="px-6 sm:px-8 py-4">
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </td>
+                  <td className="px-6 sm:px-8 py-4 text-right">
+                    <Skeleton className="ml-auto h-8 w-24 rounded-lg" />
+                  </td>
+                </tr>
+              ))
             ) : payments.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 sm:px-8 py-10 text-center text-gray-500">

@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { PrefetchLink } from "@/components/dashboard/PrefetchLink";
+import { Skeleton, SkeletonListRows } from "@/components/ui/Skeleton";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import {
   Check,
@@ -41,7 +42,7 @@ export function GmailAccountSwitcher() {
   const close = useCallback(() => setOpen(false), []);
   const ref = useDismissible(open, close);
 
-  const label = primaryAccount?.email ?? (loading ? "Loading…" : "Connect Gmail");
+  const label = primaryAccount?.email ?? "Connect Gmail";
   const initial = (primaryAccount?.email ?? "G").charAt(0).toUpperCase();
 
   const inboxLimit = useMemo(() => {
@@ -96,7 +97,13 @@ export function GmailAccountSwitcher() {
           {connected ? initial : <Mail className="h-3.5 w-3.5" />}
         </span>
         <span className="truncate capitalize">
-          {connected ? label.split("@")[0] : "Gmail"}
+          {loading && !primaryAccount ? (
+            <Skeleton className="inline-block h-3 w-16 align-middle" />
+          ) : connected ? (
+            label.split("@")[0]
+          ) : (
+            "Gmail"
+          )}
         </span>
         <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#71717A]" />
       </button>
@@ -126,7 +133,7 @@ export function GmailAccountSwitcher() {
 
         <div className="max-h-[280px] space-y-1 overflow-y-auto p-2">
           {loading && (
-            <p className="px-3 py-4 text-sm text-[#71717A]">Loading accounts…</p>
+            <SkeletonListRows rows={2} className="px-2 py-2" />
           )}
 
           {!loading && accounts.length === 0 && (

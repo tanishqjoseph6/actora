@@ -38,6 +38,7 @@ body {
   background: var(--actora-bg);
   color: var(--actora-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: clip;
 }
 
 @keyframes slide-in-right {

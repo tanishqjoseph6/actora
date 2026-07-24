@@ -57,11 +57,9 @@ export function useScrollRestoration<T extends HTMLElement>() {
     const restore = () => {
       const node = ref.current;
       if (!node) return;
-      // Only restore a known position. Do not snap to 0 on every route —
-      // leaving the container alone avoids fighting in-flight layout.
-      if (saved > 0) {
-        node.scrollTop = saved;
-      }
+      // Always apply saved position (including 0) so scroll from a previous
+      // route does not leak into pages with no stored offset.
+      node.scrollTop = saved;
     };
 
     if (pendingRestore.current != null) {

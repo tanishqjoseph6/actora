@@ -40,6 +40,25 @@ function NavAnchor({
     );
   }
 
+  if (href.startsWith("#")) {
+    return (
+      <a
+        href={href}
+        onClick={(event) => {
+          onNavigate?.();
+          const id = href.slice(1);
+          const target = document.getElementById(id);
+          if (!target) return;
+          event.preventDefault();
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+
   if (href.startsWith("/")) {
     return (
       <Link href={href} onClick={onNavigate} className={className}>

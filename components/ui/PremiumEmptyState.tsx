@@ -20,6 +20,11 @@ type PremiumEmptyStateProps = {
     href?: string;
     onClick?: () => void;
   };
+  secondaryCta?: {
+    label: string;
+    href?: string;
+    onClick?: () => void;
+  };
   className?: string;
 };
 
@@ -28,6 +33,7 @@ export function PremiumEmptyState({
   title,
   description,
   cta,
+  secondaryCta,
   className = "",
 }: PremiumEmptyStateProps) {
   return (
@@ -57,17 +63,38 @@ export function PremiumEmptyState({
       </p>
 
       {cta.href ? (
-        <Link href={cta.href} className={`${dashboard.btnPrimary} px-6 py-3 text-sm`}>
+        <Link href={cta.href} className={`${dashboard.btnPrimary} px-6 py-3 text-sm focus-ring`}>
           {cta.label}
         </Link>
       ) : (
         <button
           type="button"
           onClick={cta.onClick}
-          className={`${dashboard.btnPrimary} px-6 py-3 text-sm`}
+          className={`${dashboard.btnPrimary} px-6 py-3 text-sm focus-ring`}
         >
           {cta.label}
         </button>
+      )}
+
+      {secondaryCta && (
+        <div className="mt-3">
+          {secondaryCta.href ? (
+            <Link
+              href={secondaryCta.href}
+              className={`${dashboard.btnSecondary} px-5 py-2.5 text-sm`}
+            >
+              {secondaryCta.label}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={secondaryCta.onClick}
+              className={`${dashboard.btnSecondary} px-5 py-2.5 text-sm`}
+            >
+              {secondaryCta.label}
+            </button>
+          )}
+        </div>
       )}
     </motion.div>
   );

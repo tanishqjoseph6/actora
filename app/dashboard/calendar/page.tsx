@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { CalendarContentSkeleton } from "@/components/calendar/CalendarContentSkeleton";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 
 const CalendarWorkspace = dynamic(
@@ -13,9 +13,8 @@ const CalendarWorkspace = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className={`${dashboard.panelLg} space-y-4`}>
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-[420px] w-full" />
+      <div className={dashboard.panelLg}>
+        <CalendarContentSkeleton />
       </div>
     ),
   }

@@ -7,6 +7,7 @@ import { AnalyticsFiltersBar } from "@/components/analytics/AnalyticsFiltersBar"
 import { AnalyticsHeader } from "@/components/analytics/AnalyticsHeader";
 import { AnalyticsHealthScore } from "@/components/analytics/AnalyticsHealthScore";
 import { AnalyticsSectionEmpty } from "@/components/analytics/AnalyticsSectionEmpty";
+import { ProductionAlert } from "@/components/ui/ProductionAlert";
 import { FeatureGate } from "@/components/subscription/FeatureGate";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -197,9 +198,16 @@ export default function AnalyticsPage() {
         />
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </div>
+          <ProductionAlert
+            variant="error"
+            title="Analytics unavailable"
+            message={error}
+            action={{
+              label: "Try again",
+              onClick: () => void refresh(),
+            }}
+            className="mb-4"
+          />
         )}
 
         <AnalyticsHealthScore snapshot={snapshot} loading={loading} />

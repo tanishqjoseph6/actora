@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { History } from "lucide-react";
+import { CompactEmptyState } from "@/components/ui/CompactEmptyState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import type { AutomationRun } from "@/lib/automations/types";
 
@@ -20,12 +22,12 @@ type AutomationHistoryListProps = {
 export function AutomationHistoryList({ runs, onSelectRun, selectedRunId }: AutomationHistoryListProps) {
   if (runs.length === 0) {
     return (
-      <div className={`${dashboard.cardLg} px-5 py-12 text-center`}>
-        <p className="text-lg font-semibold text-white mb-2">No executions yet</p>
-        <p className={`text-sm ${dashboard.muted} max-w-md mx-auto`}>
-          Run a test from the workflow editor or publish an automation to see execution history here.
-        </p>
-      </div>
+      <CompactEmptyState
+        icon={History}
+        title="No executions yet"
+        description="Run a test from the workflow editor or publish an automation to see history here."
+        className={`${dashboard.cardLg} border-0 py-12`}
+      />
     );
   }
 

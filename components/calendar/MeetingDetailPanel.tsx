@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import {
   Bell,
   ExternalLink,
@@ -11,7 +10,10 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { DrawerShell } from "@/components/ui/DrawerShell";
+import { ProductionAlert } from "@/components/ui/ProductionAlert";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { friendlyErrorMessage } from "@/lib/errors/friendly";
 import type { CalendarEvent } from "@/lib/calendar/types";
 import { formatEventTime, sourceLabel } from "@/lib/calendar/view-utils";
 
@@ -31,19 +33,6 @@ export function MeetingDetailPanel({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!event) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [event, onClose]);
-
   async function handleDelete() {
     if (!event || event.id.startsWith("task-")) return;
     const confirmed = window.confirm(`Delete “${event.title}”?`);
@@ -59,7 +48,7 @@ export function MeetingDetailPanel({
       onDeleted();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(friendlyErrorMessage(err, "server"));
     } finally {
       setDeleting(false);
     }
@@ -68,28 +57,14 @@ export function MeetingDetailPanel({
   const isTask = event?.id.startsWith("task-");
 
   return (
-    <AnimatePresence>
+    <DrawerShell
+      open={Boolean(event)}
+      onClose={onClose}
+      titleId="meeting-detail-title"
+      className="flex flex-col"
+    >
       {event && (
         <>
-          <motion.button
-            type="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
-            aria-label="Close meeting details"
-          />
-          <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 380, damping: 36 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/[0.06] bg-[#0A0A0A] shadow-2xl shadow-black/50"
-            role="dialog"
-            aria-modal
-            aria-labelledby="meeting-detail-title"
-          >
             <header className="flex items-start justify-between gap-4 border-b border-white/[0.06] p-5 sm:p-6">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-[#71717A]">
@@ -117,7 +92,7 @@ export function MeetingDetailPanel({
               <button
                 type="button"
                 onClick={onClose}
-                className="shrink-0 rounded-xl border border-white/[0.06] p-2 text-[#71717A] transition-colors hover:border-[#3B82F6]/40 hover:text-white"
+                className="shrink-0 rounded-xl border border-white/[0.06] p-2 text-[#71717A] transition-colors hover:border-[#3B82F6]/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]/40"
                 aria-label="Close"
               >
                 <X className="h-5 w-5" />
@@ -206,7 +181,14 @@ export function MeetingDetailPanel({
                 </section>
               )}
 
-              {error && <p className="text-xs text-red-300">{error}</p>}
+              {error && (
+                <ProductionAlert
+                  variant="error"
+                  title="Could not delete meeting"
+                  message={error}
+                  onDismiss={() => setError(null)}
+                />
+              )}
             </div>
 
             {!isTask && (
@@ -214,7 +196,7 @@ export function MeetingDetailPanel({
                 <button
                   type="button"
                   onClick={() => onEdit(event)}
-                  className="flex-1 rounded-xl bg-[#3B82F6] py-2.5 text-sm font-semibold text-white transition hover:bg-[#2563EB]"
+                  className={`${dashboard.btnPrimary} flex-1 py-2.5 text-sm`}
                 >
                   Edit meeting
                 </button>
@@ -222,17 +204,16 @@ export function MeetingDetailPanel({
                   type="button"
                   onClick={() => void handleDelete()}
                   disabled={deleting}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-500/30 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10 disabled:opacity-50"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-500/30 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   {deleting ? "Deleting…" : "Delete"}
                 </button>
               </footer>
             )}
-          </motion.aside>
         </>
       )}
-    </AnimatePresence>
+    </DrawerShell>
   );
 }
 

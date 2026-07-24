@@ -459,6 +459,7 @@ function EmptyState({
       title="Your inbox is clear"
       description="New Gmail messages will sync here automatically. AI summaries and one-click replies are ready when they arrive."
       cta={{ label: "Refresh inbox", onClick: onRefresh }}
+      secondaryCta={{ label: "Connect Gmail", href: "/dashboard/connect-gmail" }}
       className="border-0 bg-transparent shadow-none"
     />
   );

@@ -1,5 +1,5 @@
-import { DashboardPageSkeleton } from "@/components/ui/DashboardPageSkeleton";
+import { CalendarContentSkeleton } from "@/components/calendar/CalendarContentSkeleton";
 
 export default function CalendarLoading() {
-  return <DashboardPageSkeleton statCards={0} rows={8} showHero={false} />;
+  return <CalendarContentSkeleton />;
 }

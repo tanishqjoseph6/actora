@@ -60,7 +60,7 @@ function isUniqueViolation(error: { message?: string; code?: string }): boolean 
   );
 }
 
-function useMemoryFallback(): boolean {
+function shouldUseMemoryFallback(): boolean {
   return process.env.NODE_ENV !== "production";
 }
 
@@ -78,7 +78,7 @@ export class GmailAccountRepository {
     }
     const db = getSupabaseAdmin();
     if (db) return db;
-    if (useMemoryFallback()) return null;
+    if (shouldUseMemoryFallback()) return null;
     return requireSupabaseAdmin();
   }
 
@@ -109,7 +109,7 @@ export class GmailAccountRepository {
     const db = this.clientForRead();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for listAccounts");
       }
       return memoryGmailAccountStore.listAccounts(normalizedUserId);
@@ -143,7 +143,7 @@ export class GmailAccountRepository {
     const db = this.clientForRead();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for getAccount");
       }
       return memoryGmailAccountStore.getAccount(
@@ -179,7 +179,7 @@ export class GmailAccountRepository {
     const db = this.clientForRead();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for countAccounts");
       }
       return memoryGmailAccountStore.countAccounts(normalizedUserId);
@@ -418,7 +418,7 @@ export class GmailAccountRepository {
     const db = this.clientForWrite();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for updateTokens");
       }
       return memoryGmailAccountStore.updateTokens(
@@ -474,7 +474,7 @@ export class GmailAccountRepository {
     const now = new Date().toISOString();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for updateSyncStatus");
       }
       return memoryGmailAccountStore.updateSyncStatus(
@@ -525,7 +525,7 @@ export class GmailAccountRepository {
     const db = this.clientForWrite();
 
     if (!db) {
-      if (!useMemoryFallback()) {
+      if (!shouldUseMemoryFallback()) {
         throw new Error("Supabase admin client unavailable for deleteAccount");
       }
       return memoryGmailAccountStore.deleteAccount(

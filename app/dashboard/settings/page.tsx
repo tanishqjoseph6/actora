@@ -26,6 +26,7 @@ import {
 } from "@/components/settings/SettingsSection";
 import { SettingsHeader, SettingsSidebar } from "@/components/settings/SettingsSidebar";
 import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
+import { SkeletonListRows } from "@/components/ui/Skeleton";
 import {
   WorkspaceActivitySection,
   WorkspaceBillingSection,
@@ -270,7 +271,7 @@ export default function SettingsPage() {
           >
             <Suspense
               fallback={
-                <p className={`text-sm ${dashboard.subtle}`}>Loading integrations…</p>
+                <SkeletonListRows rows={3} className="py-1" />
               }
             >
               <IntegrationsPanel />

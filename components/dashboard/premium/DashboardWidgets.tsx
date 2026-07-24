@@ -1,10 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Bot, Workflow } from "lucide-react";
 import type {
   DashboardAutomationPreview,
   DashboardMeetingPreview,
 } from "@/lib/dashboard/types";
+import { CompactEmptyState } from "@/components/ui/CompactEmptyState";
 import { SkeletonListRows } from "@/components/ui/Skeleton";
 import { useCalendarAccount } from "@/hooks/useCalendarAccount";
 import { TodaysScheduleWidget } from "./TodaysScheduleWidget";
@@ -36,14 +38,26 @@ export function DashboardWidgets({
       </WidgetCard>
 
       <WidgetCard title="Recent AI Activity" delay={0.05}>
-        <EmptyState message="AI activity will appear here after you generate replies." />
+        <CompactEmptyState
+          icon={Bot}
+          title="No AI activity yet"
+          description="Generate inbox replies or chat with Roxx AI to see activity here."
+          cta={{ label: "Open Roxx AI", href: "/dashboard" }}
+          className="border-0 bg-transparent py-6"
+        />
       </WidgetCard>
 
       <WidgetCard title="Automation Status" delay={0.1}>
         {loading ? (
           <SkeletonListRows rows={3} />
         ) : automations.length === 0 ? (
-          <EmptyState message="No automations yet." />
+          <CompactEmptyState
+            icon={Workflow}
+            title="No automations yet"
+            description="Build workflows to automate inbox, CRM, and follow-ups."
+            cta={{ label: "Create automation", href: "/dashboard/automations" }}
+            className="border-0 bg-transparent py-6"
+          />
         ) : (
           <ul className="space-y-3">
             {automations.map((item) => (
@@ -93,10 +107,6 @@ export function DashboardWidgets({
       </WidgetCard>
     </div>
   );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return <p className={`text-sm ${dashboard.subtle}`}>{message}</p>;
 }
 
 function WidgetCard({

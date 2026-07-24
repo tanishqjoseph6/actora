@@ -9,6 +9,10 @@ import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { TasksHeader } from "@/components/tasks/TasksHeader";
 import { TasksContentSkeleton } from "@/components/tasks/TasksContentSkeleton";
 import { TasksList } from "@/components/tasks/TasksList";
+import { ContentFade } from "@/components/ui/ContentFade";
+import { ModalShell } from "@/components/ui/ModalShell";
+import { useToast } from "@/providers/ToastProvider";
+import { friendlyError } from "@/lib/errors/friendly";
 import type { TaskInput } from "@/lib/tasks/live";
 import type { Task, TaskFilter, TaskSort } from "@/lib/tasks/types";
 import {
@@ -26,6 +30,7 @@ function defaultDueDate(): string {
 }
 
 export default function TasksPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -54,8 +59,19 @@ export default function TasksPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/tasks");
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? "Could not load tasks.");
+      }
       const json = (await res.json()) as { tasks?: Task[] };
       setTasks(json.tasks ?? []);
+    } catch (err) {
+      const friendly = friendlyError(err, "server");
+      showToast({
+        type: "error",
+        title: friendly.title,
+        message: friendly.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -151,7 +167,16 @@ export default function TasksPage() {
       }),
     });
     setSaving(false);
-    if (!res.ok) return;
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      const friendly = friendlyError(body.error ?? "Save failed.", "server");
+      showToast({
+        type: "error",
+        title: friendly.title,
+        message: friendly.message,
+      });
+      return;
+    }
 
     setShowForm(false);
     await loadTasks();
@@ -197,7 +222,8 @@ export default function TasksPage() {
         {loading ? (
           <TasksContentSkeleton />
         ) : (
-          <>
+          <ContentFade>
+            <>
             <div className="mb-4">
               <CrmSearchInput
                 value={search}
@@ -251,16 +277,20 @@ export default function TasksPage() {
               hasActiveFilters={hasActiveFilters}
               onClearFilters={handleClearFilters}
             />
-          </>
+            </>
+          </ContentFade>
         )}
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${dashboard.panelLg} w-full max-w-xl max-h-[90vh] overflow-y-auto`}>
-            <h3 className="text-xl font-bold text-white mb-4">
-              {editing ? "Edit task" : "Create task"}
-            </h3>
+      <ModalShell
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        ariaLabelledBy="task-form-title"
+        panelClassName={`${dashboard.panelLg} w-full max-w-xl`}
+      >
+        <h3 id="task-form-title" className="text-xl font-bold text-white mb-4">
+          {editing ? "Edit task" : "Create task"}
+        </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 value={form.title}
@@ -353,9 +383,7 @@ export default function TasksPage() {
                 {saving ? "Saving..." : editing ? "Update" : "Create"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </ModalShell>
     </>
   );
 }

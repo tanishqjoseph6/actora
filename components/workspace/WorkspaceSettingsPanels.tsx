@@ -13,6 +13,9 @@ import type {
 } from "@/lib/workspace/types";
 import { AiCreditsCard } from "@/components/subscription/AiCreditsCard";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
+import { ProductionAlert } from "@/components/ui/ProductionAlert";
+import { SkeletonListRows } from "@/components/ui/Skeleton";
+import { friendlyError, friendlyErrorMessage } from "@/lib/errors/friendly";
 import Link from "next/link";
 
 const ROLE_OPTIONS: { value: WorkspaceRole; label: string }[] = [
@@ -54,7 +57,7 @@ export function WorkspaceGeneralSection() {
       await refresh();
       setMessage("Workspace updated.");
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Save failed.");
+      setMessage(friendlyErrorMessage(err, "workspace"));
     } finally {
       setSaving(false);
     }
@@ -207,7 +210,7 @@ export function WorkspaceMembersSection() {
       }
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Load failed.");
+      setError(friendlyErrorMessage(err, "workspace"));
     } finally {
       setLoading(false);
     }
@@ -251,7 +254,7 @@ export function WorkspaceMembersSection() {
       inviteUrl?: string;
     };
     if (!res.ok) {
-      setError(data.error ?? "Invite failed.");
+      setError(friendlyErrorMessage(data.error ?? "Invite failed.", "workspace"));
       return;
     }
     setInviteUrl(data.inviteUrl ?? null);
@@ -310,7 +313,15 @@ export function WorkspaceMembersSection() {
       )}
 
       {loading ? (
-        <p className={`text-sm ${dashboard.subtle}`}>Loading members…</p>
+        <SkeletonListRows rows={4} className="rounded-xl border border-white/[0.06] bg-[#111111] p-4" />
+      ) : members.length === 0 ? (
+        <div className="rounded-xl border border-white/[0.06] bg-[#111111] px-4 py-10 text-center">
+          <UserPlus className="mx-auto h-5 w-5 text-[#52525B]" />
+          <p className="mt-2 text-sm text-white">No members yet</p>
+          <p className={`mt-1 text-xs ${dashboard.subtle}`}>
+            Invite teammates to collaborate in this workspace.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2">
           {members.map((m) => (
@@ -410,7 +421,14 @@ export function WorkspaceMembersSection() {
           </ul>
         </div>
       )}
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && (
+        <ProductionAlert
+          variant="error"
+          title={friendlyError(error, "workspace").title}
+          message={error}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </div>
   );
 }
@@ -555,7 +573,7 @@ export function WorkspaceDangerZone() {
       if (next) await switchWorkspace(next.id);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed.");
+      setError(friendlyErrorMessage(err, "workspace"));
     } finally {
       setBusy(false);
     }
@@ -589,7 +607,14 @@ export function WorkspaceDangerZone() {
           </button>
         </>
       )}
-      {error && <p className="text-xs text-red-300">{error}</p>}
+      {error && (
+        <ProductionAlert
+          variant="error"
+          title={friendlyError(error, "workspace").title}
+          message={error}
+          onDismiss={() => setError(null)}
+        />
+      )}
     </div>
   );
 }

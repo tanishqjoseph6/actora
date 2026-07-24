@@ -1,6 +1,8 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { Mail } from "lucide-react";
+import { CompactEmptyState } from "@/components/ui/CompactEmptyState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { formatGmailSyncTime } from "@/hooks/useGmailAccounts";
 import { GMAIL_OAUTH_CALLBACK_URL } from "@/hooks/useGmailOAuthCallback";
@@ -33,20 +35,12 @@ export function GmailAccountsPanel({
 }: GmailAccountsPanelProps) {
   if (accounts.length === 0) {
     return (
-      <div
-        className={`rounded-xl border border-dashed ${dashboard.border} ${dashboard.surface} p-6 text-center`}
-      >
-        <p className={`text-sm ${dashboard.muted} mb-4`}>
-          No Gmail accounts connected yet.
-        </p>
-        <button
-          type="button"
-          onClick={onConnect}
-          className={`${dashboard.btnPrimary} px-5 py-3 text-sm`}
-        >
-          Connect Gmail
-        </button>
-      </div>
+      <CompactEmptyState
+        icon={Mail}
+        title="No Gmail connected"
+        description="Connect your inbox to sync messages, AI summaries, and smart replies."
+        cta={{ label: "Connect Gmail", onClick: onConnect }}
+      />
     );
   }
 

@@ -12,6 +12,7 @@ import { CrmSelectFilter } from "@/components/crm/CrmSelectFilter";
 import { CrmStatCard } from "@/components/crm/CrmStatCard";
 import { CrmSubNav } from "@/components/crm/CrmSubNav";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { RetryErrorState } from "@/components/ui/RetryErrorState";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import {
@@ -363,12 +364,15 @@ export default function ContactsPage() {
         )}
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${dashboard.panelLg} w-full max-w-xl`}>
-            <h3 className="text-xl font-bold text-white mb-4">
-              {editing ? "Edit contact" : "Create contact"}
-            </h3>
+      <ModalShell
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        ariaLabelledBy="contact-form-title"
+        panelClassName={`${dashboard.panelLg} w-full max-w-xl`}
+      >
+        <h3 id="contact-form-title" className="text-xl font-bold text-white mb-4">
+          {editing ? "Edit contact" : "Create contact"}
+        </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 value={form.name ?? ""}
@@ -433,9 +437,7 @@ export default function ContactsPage() {
                 {saving ? "Saving..." : editing ? "Update" : "Create"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </ModalShell>
     </>
   );
 }

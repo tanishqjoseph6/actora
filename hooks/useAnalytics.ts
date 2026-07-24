@@ -11,6 +11,7 @@ import type {
   AnalyticsPeriod,
   AnalyticsSnapshot,
 } from "@/lib/analytics/types";
+import { friendlyError } from "@/lib/errors/friendly";
 
 const CACHE_PREFIX = "analytics_summary";
 const CACHE_TTL_MS = 5 * 60_000;
@@ -153,9 +154,7 @@ export function useAnalytics(initialPeriod: AnalyticsPeriod = "7d") {
         setData(json);
       } catch (err) {
         if (!cached) setData({ ...EMPTY_SNAPSHOT, period: filters.period });
-        setError(
-          err instanceof Error ? err.message : "Could not load analytics."
-        );
+        setError(friendlyError(err, "server").message);
       } finally {
         setLoading(false);
       }

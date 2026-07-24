@@ -7,6 +7,7 @@ import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricC
 import { DashboardWidgets } from "@/components/dashboard/premium/DashboardWidgets";
 import { CrmPreviewSection } from "@/components/dashboard/premium/CrmPreviewSection";
 import { RetryErrorState } from "@/components/ui/RetryErrorState";
+import { InboxContentSkeleton } from "@/components/email/InboxContentSkeleton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
@@ -53,16 +54,7 @@ const InboxView = dynamic(
   () => import("@/components/email/InboxView").then((m) => m.InboxView),
   {
     ssr: false,
-    loading: () => (
-      <div className={`${dashboard.cardLg} p-5`}>
-        <Skeleton className="mb-4 h-6 w-40" />
-        <div className="space-y-2">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      </div>
-    ),
+    loading: () => <InboxContentSkeleton compact />,
   }
 );
 

@@ -117,13 +117,13 @@ async function extractActivationContext(
   const subscriptionNotes = parseRazorpayNotes(subscription?.notes);
   const paymentNotes = parseRazorpayNotes(payment?.notes);
 
-  let userId = subscriptionNotes?.userId ?? paymentNotes?.userId;
+  const userId = subscriptionNotes?.userId ?? paymentNotes?.userId;
   let planId = subscriptionNotes?.planId ?? paymentNotes?.planId;
   let period = parseBillingPeriod(
     subscriptionNotes?.period ?? paymentNotes?.period
   );
 
-  let razorpayPlanId =
+  const razorpayPlanId =
     subscriptionNotes?.razorpayPlanId ??
     paymentNotes?.razorpayPlanId ??
     subscription?.plan_id;

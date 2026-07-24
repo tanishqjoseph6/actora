@@ -6,6 +6,7 @@ import { Bell, CheckCheck, Circle, MailOpen, Trash2 } from "lucide-react";
 import { useDismissible } from "@/hooks/useDismissible";
 import { useNotifications } from "@/providers/NotificationsProvider";
 import { DropdownShell } from "./DropdownShell";
+import { SkeletonListRows } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 
 function formatRelative(iso: string): string {
@@ -67,11 +68,13 @@ export function NotificationsPanel() {
           <div>
             <p className="text-sm font-medium text-white">Notifications</p>
             <p className="text-xs text-[#71717A]">
-              {loading
-                ? "Loading…"
-                : unreadCount
-                  ? `${unreadCount} unread`
-                  : "You're all caught up"}
+              {loading ? (
+                <span className="inline-block h-3 w-24 rounded skeleton-shimmer align-middle" aria-hidden />
+              ) : unreadCount ? (
+                `${unreadCount} unread`
+              ) : (
+                "You're all caught up"
+              )}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -99,8 +102,10 @@ export function NotificationsPanel() {
         </div>
 
         <div className="max-h-[360px] overflow-y-auto p-2">
-          {!loading && items.length === 0 ? (
-            <div className="px-3 py-10 text-center">
+          {loading && items.length === 0 ? (
+            <SkeletonListRows rows={4} className="px-2 py-2" />
+          ) : items.length === 0 ? (
+            <div className="px-3 py-10 text-center animate-fade-in">
               <Bell className="mx-auto h-5 w-5 text-[#52525B]" />
               <p className="mt-2 text-sm text-[#A1A1AA]">No notifications yet</p>
               <p className="mt-1 text-xs text-[#71717A]">
