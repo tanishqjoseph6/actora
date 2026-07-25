@@ -16,13 +16,12 @@ import { ResendVerificationEmail } from "@/components/auth/ResendVerificationEma
 import { VerificationStatusBadge } from "@/components/auth/VerificationStatusBadge";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
-import { getPublicGoogleOAuthCallbackUrl } from "@/lib/auth/public-oauth";
 import { resolveSafeCallbackUrl } from "@/lib/auth/safe-redirect";
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Check OAuth client configuration.",
   OAuthCallback:
-    "Google sign-in callback failed. The redirect URI likely does not match this environment.",
+    "Google sign-in failed while completing authentication. Please try again.",
   OAuthAccountNotLinked: "This Google account is not linked to an existing session.",
   AccessDenied: "Access was denied. Approve the requested permissions to continue.",
   Configuration: "Auth is misconfigured. Contact support.",
@@ -135,20 +134,7 @@ function LoginContent() {
       )}
 
       {oauthErrorMessage && (
-        <AuthMessage variant="error">
-          {oauthErrorMessage}
-          {errorCode === "OAuthCallback" && (
-            <span className="block mt-2 text-xs opacity-80">
-              Check server logs for{" "}
-              <code className="font-mono">[next-auth] OAuth callback failure details</code>.
-              Expected Google OAuth callback:{" "}
-              <code className="font-mono">
-                {getPublicGoogleOAuthCallbackUrl()}
-              </code>
-              .
-            </span>
-          )}
-        </AuthMessage>
+        <AuthMessage variant="error">{oauthErrorMessage}</AuthMessage>
       )}
 
       {needsVerification && (

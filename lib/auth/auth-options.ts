@@ -9,7 +9,6 @@ import {
   resolveAuthUrl,
   shouldUseSecureCookies,
 } from "@/lib/auth/nextauth-url";
-import { GOOGLE_IDENTITY_SCOPE } from "@/lib/calendar/scopes";
 import { createSupabaseAnonClient } from "@/lib/supabase/create-anon-client";
 import {
   logSupabaseProjectValidation,
@@ -183,13 +182,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: GOOGLE_IDENTITY_SCOPE,
-        },
-      },
+      clientId: process.env.GOOGLE_CLIENT_ID!.trim(),
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!.trim(),
     }),
   ],
 
