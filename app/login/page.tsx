@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -15,13 +15,13 @@ import { AuthMessage } from "@/components/auth/AuthMessage";
 import { ResendVerificationEmail } from "@/components/auth/ResendVerificationEmail";
 import { VerificationStatusBadge } from "@/components/auth/VerificationStatusBadge";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { OAUTH_ERROR_COOKIE } from "@/lib/auth/oauth-error-cookie";
 import { mapSupabaseAuthError } from "@/lib/auth/password-reset";
 import { resolveSafeCallbackUrl } from "@/lib/auth/safe-redirect";
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Check OAuth client configuration.",
-  OAuthCallback:
-    "Google sign-in failed while completing authentication. Please try again.",
+  OAuthCallback: "Google sign-in failed while completing authentication.",
   OAuthAccountNotLinked: "This Google account is not linked to an existing session.",
   AccessDenied: "Access was denied. Approve the requested permissions to continue.",
   Configuration: "Auth is misconfigured. Contact support.",
@@ -32,8 +32,37 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 const KNOWN_ERROR_CODES = new Set(Object.keys(ERROR_MESSAGES));
 
-function resolveAuthErrorMessage(errorCode: string | null): string | null {
+function readOAuthErrorCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${OAUTH_ERROR_COOKIE}=`;
+  const match = document.cookie
+    .split("; ")
+    .find((part) => part.startsWith(prefix));
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match.slice(prefix.length));
+  } catch {
+    return match.slice(prefix.length);
+  }
+}
+
+function clearOAuthErrorCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${OAUTH_ERROR_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+function resolveAuthErrorMessage(
+  errorCode: string | null,
+  detailedOAuthError: string | null
+): string | null {
   if (!errorCode) return null;
+
+  if (
+    (errorCode === "OAuthCallback" || errorCode === "OAuthSignin") &&
+    detailedOAuthError
+  ) {
+    return detailedOAuthError;
+  }
 
   if (KNOWN_ERROR_CODES.has(errorCode)) {
     return ERROR_MESSAGES[errorCode];
@@ -59,11 +88,26 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailedOAuthError, setDetailedOAuthError] = useState<string | null>(
+    null
+  );
   const [needsVerification, setNeedsVerification] = useState(
     searchParams.get("unverified") === "1"
   );
 
-  const oauthErrorMessage = resolveAuthErrorMessage(errorCode);
+  useEffect(() => {
+    if (!errorCode) return;
+    const detailed = readOAuthErrorCookie();
+    if (detailed) {
+      setDetailedOAuthError(detailed);
+      clearOAuthErrorCookie();
+    }
+  }, [errorCode]);
+
+  const oauthErrorMessage = resolveAuthErrorMessage(
+    errorCode,
+    detailedOAuthError
+  );
   const callbackUrl = resolveSafeCallbackUrl(searchParams.get("callbackUrl"));
 
   const handleEmailSignIn = async (event: FormEvent<HTMLFormElement>) => {

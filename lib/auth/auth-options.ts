@@ -18,6 +18,10 @@ import { getStoredSubscription } from "@/lib/subscription/repository";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { provisionTrialOnSignIn } from "@/lib/trial/service";
 import type { PlanId } from "@/lib/subscription";
+import {
+  extractAuthException,
+  persistOAuthErrorForClient,
+} from "@/lib/auth/oauth-error";
 
 configureNextAuthEnv();
 
@@ -58,32 +62,11 @@ function assertRequiredAuthEnv(): void {
 
   if (missing.length > 0) {
     const message = `[next-auth] Missing required auth env: ${missing.join(", ")}`;
-    // In production, fail fast to avoid opaque OAuthCallback loops.
     if (process.env.NODE_ENV === "production") {
       throw new Error(message);
     }
     console.error(message);
   }
-}
-
-function extractOAuthRootCause(payload: unknown): string | null {
-  const serialized = JSON.stringify(payload ?? {});
-  const knownSignals = [
-    "invalid_client",
-    "redirect_uri_mismatch",
-    "invalid_grant",
-    "state",
-    "PKCE",
-    "JWT_SESSION_ERROR",
-    "decryption operation failed",
-    "JWEDecryptionFailed",
-    "OAuthCallbackError",
-  ];
-
-  for (const signal of knownSignals) {
-    if (serialized.includes(signal)) return signal;
-  }
-  return null;
 }
 
 assertRequiredAuthEnv();
@@ -96,8 +79,9 @@ if (process.env.NODE_ENV === "development") {
 }
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development",
+  secret: process.env.NEXTAUTH_SECRET?.trim(),
+  // Keep verbose OAuth diagnostics available in production while debugging auth.
+  debug: true,
   useSecureCookies: shouldUseSecureCookies(),
 
   providers: [
@@ -128,6 +112,7 @@ export const authOptions: NextAuthOptions = {
               message: error.message,
               status: error.status,
               code: (error as { code?: string }).code,
+              stack: error.stack,
             });
             if (
               error.message === "Email not confirmed" ||
@@ -161,6 +146,11 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           if (error instanceof Error) {
+            console.error("[next-auth] credentials authorize exception", {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            });
             if (
               error.message === "Email not confirmed" ||
               error.message === "Incorrect email or password." ||
@@ -173,11 +163,9 @@ export const authOptions: NextAuthOptions = {
             `[next-auth] Supabase credentials sign-in failed. Ensure ${SUPABASE_ENV.URL} and ${SUPABASE_ENV.ANON_KEY} are set for the same project.`,
             error
           );
-          throw new Error(
-            error instanceof Error
-              ? error.message
-              : "Sign-in failed. Please try again."
-          );
+          throw error instanceof Error
+            ? error
+            : new Error("Sign-in failed. Please try again.");
         }
       },
     }),
@@ -202,6 +190,19 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
+    async signIn({ user, account, profile }) {
+      console.log("[next-auth][callback][signIn]", {
+        provider: account?.provider ?? null,
+        email: user.email ?? null,
+        accountType: account?.type ?? null,
+        profileSub:
+          profile && typeof profile === "object" && "sub" in profile
+            ? String((profile as { sub?: string }).sub ?? "")
+            : null,
+      });
+      return true;
+    },
+
     async jwt({ token, account, trigger, session, user }) {
       const email = (user?.email ?? token.email) as string | undefined;
 
@@ -215,7 +216,6 @@ export const authOptions: NextAuthOptions = {
       const applySubscriptionToToken = async () => {
         if (!email) return;
         try {
-          // Ensure first-time users get a trial before we read plan into the JWT.
           if (account || user) {
             await provisionTrialOnSignIn(email);
           }
@@ -230,90 +230,108 @@ export const authOptions: NextAuthOptions = {
           token.currentPeriodEnd = stored.currentPeriodEnd;
         } catch (error) {
           console.error("[next-auth] Failed to load subscription plan:", error);
+          if (error instanceof Error) {
+            console.error(error.stack);
+          }
+          throw error;
         }
       };
 
-      if (account || user) {
-        await applySubscriptionToToken();
+      try {
+        if (account || user) {
+          await applySubscriptionToToken();
 
-        if (account) {
-          return {
-            ...token,
-            accessToken: account.access_token,
-            refreshToken: account.refresh_token ?? token.refreshToken,
-            accessTokenExpires: account.expires_at
-              ? account.expires_at * 1000
-              : Date.now() + 3600 * 1000,
-          };
+          if (account) {
+            return {
+              ...token,
+              accessToken: account.access_token,
+              refreshToken: account.refresh_token ?? token.refreshToken,
+              accessTokenExpires: account.expires_at
+                ? account.expires_at * 1000
+                : Date.now() + 3600 * 1000,
+            };
+          }
+
+          return token;
+        }
+
+        if (trigger === "update") {
+          if (session?.planId) {
+            token.planId = session.planId as PlanId;
+          }
+          if (typeof session?.isTrial === "boolean") {
+            token.isTrial = session.isTrial;
+          }
+          if (session?.trialEndsAt !== undefined) {
+            token.trialEndsAt = session.trialEndsAt;
+          }
+          if (typeof session?.trialExpired === "boolean") {
+            token.trialExpired = session.trialExpired;
+          }
+          await applySubscriptionToToken();
+        }
+
+        if (!token.planId) {
+          token.planId = "free";
+        }
+
+        if (
+          token.isTrial &&
+          token.trialEndsAt &&
+          new Date(token.trialEndsAt).getTime() <= Date.now()
+        ) {
+          await applySubscriptionToToken();
+        }
+
+        if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+          return token;
+        }
+
+        if (token.refreshToken) {
+          return refreshGoogleAccessToken(token as JWT);
         }
 
         return token;
-      }
-
-      if (trigger === "update") {
-        if (session?.planId) {
-          token.planId = session.planId as PlanId;
+      } catch (error) {
+        console.error("[next-auth][callback][jwt] exception", error);
+        if (error instanceof Error) {
+          console.error(error.stack);
         }
-        if (typeof session?.isTrial === "boolean") {
-          token.isTrial = session.isTrial;
-        }
-        if (session?.trialEndsAt !== undefined) {
-          token.trialEndsAt = session.trialEndsAt;
-        }
-        if (typeof session?.trialExpired === "boolean") {
-          token.trialExpired = session.trialExpired;
-        }
-        // Refresh from DB when client requests a session update after trial/payment.
-        await applySubscriptionToToken();
+        throw error;
       }
-
-      if (!token.planId) {
-        token.planId = "free";
-      }
-
-      // Periodically refresh trial expiry from DB (every JWT refresh / Google token refresh).
-      if (
-        token.isTrial &&
-        token.trialEndsAt &&
-        new Date(token.trialEndsAt).getTime() <= Date.now()
-      ) {
-        await applySubscriptionToToken();
-      }
-
-      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
-        return token;
-      }
-
-      if (token.refreshToken) {
-        return refreshGoogleAccessToken(token as JWT);
-      }
-
-      return token;
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        if (typeof token.email === "string") {
-          session.user.email = token.email;
+      try {
+        if (session.user) {
+          if (typeof token.email === "string") {
+            session.user.email = token.email;
+          }
+          if (typeof token.name === "string") {
+            session.user.name = token.name;
+          }
         }
-        if (typeof token.name === "string") {
-          session.user.name = token.name;
+
+        session.accessToken = token.accessToken;
+        session.planId = token.planId ?? "free";
+        session.isTrial = Boolean(token.isTrial);
+        session.trialEndsAt = token.trialEndsAt ?? null;
+        session.trialExpired = Boolean(token.trialExpired);
+        session.subscriptionStatus = token.subscriptionStatus ?? "active";
+        session.currentPeriodEnd = token.currentPeriodEnd ?? null;
+
+        if (token.error === "RefreshAccessTokenError") {
+          session.error = "RefreshAccessTokenError";
         }
+
+        return session;
+      } catch (error) {
+        console.error("[next-auth][callback][session] exception", error);
+        if (error instanceof Error) {
+          console.error(error.stack);
+        }
+        throw error;
       }
-
-      session.accessToken = token.accessToken;
-      session.planId = token.planId ?? "free";
-      session.isTrial = Boolean(token.isTrial);
-      session.trialEndsAt = token.trialEndsAt ?? null;
-      session.trialExpired = Boolean(token.trialExpired);
-      session.subscriptionStatus = token.subscriptionStatus ?? "active";
-      session.currentPeriodEnd = token.currentPeriodEnd ?? null;
-
-      if (token.error === "RefreshAccessTokenError") {
-        session.error = "RefreshAccessTokenError";
-      }
-
-      return session;
     },
 
     async redirect({ url, baseUrl }) {
@@ -329,38 +347,65 @@ export const authOptions: NextAuthOptions = {
 
   logger: {
     error(code, metadata) {
+      const exception = extractAuthException(metadata);
       const payload = serializeError(metadata);
 
       console.error(`[next-auth][error][${code}]`, payload);
+      console.error(`[next-auth][error][${code}] message:`, exception.message);
+      if (exception.stack) {
+        console.error(`[next-auth][error][${code}] stack:\n${exception.stack}`);
+      } else if (metadata instanceof Error && metadata.stack) {
+        console.error(`[next-auth][error][${code}] stack:\n${metadata.stack}`);
+      }
 
       if (
         code === "OAUTH_CALLBACK_ERROR" ||
-        code === "OAUTH_CALLBACK_HANDLER_ERROR"
+        code === "OAUTH_CALLBACK_HANDLER_ERROR" ||
+        code === "SIGNIN_OAUTH_ERROR" ||
+        code === "OAUTH_PARSE_PROFILE_ERROR" ||
+        code === "CALLBACK_CREDENTIALS_HANDLER_ERROR" ||
+        String(code).includes("OAUTH") ||
+        String(code).includes("CALLBACK")
       ) {
-        const root = extractOAuthRootCause(payload);
-        console.error("[next-auth] OAuth callback failure details:", {
+        console.error("[next-auth] OAuth/callback failure details:", {
           code,
-          inferredRootCause: root,
+          exception,
           authUrl: resolveAuthUrl(),
           expectedCallback: getGoogleOAuthCallbackUrl(),
-          googleClientIdLoaded: Boolean(process.env.GOOGLE_CLIENT_ID),
-          googleClientSecretLoaded: Boolean(process.env.GOOGLE_CLIENT_SECRET),
-          nextAuthSecretLoaded: Boolean(process.env.NEXTAUTH_SECRET),
+          googleClientIdLoaded: Boolean(process.env.GOOGLE_CLIENT_ID?.trim()),
+          googleClientSecretLoaded: Boolean(
+            process.env.GOOGLE_CLIENT_SECRET?.trim()
+          ),
+          googleClientIdSuffix: process.env.GOOGLE_CLIENT_ID?.trim().slice(-12) ?? null,
+          googleClientSecretLen: process.env.GOOGLE_CLIENT_SECRET?.trim().length ?? 0,
+          nextAuthSecretLoaded: Boolean(process.env.NEXTAUTH_SECRET?.trim()),
           nextAuthUrlEnv: process.env.NEXTAUTH_URL ?? null,
           trustHost: process.env.AUTH_TRUST_HOST ?? "false",
-          ...(typeof payload === "object" && payload !== null ? payload : { payload }),
+        });
+
+        void persistOAuthErrorForClient(
+          exception.message || String(code)
+        ).catch((persistError) => {
+          console.error(
+            "[next-auth] persistOAuthErrorForClient failed",
+            persistError
+          );
         });
       }
     },
     warn(code) {
       console.warn(`[next-auth][warn][${code}]`);
     },
+    debug(code, metadata) {
+      console.log(`[next-auth][debug][${code}]`, serializeError(metadata));
+    },
   },
 
   events: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       console.log("[next-auth][event][signIn]", {
         email: user.email,
+        provider: account?.provider ?? null,
       });
     },
   },
