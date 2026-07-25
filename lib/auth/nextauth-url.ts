@@ -56,14 +56,12 @@ export function getGoogleOAuthCallbackUrl(): string {
 
 /**
  * Configure NextAuth environment before handlers run.
- * On Vercel/Netlify, trust the request host so OAuth callbacks match the live domain.
+ * Always pin NEXTAUTH_URL to the resolved canonical origin.
+ * Production OAuth also forces x-forwarded-host in the NextAuth route handler
+ * because NextAuth on Vercel builds redirect_uri from the request host.
  */
 export function configureNextAuthEnv(): string {
   const url = resolveAuthUrl();
-
-  if (process.env.VERCEL || process.env.URL) {
-    process.env.AUTH_TRUST_HOST = "true";
-  }
 
   process.env.NEXTAUTH_URL = url;
   process.env.NEXTAUTH_URL_INTERNAL = url;
