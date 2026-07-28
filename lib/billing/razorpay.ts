@@ -4,7 +4,7 @@ import {
   RAZORPAY_CONNECTED,
   RAZORPAY_KEY_ID,
 } from "./config";
-import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
+import type { BillingPeriod, PaidPlanId, PlanId } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
 import {
   getChargeAmount,
@@ -12,11 +12,16 @@ import {
   isPaidPlan,
 } from "./pricing";
 import {
+  getPlanLabel,
   getRazorpayKeyIdPrefix,
   getRazorpayKeyMode,
   getRazorpayPlanEnvKey,
   getRazorpayPlanId,
 } from "./razorpay-plans";
+import {
+  formatInrPaise,
+  getInrCheckoutDisclaimer,
+} from "./exchange-rate";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
 export function getRazorpayClient(): Razorpay {
@@ -28,6 +33,57 @@ export function getRazorpayClient(): Razorpay {
     key_id: process.env.RAZORPAY_KEY_ID!,
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
   });
+}
+
+/**
+ * Creates a Razorpay plan with a live-converted INR amount.
+ * Each checkout gets its own plan so the amount reflects the current exchange rate.
+ * Renewals charge the same locked-in amount from subscription creation.
+ */
+async function createDynamicRazorpayPlan({
+  planId,
+  period,
+  amountPaise,
+}: {
+  planId: PaidPlanId;
+  period: BillingPeriod;
+  amountPaise: number;
+}): Promise<string> {
+  if (amountPaise < 100) {
+    throw new Error(
+      `Invalid plan amount (${amountPaise} paise). Amount must be at least ₹1.`
+    );
+  }
+
+  const razorpay = getRazorpayClient();
+  const label = getPlanLabel(planId);
+  const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
+  const planName = `Actora ${label} — ${periodLabel}`;
+
+  const plan = await razorpay.plans.create({
+    period: period === "yearly" ? "yearly" : "monthly",
+    interval: 1,
+    item: {
+      name: planName,
+      amount: amountPaise,
+      currency: "INR",
+      description: `${planName} (USD-priced, INR at checkout)`,
+    },
+  });
+
+  const planIdValue = (plan as { id?: string }).id;
+  if (!planIdValue) {
+    throw new Error("Razorpay did not return a plan ID.");
+  }
+
+  console.log("[razorpay] Created dynamic INR plan", {
+    razorpayPlanId: planIdValue,
+    appPlanId: planId,
+    period,
+    amountPaise,
+  });
+
+  return planIdValue;
 }
 
 export async function createRazorpayOrder({
@@ -51,12 +107,23 @@ export async function createRazorpayOrder({
   const normalizedEmail = email
     ? normalizeSubscriptionUserId(email)
     : normalizedUserId;
-  const razorpayPlanId = getRazorpayPlanId(planId, period);
-  const amount = getChargeAmount(currency, planId, period);
+
+  const amount = await getChargeAmount(currency, planId, period);
 
   if (!amount) {
     throw new Error("This plan cannot be purchased via checkout.");
   }
+
+  // INR: create a dynamic plan with live-converted amount.
+  // USD via Razorpay: fall back to pre-configured dashboard plan IDs.
+  const razorpayPlanId =
+    currency === "INR"
+      ? await createDynamicRazorpayPlan({
+          planId,
+          period,
+          amountPaise: amount,
+        })
+      : getRazorpayPlanId(planId, period);
 
   const subscriptionPayload = {
     plan_id: razorpayPlanId,
@@ -73,6 +140,7 @@ export async function createRazorpayOrder({
       period,
       currency,
       razorpayPlanId,
+      usdPriced: "true",
     },
   };
 
@@ -81,8 +149,11 @@ export async function createRazorpayOrder({
     keyMode: getRazorpayKeyMode(),
     appPlanId: planId,
     billingPeriod: period,
-    planEnvKey: getRazorpayPlanEnvKey(planId, period),
+    planEnvKey:
+      currency === "USD" ? getRazorpayPlanEnvKey(planId, period) : "dynamic",
     razorpayPlanId,
+    currency,
+    amount,
     payload: subscriptionPayload,
   });
 
@@ -96,32 +167,23 @@ export async function createRazorpayOrder({
     );
     if (remoteAmount > 0 && remoteAmount <= 100) {
       throw new Error(
-        `Razorpay plan ${razorpayPlanId} is priced at ${remoteAmount} (₹1/$0.01 test plan). ` +
-          `Update RAZORPAY_*_PLAN_ID to the production Pro ($20 / ₹1,760) or Team ($69 / ₹6,072) plan.`
+        `Razorpay plan ${razorpayPlanId} is priced at ${remoteAmount} (test plan). ` +
+          `Contact support if this persists.`
       );
     }
-    if (remoteAmount > 0 && amount > 0) {
-      const drift = Math.abs(remoteAmount - amount) / amount;
-      if (drift > 0.2) {
-        console.warn("[razorpay] Plan amount differs from app pricing", {
-          razorpayPlanId,
-          remoteAmount,
-          expectedAmount: amount,
-          currency,
-        });
-      }
-    }
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes("test plan")
-    ) {
+    if (error instanceof Error && error.message.includes("test plan")) {
       throw error;
     }
     console.warn("[razorpay] Could not pre-validate plan amount:", error);
   }
 
   const subscription = await razorpay.subscriptions.create(subscriptionPayload);
+
+  const inrDisclaimer =
+    currency === "INR"
+      ? getInrCheckoutDisclaimer(formatInrPaise(amount))
+      : undefined;
 
   return {
     subscriptionId: subscription.id,
@@ -130,6 +192,8 @@ export async function createRazorpayOrder({
     currency,
     keyId: RAZORPAY_KEY_ID,
     description: getChargeDescription(currency, planId, period),
+    approximateInrLabel: currency === "INR" ? formatInrPaise(amount) : undefined,
+    exchangeRateNotice: inrDisclaimer,
   };
 }
 
@@ -242,8 +306,14 @@ export async function createRazorpayCreditTopUpOrder({
       packId,
       credits: String(credits),
       currency,
+      usdPriced: "true",
     },
   });
+
+  const inrDisclaimer =
+    currency === "INR"
+      ? getInrCheckoutDisclaimer(formatInrPaise(amount))
+      : undefined;
 
   return {
     orderId: order.id,
@@ -251,5 +321,7 @@ export async function createRazorpayCreditTopUpOrder({
     currency: order.currency as BillingCurrency,
     keyId: RAZORPAY_KEY_ID,
     description: `${credits.toLocaleString("en-US")} AI Credits`,
+    approximateInrLabel: currency === "INR" ? formatInrPaise(amount) : undefined,
+    exchangeRateNotice: inrDisclaimer,
   };
 }

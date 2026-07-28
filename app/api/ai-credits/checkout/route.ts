@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isBillingCurrency } from "@/lib/billing/currency";
 import { isCheckoutAvailableServer } from "@/lib/billing/providers";
 import { createRazorpayCreditTopUpOrder } from "@/lib/billing/razorpay";
+import { resolvePaymentCurrency } from "@/lib/billing/payment-region";
 import {
   getAiCreditPack,
   getAiCreditPackAmount,
@@ -32,21 +32,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
       packId?: string;
-      currency?: string;
     };
 
     if (!body.packId || !isAiCreditPackId(body.packId)) {
       return NextResponse.json({ error: "Invalid credit pack." }, { status: 400 });
     }
 
-    if (!body.currency || !isBillingCurrency(body.currency)) {
-      return NextResponse.json(
-        { error: "Invalid or missing currency." },
-        { status: 400 }
-      );
-    }
+    const currency = resolvePaymentCurrency(request);
 
-    if (!RAZORPAY_CONNECTED || !isCheckoutAvailableServer(body.currency)) {
+    if (!RAZORPAY_CONNECTED || !isCheckoutAvailableServer(currency)) {
       return NextResponse.json(
         { error: "Checkout is not configured." },
         { status: 503 }
@@ -54,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     const pack = getAiCreditPack(body.packId)!;
-    const amount = getAiCreditPackAmount(pack.id, body.currency);
+    const amount = await getAiCreditPackAmount(pack.id, currency);
     if (!amount) {
       return NextResponse.json(
         { error: "Unable to price this credit pack." },
@@ -68,7 +62,7 @@ export async function POST(request: NextRequest) {
       packId: pack.id,
       credits: pack.credits,
       amount,
-      currency: body.currency,
+      currency,
     });
 
     await createPendingCreditPurchase({
@@ -76,7 +70,7 @@ export async function POST(request: NextRequest) {
       packId: pack.id,
       credits: pack.credits,
       amount: order.amount,
-      currency: body.currency,
+      currency,
       razorpayOrderId: order.orderId,
       workspaceId,
     });
@@ -92,6 +86,8 @@ export async function POST(request: NextRequest) {
       credits: pack.credits,
       packName: pack.name,
       workspaceId,
+      approximateInrLabel: order.approximateInrLabel,
+      exchangeRateNotice: order.exchangeRateNotice,
     });
   } catch (error) {
     console.error("[ai-credits/checkout] create failed:", error);

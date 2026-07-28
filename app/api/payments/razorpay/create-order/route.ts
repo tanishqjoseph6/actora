@@ -1,12 +1,12 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth/auth-options";
-import { isBillingCurrency } from "@/lib/billing/currency";
 import {
   getPaymentProviderForCurrency,
   isCheckoutAvailableServer,
 } from "@/lib/billing/providers";
-import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
+import { resolvePaymentCurrency } from "@/lib/billing/payment-region";
+import type { BillingPeriod, PaidPlanId, PlanId } from "@/components/billing/pricing-data";
 import { isPaidPlan } from "@/lib/billing/pricing";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 
@@ -22,22 +22,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { planId, period, currency } = body as {
+    const { planId, period } = body as {
       planId?: PlanId;
       period?: BillingPeriod;
       currency?: string;
     };
 
-    if (!currency || !isBillingCurrency(currency)) {
-      return NextResponse.json(
-        { error: "Invalid or missing currency." },
-        { status: 400 }
-      );
-    }
+    // Payment currency is determined server-side from geo — never trust client amounts.
+    const currency = resolvePaymentCurrency(request);
 
     if (!isCheckoutAvailableServer(currency)) {
       return NextResponse.json(
-        { error: "Checkout is not configured for this currency." },
+        { error: "Checkout is not configured for this region." },
         { status: 503 }
       );
     }
@@ -74,6 +70,8 @@ export async function POST(request: NextRequest) {
       currency: order.currency,
       keyId: order.keyId,
       description: order.description,
+      approximateInrLabel: order.approximateInrLabel,
+      exchangeRateNotice: order.exchangeRateNotice,
     });
   } catch (error) {
     console.error("[checkout] Failed to create order:", error);
@@ -82,5 +80,70 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "Failed to create payment order.";
 
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/** Preview checkout amounts before opening Razorpay (INR disclaimer for Indian users). */
+export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const planIdParam = searchParams.get("planId");
+  const periodParam = searchParams.get("period");
+  const currency = resolvePaymentCurrency(request);
+
+  const period: BillingPeriod =
+    periodParam === "yearly" ? "yearly" : "monthly";
+
+  if (
+    !planIdParam ||
+    !isPaidPlan(planIdParam as PlanId) ||
+    (periodParam !== "monthly" && periodParam !== "yearly")
+  ) {
+    return NextResponse.json({ error: "Invalid preview parameters." }, { status: 400 });
+  }
+
+  const planId = planIdParam as PaidPlanId;
+
+  try {
+    if (currency === "INR") {
+      const { getInrCheckoutPreview } = await import(
+        "@/lib/billing/pricing-amounts"
+      );
+      const { getInrCheckoutDisclaimer } = await import(
+        "@/lib/billing/exchange-rate"
+      );
+      const preview = await getInrCheckoutPreview(planId, period);
+      return NextResponse.json({
+        currency,
+        usdLabel: preview.usdLabel,
+        approximateInrLabel: preview.inrLabel,
+        exchangeRateNotice: getInrCheckoutDisclaimer(preview.inrLabel),
+        exchangeRate: preview.exchangeRate,
+      });
+    }
+
+    const { getUsdPriceLabel, getUsdChargeAmount } = await import(
+      "@/lib/billing/pricing-amounts"
+    );
+    return NextResponse.json({
+      currency: "USD",
+      usdLabel: getUsdPriceLabel(planId, period),
+      usdCents: getUsdChargeAmount(planId, period),
+    });
+  } catch (error) {
+    console.error("[checkout/preview] Failed:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to preview checkout amount.",
+      },
+      { status: 500 }
+    );
   }
 }

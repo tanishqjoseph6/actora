@@ -4,13 +4,15 @@ import type {
   PlanId,
 } from "@/components/billing/pricing-data";
 import {
-  BILLING_PRICING,
   getPlanPriceConfig,
   YEARLY_DISCOUNT,
 } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
 import { CURRENCY_SYMBOLS } from "./currency";
-import { getRazorpayPlanId as resolveRazorpayPlanId } from "./razorpay-plans";
+import {
+  convertUsdCentsToInrPaise,
+  getUsdChargeAmount,
+} from "./pricing-amounts";
 
 export { YEARLY_DISCOUNT };
 
@@ -18,27 +20,28 @@ export function isPaidPlan(planId: PlanId): planId is PaidPlanId {
   return planId === "starter" || planId === "pro";
 }
 
-export function getChargeAmount(
+/**
+ * Returns the charge amount in the currency's smallest unit.
+ * USD amounts are synchronous; INR amounts require a live exchange rate fetch.
+ */
+export async function getChargeAmount(
   currency: BillingCurrency,
   planId: PlanId,
   period: BillingPeriod
-): number | null {
+): Promise<number | null> {
   if (!isPaidPlan(planId)) return null;
-  return BILLING_PRICING[currency][period][planId].chargeAmount;
-}
 
-export function getRazorpayPlanId(
-  planId: PlanId,
-  period: BillingPeriod
-): string {
-  if (!isPaidPlan(planId)) {
-    throw new Error(`Plan "${planId}" cannot be purchased via Razorpay checkout.`);
+  if (currency === "USD") {
+    return getUsdChargeAmount(planId, period);
   }
-  return resolveRazorpayPlanId(planId, period);
+
+  const { paise } = await convertUsdCentsToInrPaise(
+    getUsdChargeAmount(planId, period)
+  );
+  return paise;
 }
 
 export function getDisplayPrice(
-  currency: BillingCurrency,
   planId: PlanId,
   period: BillingPeriod
 ): {
@@ -52,15 +55,14 @@ export function getDisplayPrice(
   }
 
   if (planId === "free") {
-    const symbol = CURRENCY_SYMBOLS[currency];
-    return { amount: `${symbol}0`, suffix: "/month" };
+    return { amount: "$0", suffix: "/month" };
   }
 
   if (!isPaidPlan(planId)) {
     return { amount: "", suffix: "" };
   }
 
-  const config = getPlanPriceConfig(currency, period, planId);
+  const config = getPlanPriceConfig(period, planId);
   return {
     amount: config.priceLabel,
     suffix: config.priceSuffix,
@@ -75,10 +77,13 @@ export function getChargeDescription(
   period: BillingPeriod
 ): string {
   const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
-  const planName = planId === "starter" ? "Team" : planId.charAt(0).toUpperCase() + planId.slice(1);
+  const planName =
+    planId === "starter"
+      ? "Team"
+      : planId.charAt(0).toUpperCase() + planId.slice(1);
 
   if (period === "yearly" && isPaidPlan(planId)) {
-    const config = BILLING_PRICING[currency][period][planId];
+    const config = getPlanPriceConfig(period, planId);
     return `Actora ${planName} — ${periodLabel} (${config.priceLabel}${config.priceSuffix})`;
   }
 

@@ -10,7 +10,7 @@ import {
 } from "@/lib/billing/razorpay";
 import type { BillingPeriod, PlanId } from "@/components/billing/pricing-data";
 import { isBillingCurrency } from "@/lib/billing/currency";
-import { getRazorpayPlanId, getChargeAmount, isPaidPlan } from "@/lib/billing/pricing";
+import { getChargeAmount, isPaidPlan } from "@/lib/billing/pricing";
 import {
   findPaymentByRazorpayId,
   recordBillingPayment,
@@ -114,17 +114,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
     }
 
-    const expectedPlanId = getRazorpayPlanId(planId, period);
-    if (razorpayPlanId && razorpayPlanId.trim() !== expectedPlanId) {
-      console.error("[razorpay/verify] step:client-plan-mismatch", {
-        clientRazorpayPlanId: razorpayPlanId,
-        expectedPlanId,
-      });
-      return NextResponse.json(
-        { error: "Razorpay plan does not match checkout selection." },
-        { status: 400 }
-      );
-    }
+    // Dynamic INR plans are created at checkout — validate via subscription notes, not env plan IDs.
+    const resolvedRazorpayPlanId = razorpayPlanId?.trim() || undefined;
 
     const isValid = razorpay_subscription_id
       ? verifyRazorpaySubscriptionSignature({
@@ -165,17 +156,19 @@ export async function POST(request: NextRequest) {
         duplicate: true,
         subscription: snapshot,
         paymentId: razorpay_payment_id,
-        razorpayPlanId: expectedPlanId,
+        razorpayPlanId: resolvedRazorpayPlanId,
       });
     }
 
     const razorpay = getRazorpayClient();
     let upsertMetadata: SubscriptionUpsertMetadata = {
-      razorpayPlanId: expectedPlanId,
+      razorpayPlanId: resolvedRazorpayPlanId,
       razorpaySubscriptionId: razorpay_subscription_id,
       razorpayPaymentId: razorpay_payment_id,
       razorpayOrderId: razorpay_order_id,
     };
+
+    let actualChargeAmount = await getChargeAmount(currency, planId, period) ?? 0;
 
     if (razorpay_subscription_id) {
       const subscription = await razorpay.subscriptions.fetch(
@@ -189,7 +182,7 @@ export async function POST(request: NextRequest) {
 
       upsertMetadata = {
         razorpaySubscriptionId: razorpay_subscription_id,
-        razorpayPlanId: expectedPlanId,
+        razorpayPlanId: remotePlanId ?? resolvedRazorpayPlanId,
         razorpayPaymentId: razorpay_payment_id,
         razorpayOrderId: razorpay_order_id,
         currentPeriodEnd: currentEnd,
@@ -198,16 +191,19 @@ export async function POST(request: NextRequest) {
       console.log("[razorpay/verify] step:subscription-fetch", {
         subscriptionId: razorpay_subscription_id,
         remotePlanId,
-        expectedPlanId,
+        resolvedRazorpayPlanId,
         notes,
         status: subscription.status,
         currentPeriodEnd: currentEnd,
       });
 
-      if (remotePlanId !== expectedPlanId) {
+      if (
+        notes?.planId &&
+        !noteMatches(notes.planId, planId, { required: true })
+      ) {
         console.error("[razorpay/verify] step:subscription-plan-mismatch", {
-          remotePlanId,
-          expectedPlanId,
+          notesPlanId: notes.planId,
+          requestedPlanId: planId,
         });
         return NextResponse.json(
           { error: "Subscription plan does not match checkout." },
@@ -230,7 +226,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (
-        (notes?.planId && !noteMatches(notes.planId, planId, { required: true })) ||
         (notes?.period && !noteMatches(notes.period, period, { required: true })) ||
         (notes?.currency && !noteMatches(notes.currency, currency, { required: true }))
       ) {
@@ -266,6 +261,17 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    }
+
+    // Prefer the actual amount Razorpay charged over a recalculated estimate.
+    try {
+      const payment = await razorpay.payments.fetch(razorpay_payment_id);
+      const paidAmount = Number((payment as { amount?: number }).amount ?? 0);
+      if (paidAmount > 0) {
+        actualChargeAmount = paidAmount;
+      }
+    } catch (fetchPaymentError) {
+      console.warn("[razorpay/verify] Could not fetch payment amount:", fetchPaymentError);
     }
 
     console.log("[razorpay/verify] step:set-plan — writing to database", {
@@ -310,7 +316,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const chargeAmount = getChargeAmount(currency, planId, period) ?? 0;
+    const chargeAmount = actualChargeAmount;
     await recordBillingPayment({
       userId,
       planId,
@@ -350,7 +356,7 @@ export async function POST(request: NextRequest) {
       success: true,
       subscription: snapshot,
       paymentId: razorpay_payment_id,
-      razorpayPlanId: expectedPlanId,
+      razorpayPlanId: upsertMetadata.razorpayPlanId,
     });
   } catch (error) {
     logApiError("razorpay/verify", error, { userId });

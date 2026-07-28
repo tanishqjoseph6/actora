@@ -279,8 +279,16 @@ export async function handleRazorpayWebhook(
       const currency: BillingCurrency = isBillingCurrency(rawCurrency)
         ? rawCurrency
         : "USD";
+
+      const paymentEntity = payload.payload?.payment?.entity;
+      const paidAmount = Number(
+        (paymentEntity as { amount?: number } | undefined)?.amount ?? 0
+      );
       const amount =
-        getChargeAmount(currency, context.planId, context.period) ?? 0;
+        paidAmount > 0
+          ? paidAmount
+          : (await getChargeAmount(currency, context.planId, context.period)) ?? 0;
+
       await recordBillingPayment({
         userId: context.userId,
         planId: context.planId,

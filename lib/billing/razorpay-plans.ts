@@ -1,5 +1,10 @@
 import type { BillingPeriod, PaidPlanId } from "@/components/billing/pricing-data";
 
+const PLAN_LABELS: Record<PaidPlanId, string> = {
+  pro: "Pro",
+  starter: "Team",
+};
+
 const PLAN_ENV_KEYS: Record<PaidPlanId, Record<BillingPeriod, string>> = {
   pro: {
     monthly: "RAZORPAY_PRO_PLAN_ID",
@@ -9,11 +14,6 @@ const PLAN_ENV_KEYS: Record<PaidPlanId, Record<BillingPeriod, string>> = {
     monthly: "RAZORPAY_TEAM_PLAN_ID",
     yearly: "RAZORPAY_TEAM_YEARLY_PLAN_ID",
   },
-};
-
-const PLAN_LABELS: Record<PaidPlanId, string> = {
-  pro: "Pro",
-  starter: "Team",
 };
 
 export type RazorpayKeyMode = "LIVE" | "TEST" | "UNKNOWN";
@@ -34,7 +34,11 @@ function readPlanEnv(envKey: string): string | undefined {
   return value || undefined;
 }
 
-function validatePlanId(envKey: string, planId: PaidPlanId, period: BillingPeriod): string {
+function validatePlanId(
+  envKey: string,
+  planId: PaidPlanId,
+  period: BillingPeriod
+): string {
   const value = readPlanEnv(envKey);
 
   if (!value) {
@@ -55,8 +59,8 @@ function validatePlanId(envKey: string, planId: PaidPlanId, period: BillingPerio
 }
 
 /**
- * Resolves the Razorpay dashboard plan ID for a paid app plan + billing period.
- * Throws a descriptive error if the required environment variable is missing or invalid.
+ * Resolves a static Razorpay dashboard plan ID (legacy / USD plans).
+ * For INR checkout, use createDynamicRazorpayPlan instead.
  */
 export function getRazorpayPlanId(
   planId: PaidPlanId,
@@ -74,7 +78,10 @@ export function getRazorpayPlanEnvKey(
 }
 
 /** Logs configured plan IDs (for debugging). Safe to print — not secrets. */
-export function getConfiguredRazorpayPlanIds(): Record<string, string | undefined> {
+export function getConfiguredRazorpayPlanIds(): Record<
+  string,
+  string | undefined
+> {
   const out: Record<string, string | undefined> = {};
   for (const [planId, periods] of Object.entries(PLAN_ENV_KEYS) as [
     PaidPlanId,
@@ -88,6 +95,10 @@ export function getConfiguredRazorpayPlanIds(): Record<string, string | undefine
     }
   }
   return out;
+}
+
+export function getPlanLabel(planId: PaidPlanId): string {
+  return PLAN_LABELS[planId];
 }
 
 /** Map a Razorpay dashboard plan_id back to the app plan + billing period. */

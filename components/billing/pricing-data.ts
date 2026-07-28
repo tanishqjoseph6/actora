@@ -1,11 +1,9 @@
-import type { BillingCurrency } from "@/lib/billing/currency";
 import {
-  getInrChargeAmount,
-  getInrPriceLabel,
   getUsdChargeAmount,
+  getUsdCompareAtLabel,
   getUsdPriceLabel,
+  YEARLY_DISCOUNT,
 } from "@/lib/billing/pricing-amounts";
-import { formatInrPaise } from "@/lib/billing/exchange-rate";
 
 export type BillingPeriod = "monthly" | "yearly";
 
@@ -19,45 +17,27 @@ export type PlanDisplayConfig = {
   billingNote?: string;
   saveNote?: string;
   compareAtLabel?: string;
+  /** USD charge amount in cents (for reference only — never sent to payment UI). */
   chargeAmount: number;
 };
 
-export const YEARLY_DISCOUNT = 0.15;
+export { YEARLY_DISCOUNT };
 
 function buildPlanDisplayConfig(
-  currency: BillingCurrency,
   period: BillingPeriod,
   planId: PaidPlanId
 ): PlanDisplayConfig {
-  const chargeAmount =
-    currency === "USD"
-      ? getUsdChargeAmount(planId, period)
-      : getInrChargeAmount(planId, period);
-
-  const priceLabel =
-    currency === "USD"
-      ? getUsdPriceLabel(planId, period)
-      : getInrPriceLabel(planId, period);
-
+  const chargeAmount = getUsdChargeAmount(planId, period);
+  const priceLabel = getUsdPriceLabel(planId, period);
   const priceSuffix = period === "yearly" ? "/year" : "/month";
 
   if (period === "yearly") {
-    const fullYearCents =
-      currency === "USD"
-        ? getUsdChargeAmount(planId, "monthly") * 12
-        : getInrChargeAmount(planId, "monthly") * 12;
-
-    const compareAtLabel =
-      currency === "USD"
-        ? `$${(fullYearCents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`
-        : formatInrPaise(fullYearCents);
-
     return {
       priceLabel,
       priceSuffix,
       billingNote: "Billed yearly",
       saveNote: "Save 15% with annual billing",
-      compareAtLabel,
+      compareAtLabel: getUsdCompareAtLabel(planId, period) ?? undefined,
       chargeAmount,
     };
   }
@@ -65,30 +45,18 @@ function buildPlanDisplayConfig(
   return { priceLabel, priceSuffix, chargeAmount };
 }
 
-/** Display prices per currency. Razorpay plan IDs are configured via server env vars. */
+/** USD display prices — single currency shown across the product. */
 export const BILLING_PRICING: Record<
-  BillingCurrency,
-  Record<BillingPeriod, Record<PaidPlanId, PlanDisplayConfig>>
+  BillingPeriod,
+  Record<PaidPlanId, PlanDisplayConfig>
 > = {
-  USD: {
-    monthly: {
-      pro: buildPlanDisplayConfig("USD", "monthly", "pro"),
-      starter: buildPlanDisplayConfig("USD", "monthly", "starter"),
-    },
-    yearly: {
-      pro: buildPlanDisplayConfig("USD", "yearly", "pro"),
-      starter: buildPlanDisplayConfig("USD", "yearly", "starter"),
-    },
+  monthly: {
+    pro: buildPlanDisplayConfig("monthly", "pro"),
+    starter: buildPlanDisplayConfig("monthly", "starter"),
   },
-  INR: {
-    monthly: {
-      pro: buildPlanDisplayConfig("INR", "monthly", "pro"),
-      starter: buildPlanDisplayConfig("INR", "monthly", "starter"),
-    },
-    yearly: {
-      pro: buildPlanDisplayConfig("INR", "yearly", "pro"),
-      starter: buildPlanDisplayConfig("INR", "yearly", "starter"),
-    },
+  yearly: {
+    pro: buildPlanDisplayConfig("yearly", "pro"),
+    starter: buildPlanDisplayConfig("yearly", "starter"),
   },
 };
 
@@ -194,22 +162,18 @@ const PRICING_PLAN_TEMPLATES: Omit<
 ];
 
 export function getPlanPriceConfig(
-  currency: BillingCurrency,
   period: BillingPeriod,
   planId: PaidPlanId
 ): PlanPriceConfig {
-  return BILLING_PRICING[currency][period][planId];
+  return BILLING_PRICING[period][planId];
 }
 
-export function getDisplayPlans(
-  currency: BillingCurrency,
-  period: BillingPeriod
-): PricingPlan[] {
+export function getDisplayPlans(period: BillingPeriod): PricingPlan[] {
   return PRICING_PLAN_TEMPLATES.map((template) => {
     if (template.id === "free" || template.id === "trial") {
       return {
         ...template,
-        priceLabel: currency === "INR" ? "₹0" : "$0",
+        priceLabel: "$0",
         priceSuffix: "/month",
         chargeAmount: null,
       };
@@ -225,7 +189,6 @@ export function getDisplayPlans(
     }
 
     const priceConfig = getPlanPriceConfig(
-      currency,
       period,
       template.id as PaidPlanId
     );
@@ -241,15 +204,14 @@ export function getDisplayPlans(
   });
 }
 
-/** @deprecated Use getDisplayPlans(currency, period) for billing UI */
-export const PRICING_PLANS: PricingPlan[] = getDisplayPlans("USD", "monthly");
+/** @deprecated Use getDisplayPlans(period) for billing UI */
+export const PRICING_PLANS: PricingPlan[] = getDisplayPlans("monthly");
 
 export function getPlanById(
   id: PlanId,
-  currency: BillingCurrency = "USD",
   period: BillingPeriod = "monthly"
 ): PricingPlan | undefined {
-  return getDisplayPlans(currency, period).find((plan) => plan.id === id);
+  return getDisplayPlans(period).find((plan) => plan.id === id);
 }
 
 export type ComparisonValue = boolean | string;
@@ -286,12 +248,12 @@ export const BILLING_FAQ = [
   {
     question: "Can I upgrade anytime?",
     answer:
-      "Yes. Upgrades take effect immediately through Razorpay checkout. Downgrades apply at your next renewal date.",
+      "Yes. Upgrades take effect immediately through checkout. Downgrades apply at your next renewal date.",
   },
   {
     question: "Do you offer refunds?",
     answer:
-      "Subscription payments and purchased AI Credits are non-refundable. Refunds are only considered for duplicate charges, unauthorized payments, or technical billing errors, solely at Actora’s discretion. See Terms → Refund Policy.",
+      "Subscription payments and purchased AI Credits are non-refundable. Refunds are only considered for duplicate charges, unauthorized payments, or technical billing errors, solely at Actora's discretion. See Terms → Refund Policy.",
   },
   {
     question: "How many Gmail accounts can I connect?",
@@ -302,5 +264,10 @@ export const BILLING_FAQ = [
     question: "Can I switch plans later?",
     answer:
       "Absolutely. Move between Pro and Team anytime from this page — upgrades open checkout, downgrades apply at renewal.",
+  },
+  {
+    question: "How does INR billing work for Indian users?",
+    answer:
+      "All prices are listed in USD. When you checkout from India, your payment is processed in INR via Razorpay using the live USD → INR exchange rate at the time of purchase.",
   },
 ];

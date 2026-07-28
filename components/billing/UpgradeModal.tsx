@@ -18,7 +18,7 @@ import {
 
 type UpgradeModalProps = {
   selection: UpgradeSelection | null;
-  currency: BillingCurrency;
+  isIndia?: boolean;
   onClose: () => void;
   onDevUpgrade?: (planId: PlanId) => Promise<boolean>;
   onCheckout?: (
@@ -32,7 +32,7 @@ type UpgradeModalProps = {
 
 export function UpgradeModal({
   selection,
-  currency,
+  isIndia = false,
   onClose,
   onDevUpgrade,
   onCheckout,
@@ -41,12 +41,54 @@ export function UpgradeModal({
   const isOpen = selection !== null;
   const [isProcessing, setIsProcessing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [checkoutPreview, setCheckoutPreview] = useState<{
+    exchangeRateNotice?: string;
+    approximateInrLabel?: string;
+  } | null>(null);
   const devBilling = isDevBillingEnabled();
   const { showComingSoon } = useBillingPause();
+
+  const { plan, period, currency: selectionCurrency } = selection ?? {
+    plan: null,
+    period: "monthly" as BillingPeriod,
+    currency: "USD" as BillingCurrency,
+  };
+
+  useEffect(() => {
+    if (!isOpen || !plan || !isPaidPlan(plan.id)) {
+      setCheckoutPreview(null);
+      return;
+    }
+
+    if (!isIndia || devBilling) {
+      setCheckoutPreview(null);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      planId: plan.id,
+      period,
+    });
+
+    fetch(`/api/payments/razorpay/create-order?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.exchangeRateNotice) {
+          setCheckoutPreview({
+            exchangeRateNotice: data.exchangeRateNotice,
+            approximateInrLabel: data.approximateInrLabel,
+          });
+        }
+      })
+      .catch(() => {
+        setCheckoutPreview(null);
+      });
+  }, [isOpen, plan, period, isIndia, devBilling]);
 
   useEffect(() => {
     if (!isOpen) {
       setActionError(null);
+      setCheckoutPreview(null);
       return;
     }
 
@@ -63,9 +105,8 @@ export function UpgradeModal({
     };
   }, [isOpen, onClose]);
 
-  if (!selection) return null;
+  if (!selection || !plan) return null;
 
-  const { plan, period, currency: selectionCurrency } = selection;
   const isCurrentPlan = currentPlanId === plan.id;
 
   const handlePrimaryAction = async () => {
@@ -141,7 +182,7 @@ export function UpgradeModal({
 
             <div className="mb-6">
               <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-2">
-                {period === "yearly" ? "Yearly billing" : "Monthly billing"} · {selectionCurrency}
+                {period === "yearly" ? "Yearly billing" : "Monthly billing"}
               </p>
               <h2
                 id="upgrade-modal-title"
@@ -183,6 +224,12 @@ export function UpgradeModal({
               ))}
             </ul>
 
+            {checkoutPreview?.exchangeRateNotice && (
+              <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200">
+                {checkoutPreview.exchangeRateNotice}
+              </p>
+            )}
+
             <p className="text-center text-sm text-gray-500 mb-6">
               {getCheckoutDescription(selectionCurrency)}
             </p>
@@ -219,6 +266,10 @@ export function UpgradeModal({
       </div>
     </>
   );
+}
+
+function isPaidPlan(id: string): id is "pro" | "starter" {
+  return id === "pro" || id === "starter";
 }
 
 export function useUpgradeModal() {

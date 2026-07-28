@@ -20,8 +20,7 @@ import {
   type BillingPeriod,
   type PricingPlan,
 } from "@/components/billing/pricing-data";
-import { parseBillingCurrency } from "@/lib/billing/currency";
-import { useBillingCurrency } from "@/hooks/useBillingCurrency";
+import { usePaymentRegion } from "@/hooks/useBillingCurrency";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 import { useSubscription } from "@/hooks/useSubscription";
 import type { BillingCurrency } from "@/lib/billing/currency";
@@ -69,15 +68,12 @@ export function PricingSection({
     refresh: refreshSubscription,
     applySubscription,
   } = useSubscription();
-  const { currency, setCurrency } = useBillingCurrency();
+  const { paymentCurrency, isIndia } = usePaymentRegion();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
   const [toast, setToast] = useState<PaymentToastState>(null);
 
-  const displayPlans = useMemo(
-    () => getDisplayPlans(currency, period),
-    [currency, period]
-  );
+  const displayPlans = useMemo(() => getDisplayPlans(period), [period]);
 
   const { openCheckout } = useRazorpayCheckout({
     onSuccess: async (planId, planName, subscription) => {
@@ -117,7 +113,6 @@ export function PricingSection({
 
   const handleSelect = useCallback(
     async (plan: PricingPlan) => {
-      // Paid checkout / upgrades paused — free marketing CTAs still navigate to signup.
       if (
         BILLING_TEMPORARILY_DISABLED &&
         !(mode === "marketing" && plan.id === "free")
@@ -184,19 +179,18 @@ export function PricingSection({
         const params = new URLSearchParams({
           plan: plan.id,
           period,
-          currency,
         });
         router.push(`/login?callbackUrl=${encodeURIComponent(`/billing?${params}`)}`);
         return;
       }
 
-      openUpgrade(plan, period, currency);
+      openUpgrade(plan, period, paymentCurrency);
     },
     [
       mode,
       session,
       period,
-      currency,
+      paymentCurrency,
       openUpgrade,
       router,
       refreshSubscription,
@@ -284,38 +278,29 @@ export function PricingSection({
       const params = new URLSearchParams(window.location.search);
       const planParam = params.get("plan");
       const periodParam = params.get("period");
-      const currencyParam = parseBillingCurrency(params.get("currency"));
       const billingPeriod: BillingPeriod =
         periodParam === "yearly" ? "yearly" : "monthly";
-
-      if (currencyParam) {
-        setCurrency(currencyParam);
-      }
 
       if (periodParam === "yearly" || periodParam === "monthly") {
         setPeriod(billingPeriod);
       }
 
       if (planParam === "starter" || planParam === "pro") {
-        const plan = getPlanById(
-          planParam,
-          currencyParam ?? currency,
-          billingPeriod
-        );
+        const plan = getPlanById(planParam, billingPeriod);
         if (plan) {
           if (BILLING_TEMPORARILY_DISABLED) {
             showComingSoon();
           } else {
-            openUpgrade(plan, billingPeriod, currencyParam ?? currency);
+            openUpgrade(plan, billingPeriod, paymentCurrency);
           }
         }
       }
 
-      if (params.has("plan") || params.has("period") || params.has("currency")) {
+      if (params.has("plan") || params.has("period")) {
         window.history.replaceState({}, "", window.location.pathname);
       }
     });
-  }, [syncFromUrl, openUpgrade, setCurrency, currency, showComingSoon]);
+  }, [syncFromUrl, openUpgrade, paymentCurrency, showComingSoon]);
 
   useEffect(() => {
     if (!proUpgradeRequest) return;
@@ -323,11 +308,11 @@ export function PricingSection({
       showComingSoon();
       return;
     }
-    const plan = getPlanById("pro", currency, period);
+    const plan = getPlanById("pro", period);
     if (plan) {
-      openUpgrade(plan, period, currency);
+      openUpgrade(plan, period, paymentCurrency);
     }
-  }, [proUpgradeRequest, currency, period, openUpgrade, showComingSoon]);
+  }, [proUpgradeRequest, period, openUpgrade, paymentCurrency, showComingSoon]);
 
   const isMarketing = mode === "marketing";
 
@@ -362,19 +347,14 @@ export function PricingSection({
           ) : null}
 
           <div className={title || subtitle ? "mt-8" : undefined}>
-            <PricingToggles
-              period={period}
-              currency={currency}
-              onPeriodChange={setPeriod}
-              onCurrencyChange={setCurrency}
-            />
+            <PricingToggles period={period} onPeriodChange={setPeriod} />
           </div>
         </motion.header>
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 items-stretch">
           {displayPlans.map((plan, index) => (
             <PremiumPricingCard
-              key={`${plan.id}-${currency}-${period}`}
+              key={`${plan.id}-${period}`}
               plan={plan}
               index={index}
               currentPlanId={isMarketing ? undefined : currentPlanId}
@@ -387,7 +367,7 @@ export function PricingSection({
 
       <UpgradeModal
         selection={selection}
-        currency={currency}
+        isIndia={isIndia}
         onClose={closeUpgrade}
         onDevUpgrade={isDevBillingEnabled() ? handleDevUpgrade : undefined}
         onCheckout={handleCheckout}

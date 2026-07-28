@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { fetchJson } from "@/lib/api/fetch-json";
 import type { BillingPeriod } from "@/components/billing/pricing-data";
@@ -43,6 +43,11 @@ function loadRazorpayScript(): Promise<void> {
   });
 }
 
+/** Show INR exchange rate disclaimer before opening Razorpay. */
+function confirmInrCheckout(notice: string): boolean {
+  return window.confirm(notice);
+}
+
 type CheckoutCallbacks = {
   onSuccess?: (
     planId: PlanId,
@@ -65,7 +70,7 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
     async (
       planId: PlanId,
       period: BillingPeriod,
-      currency: BillingCurrency,
+      paymentCurrency: BillingCurrency,
       razorpayPlanId?: string
     ) => {
       try {
@@ -75,7 +80,6 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
           body: JSON.stringify({
             planId,
             period,
-            currency,
             razorpayPlanId,
           }),
         });
@@ -96,6 +100,15 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
           return false;
         }
 
+        // Show INR disclaimer before opening Razorpay (amount calculated server-side).
+        if (orderData.exchangeRateNotice) {
+          const confirmed = confirmInrCheckout(orderData.exchangeRateNotice);
+          if (!confirmed) {
+            callbacksRef.current?.onCancel?.();
+            return false;
+          }
+        }
+
         await loadRazorpayScript();
 
         if (!window.Razorpay) {
@@ -114,13 +127,15 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
           theme: { color: "#3B82F6" },
         };
 
+        const resolvedCurrency = orderData.currency as BillingCurrency;
+
         return await new Promise<boolean>((resolve) => {
           const handler = async (response: RazorpayPaymentResponse) => {
             const verifyPayload = {
               ...response,
               planId,
               period,
-              currency,
+              currency: resolvedCurrency,
               razorpayPlanId: orderData.razorpayPlanId,
             };
 
@@ -142,11 +157,6 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
                   verifyResult.data.subscription?.planId ?? planId;
                 const planName =
                   verifyResult.data.subscription?.planName ?? planId;
-                console.log("[razorpay/checkout] verify success", {
-                  planId: verifiedPlanId,
-                  planName,
-                  attempt,
-                });
                 callbacksRef.current?.onSuccess?.(
                   verifiedPlanId,
                   planName,
@@ -157,11 +167,6 @@ export function useRazorpayCheckout(callbacks?: CheckoutCallbacks) {
               }
 
               lastError = verifyResult.error.message;
-              console.error("[razorpay/checkout] verify failed", {
-                attempt,
-                status: verifyResult.error.status,
-                error: verifyResult.error.message,
-              });
 
               if (
                 verifyResult.error.status &&

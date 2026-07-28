@@ -2,12 +2,10 @@
 
 import type { BillingPeriod, PricingPlan } from "./pricing-data";
 import { getDisplayPrice } from "@/lib/billing/pricing";
-import type { BillingCurrency } from "@/lib/billing/currency";
 
 type PricingCardProps = {
   plan: PricingPlan;
   period: BillingPeriod;
-  currency: BillingCurrency;
   onUpgrade?: (plan: PricingPlan) => void;
   isCurrentPlan?: boolean;
 };
@@ -15,11 +13,10 @@ type PricingCardProps = {
 export function PricingCard({
   plan,
   period,
-  currency,
   onUpgrade,
   isCurrentPlan,
 }: PricingCardProps) {
-  const pricing = getDisplayPrice(currency, plan.id, period);
+  const pricing = getDisplayPrice(plan.id, period);
   const isEnterprise = plan.id === "enterprise";
   const showYearlyNote = Boolean(plan.saveNote);
 

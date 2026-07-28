@@ -2,21 +2,16 @@
 
 import { motion } from "framer-motion";
 import type { BillingPeriod } from "../pricing-data";
-import type { BillingCurrency } from "@/lib/billing/currency";
 import { PricingToggles } from "../PricingToggles";
 
 type BillingHeaderProps = {
   period: BillingPeriod;
-  currency: BillingCurrency;
   onPeriodChange: (period: BillingPeriod) => void;
-  onCurrencyChange: (currency: BillingCurrency) => void;
 };
 
 export function BillingHeader({
   period,
-  currency,
   onPeriodChange,
-  onCurrencyChange,
 }: BillingHeaderProps) {
   return (
     <motion.header
@@ -39,12 +34,7 @@ export function BillingHeader({
       </p>
 
       <div className="mt-8">
-        <PricingToggles
-          period={period}
-          currency={currency}
-          onPeriodChange={onPeriodChange}
-          onCurrencyChange={onCurrencyChange}
-        />
+        <PricingToggles period={period} onPeriodChange={onPeriodChange} />
       </div>
     </motion.header>
   );

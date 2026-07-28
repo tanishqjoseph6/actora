@@ -20,6 +20,10 @@ export type CheckoutOrderResult = {
   currency: BillingCurrency;
   keyId?: string;
   description: string;
+  /** Approximate INR label for Indian checkout disclaimer. */
+  approximateInrLabel?: string;
+  /** Full disclaimer text shown before Razorpay opens. */
+  exchangeRateNotice?: string;
 };
 
 export interface PaymentProvider {

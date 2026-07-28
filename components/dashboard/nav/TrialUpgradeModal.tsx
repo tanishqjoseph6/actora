@@ -26,13 +26,13 @@ const PLANS: {
   {
     id: "free",
     name: "Free",
-    price: "₹0",
+    price: "$0",
     features: ["14-day trial access", "1 Gmail account", "Basic inbox & CRM"],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "₹2,200",
+    price: "$20",
     highlight: true,
     features: [
       "20 Gmail accounts",
@@ -44,7 +44,7 @@ const PLANS: {
   {
     id: "team",
     name: "Team",
-    price: "₹6,072",
+    price: "$69",
     features: [
       "Everything in Pro",
       "Unlimited Gmail",

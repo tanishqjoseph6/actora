@@ -11,8 +11,8 @@ import {
   type AiCreditPack,
   type AiCreditPackId,
 } from "@/lib/ai-credits/packs";
+import { usePaymentRegion } from "@/hooks/useBillingCurrency";
 import type { BillingCurrency } from "@/lib/billing/currency";
-import { useBillingCurrency } from "@/hooks/useBillingCurrency";
 import type { SubscriptionSnapshot } from "@/lib/subscription";
 import { cn } from "@/lib/utils";
 import type { RazorpayOrderPaymentResponse } from "@/types/razorpay";
@@ -70,7 +70,7 @@ export function CreditTopUpSection({
   onToast,
 }: CreditTopUpSectionProps) {
   const { data: session } = useSession();
-  const { currency } = useBillingCurrency();
+  const { isIndia } = usePaymentRegion();
   const [selected, setSelected] = useState<AiCreditPackId>("pro");
   const [buying, setBuying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,11 +119,23 @@ export function CreditTopUpSection({
         const orderRes = await fetch("/api/ai-credits/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ packId: pack.id, currency }),
+          body: JSON.stringify({ packId: pack.id }),
         });
         const orderData = await orderRes.json();
         if (!orderRes.ok) {
           throw new Error(orderData.error ?? "Failed to start checkout.");
+        }
+
+        if (orderData.exchangeRateNotice) {
+          const confirmed = window.confirm(orderData.exchangeRateNotice);
+          if (!confirmed) {
+            onToast?.({
+              type: "info",
+              title: "Payment cancelled",
+              message: "Checkout was closed before payment completed.",
+            });
+            return;
+          }
         }
 
         await loadRazorpayScript();
@@ -222,7 +234,7 @@ export function CreditTopUpSection({
       }
     },
     [
-      currency,
+      isIndia,
       loadHistory,
       onPurchaseSuccess,
       onToast,
@@ -278,7 +290,7 @@ export function CreditTopUpSection({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {packs.map((pack) => {
           const active = selected === pack.id;
-          const price = formatAiCreditPackPrice(pack.id, currency);
+          const price = formatAiCreditPackPrice(pack.id);
           return (
             <motion.div
               key={pack.id}

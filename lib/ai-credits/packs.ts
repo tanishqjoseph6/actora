@@ -1,5 +1,9 @@
 import type { BillingCurrency } from "@/lib/billing/currency";
-import { getUsdInrExchangeRate } from "@/lib/billing/exchange-rate";
+import { formatUsdCents } from "@/lib/billing/exchange-rate";
+import {
+  convertUsdCentsToInrPaise,
+  getUsdChargeAmount,
+} from "@/lib/billing/pricing-amounts";
 
 export const AI_CREDIT_PACK_IDS = [
   "starter",
@@ -14,7 +18,7 @@ export type AiCreditPack = {
   id: AiCreditPackId;
   name: string;
   credits: number;
-  /** USD price in cents */
+  /** USD price in cents — single source of truth */
   usdCents: number;
   badge?: string;
   highlight?: "most_popular" | "best_value";
@@ -63,27 +67,28 @@ export function isAiCreditPackId(value: string): value is AiCreditPackId {
   return (AI_CREDIT_PACK_IDS as readonly string[]).includes(value);
 }
 
-/** Charge amount in the currency's smallest unit (cents / paise). */
-export function getAiCreditPackAmount(
+/** Display price in USD only — INR is shown at checkout via backend preview. */
+export function formatAiCreditPackPrice(packId: AiCreditPackId): string {
+  const pack = getAiCreditPack(packId);
+  if (!pack) return "";
+  return formatUsdCents(pack.usdCents);
+}
+
+/**
+ * Server-side charge amount in the currency's smallest unit.
+ * INR amounts use the live USD → INR exchange rate.
+ */
+export async function getAiCreditPackAmount(
   packId: AiCreditPackId,
   currency: BillingCurrency
-): number {
+): Promise<number> {
   const pack = getAiCreditPack(packId);
   if (!pack) return 0;
   if (currency === "USD") return pack.usdCents;
-  return Math.round(pack.usdCents * getUsdInrExchangeRate());
+  const { paise } = await convertUsdCentsToInrPaise(pack.usdCents);
+  return paise;
 }
 
-export function formatAiCreditPackPrice(
-  packId: AiCreditPackId,
-  currency: BillingCurrency
-): string {
-  const amount = getAiCreditPackAmount(packId, currency);
-  if (currency === "USD") {
-    return `$${(amount / 100).toLocaleString("en-US", {
-      minimumFractionDigits: amount % 100 === 0 ? 0 : 2,
-      maximumFractionDigits: 2,
-    })}`;
-  }
-  return `₹${Math.round(amount / 100).toLocaleString("en-IN")}`;
+export function getAiCreditPackUsdCents(packId: AiCreditPackId): number {
+  return getAiCreditPack(packId)?.usdCents ?? 0;
 }
