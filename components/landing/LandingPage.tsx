@@ -5,14 +5,17 @@ import { useCallback, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { PricingSection } from "@/components/billing/PricingSection";
+import { AiCommandBar } from "./AiCommandBar";
 import { FeatureShowcaseSection } from "./FeatureShowcaseSection";
 import { FinalCtaSection } from "./FinalCtaSection";
 import { HeroSection } from "./HeroSection";
+import { HowActoraWorksSection } from "./HowActoraWorksSection";
 import { LandingFaq } from "./LandingFaq";
 import { LinearComparisonSection } from "./LinearComparisonSection";
 import { ProductShowcase } from "./ProductShowcase";
 import { SectionHeader } from "./SectionHeader";
-import { TrustSection } from "./TrustSection";
+import { SecuritySection } from "./SecuritySection";
+import { WhyActoraSection } from "./WhyActoraSection";
 import { FadeUp } from "./motion";
 
 const InteractiveDemoTour = dynamic(
@@ -30,9 +33,11 @@ export function LandingPage() {
   return (
     <>
       <HeroSection onTryDemo={openDemo} />
-      <TrustSection />
-      <FeatureShowcaseSection />
       <ProductShowcase onTryDemo={openDemo} />
+      <HowActoraWorksSection />
+      <FeatureShowcaseSection />
+      <WhyActoraSection />
+      <SecuritySection />
 
       <section
         id="pricing"
@@ -65,13 +70,16 @@ export function LandingPage() {
       </section>
 
       <LinearComparisonSection />
-      <FinalCtaSection />
-      <LandingFaq limit={5} />
-      <p className="mx-auto -mt-12 max-w-3xl px-5 pb-20 text-center text-sm text-[#71717A] sm:px-8 sm:-mt-16 sm:pb-24">
+      <LandingFaq limit={6} useHomeFaq />
+      <FinalCtaSection onTryDemo={openDemo} />
+
+      <p className="mx-auto -mt-8 max-w-3xl px-5 pb-28 text-center text-sm text-[#71717A] sm:px-8 sm:pb-32">
         <Link href="/faq" className="text-[#93C5FD] transition-colors hover:text-white">
           View all FAQs →
         </Link>
       </p>
+
+      <AiCommandBar hidden={demoOpen} />
 
       <AnimatePresence>
         {demoOpen && <InteractiveDemoTour onClose={closeDemo} />}

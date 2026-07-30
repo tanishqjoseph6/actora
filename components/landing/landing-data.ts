@@ -278,6 +278,46 @@ export const LANDING_FEATURE_SECTIONS = [
 
 export type LandingFeatureId = (typeof LANDING_FEATURE_SECTIONS)[number]["id"];
 
+/** Homepage FAQ — conversion-focused questions */
+export const HOME_LANDING_FAQ = [
+  {
+    id: "what-is-actora",
+    question: "What is Actora?",
+    answer:
+      "Actora is an AI-powered workspace that unifies conversations, CRM, tasks, meetings, documents, calendar, and automations — so every conversation becomes execution.",
+  },
+  {
+    id: "who-for",
+    question: "Who is it for?",
+    answer:
+      "Founders, revenue operators, agencies, and teams who run their business on email and need one place to organize, execute, and follow through.",
+  },
+  {
+    id: "solo",
+    question: "Can I use it alone?",
+    answer:
+      "Yes. Start solo with a free 14-day trial. Upgrade to Pro or Team when you're ready to collaborate.",
+  },
+  {
+    id: "teams",
+    question: "Does it support teams?",
+    answer:
+      "Absolutely. Team plans include shared AI credits, unlimited members, role-based permissions, and a shared workspace.",
+  },
+  {
+    id: "security-faq",
+    question: "How secure is my data?",
+    answer:
+      "Actora uses Google OAuth, encrypted sessions, and workspace-scoped access. We never store your Google password. See our Privacy Policy for full details.",
+  },
+  {
+    id: "cancel",
+    question: "Can I cancel anytime?",
+    answer:
+      "Yes. Cancel anytime from Billing. Your plan stays active until the end of the current billing period — no lock-in.",
+  },
+] as const;
+
 export const TRUSTED_SEGMENTS = [
   "Revenue Ops",
   "Founders",

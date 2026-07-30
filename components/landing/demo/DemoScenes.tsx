@@ -36,7 +36,15 @@ type SceneProps = {
   activeNav?: string;
 };
 
-export function DemoScene({ stepId, activeNav }: { stepId: DemoStepId; activeNav?: string }) {
+export function DemoScene({
+  stepId,
+  activeNav,
+  onClose,
+}: {
+  stepId: DemoStepId;
+  activeNav?: string;
+  onClose?: () => void;
+}) {
   switch (stepId) {
     case "welcome":
       return <WelcomeScene activeNav={activeNav} />;
@@ -57,7 +65,7 @@ export function DemoScene({ stepId, activeNav }: { stepId: DemoStepId; activeNav
     case "analytics":
       return <AnalyticsScene activeNav={activeNav} />;
     case "ending":
-      return <EndingScene />;
+      return <EndingScene onClose={onClose} />;
     default:
       return null;
   }
@@ -421,12 +429,11 @@ function DocumentsScene({ activeNav }: SceneProps) {
 
 function AutomationsScene({ activeNav }: SceneProps) {
   const steps = [
-    "Customer replies",
-    "Lead updated",
-    "CRM updated",
-    "Task created",
-    "Reminder scheduled",
-    "Notification sent",
+    "Email",
+    "CRM",
+    "Task",
+    "Reminder",
+    "Notification",
   ];
 
   return (
@@ -495,7 +502,7 @@ function RoxxScene({ activeNav }: SceneProps) {
             transition={{ duration: 0.8 }}
             className="mt-1 text-xs leading-relaxed text-white sm:text-sm"
           >
-            &ldquo;Follow up with every customer that hasn&apos;t replied in 7 days.&rdquo;
+            &ldquo;Follow up with everyone that hasn&apos;t replied in 7 days.&rdquo;
           </motion.p>
         </motion.div>
 
@@ -594,13 +601,13 @@ function AnalyticsScene({ activeNav }: SceneProps) {
   );
 }
 
-function EndingScene() {
+function EndingScene({ onClose }: { onClose?: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1 }}
-      className="flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#0A0A0A] px-6 text-center"
+      className="relative flex h-full min-h-[320px] flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#0A0A0A] px-6 text-center"
     >
       <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.12),transparent_70%)]" />
       <motion.p
@@ -623,7 +630,7 @@ function EndingScene() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.9, duration: 0.5 }}
-        className="relative mt-8 flex flex-col items-center gap-3"
+        className="relative mt-8 flex flex-col items-center gap-3 sm:flex-row"
       >
         <Link
           href="/signup"
@@ -631,7 +638,15 @@ function EndingScene() {
         >
           Start Free
         </Link>
-        <p className="text-sm text-[#71717A]">useactora.com</p>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-12 min-w-[180px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.03] px-8 text-sm font-medium text-white transition-colors hover:bg-white/[0.06]"
+          >
+            Close Demo
+          </button>
+        )}
       </motion.div>
     </motion.div>
   );

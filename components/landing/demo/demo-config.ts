@@ -22,7 +22,7 @@ export type DemoStep = {
 export const DEMO_STEPS: DemoStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Actora",
+    title: "Welcome Dashboard",
     tooltip: "Welcome to your AI workspace.",
     durationMs: 7000,
     sidebarHighlight: "Dashboard",

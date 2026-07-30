@@ -36,7 +36,7 @@ export default function FaqPage() {
         title="Frequently asked questions"
         subtitle="Security, AI credits, billing, team workspaces, and privacy — straight answers for operators evaluating Actora."
       />
-      <LandingFaq showHeader={false} />
+      <LandingFaq showHeader={false} useHomeFaq={false} />
       <p className="mx-auto max-w-3xl px-5 pb-8 text-center text-sm text-[#71717A] sm:px-8">
         Still stuck?{" "}
         <Link href="/contact" className="text-[#93C5FD] hover:text-white">

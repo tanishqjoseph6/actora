@@ -155,6 +155,7 @@ export function InteractiveDemoTour({ onClose }: InteractiveDemoTourProps) {
                 <DemoScene
                   stepId={currentStep.id}
                   activeNav={currentStep.sidebarHighlight}
+                  onClose={handleSkip}
                 />
               )}
             </motion.div>
