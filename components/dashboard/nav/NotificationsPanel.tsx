@@ -20,19 +20,34 @@ function formatRelative(iso: string): string {
 }
 
 function isPriorityNotification(item: UserNotification): boolean {
-  if (item.category === "Calendar" || item.category === "Roxx AI") return true;
+  if (
+    item.category === "Calendar" ||
+    item.category === "Roxx AI" ||
+    item.category === "Growth" ||
+    item.category === "Invites"
+  ) {
+    return true;
+  }
   const text = `${item.title} ${item.body}`.toLowerCase();
-  return text.includes("mention") || text.includes("reminder");
+  return (
+    text.includes("mention") ||
+    text.includes("reminder") ||
+    text.includes("reward") ||
+    text.includes("invite accepted")
+  );
 }
 
 function groupNotifications(items: UserNotification[]) {
   const priority: UserNotification[] = [];
   const automations: UserNotification[] = [];
+  const growth: UserNotification[] = [];
   const updates: UserNotification[] = [];
 
   for (const item of items) {
     if (item.category === "Automations") {
       automations.push(item);
+    } else if (item.category === "Growth" || item.category === "Invites") {
+      growth.push(item);
     } else if (isPriorityNotification(item)) {
       priority.push(item);
     } else {
@@ -42,6 +57,7 @@ function groupNotifications(items: UserNotification[]) {
 
   return [
     { id: "priority", label: "Priority", items: priority },
+    { id: "growth", label: "Growth & invites", items: growth },
     { id: "automations", label: "Automations", items: automations },
     { id: "updates", label: "Updates", items: updates },
   ].filter((group) => group.items.length > 0);

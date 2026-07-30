@@ -26,6 +26,9 @@ import {
 } from "@/components/settings/SettingsSection";
 import { SettingsHeader, SettingsSidebar } from "@/components/settings/SettingsSidebar";
 import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
+import { ReferralSettingsPanel } from "@/components/growth/ReferralSettingsPanel";
+import { AchievementsPanel } from "@/components/growth/AchievementsPanel";
+import { GrowthUsagePanel } from "@/components/growth/GrowthUsagePanel";
 import { SkeletonListRows } from "@/components/ui/Skeleton";
 import {
   WorkspaceActivitySection,
@@ -82,6 +85,9 @@ export default function SettingsPage() {
       "workspace-billing",
       "workspace-credits",
       "workspace-activity",
+      "referrals",
+      "achievements",
+      "usage-analytics",
       "notifications",
       "integrations",
       "preferences",
@@ -222,6 +228,30 @@ export default function SettingsPage() {
             description="Membership, role, plan, and credit events."
           >
             <WorkspaceActivitySection />
+          </SettingsSection>
+
+          <SettingsSection
+            id="referrals"
+            title="Referrals"
+            description="Share Actora and earn Pro rewards."
+          >
+            <ReferralSettingsPanel />
+          </SettingsSection>
+
+          <SettingsSection
+            id="achievements"
+            title="Achievements"
+            description="Streaks, badges, and workspace progress."
+          >
+            <AchievementsPanel />
+          </SettingsSection>
+
+          <SettingsSection
+            id="usage-analytics"
+            title="Usage analytics"
+            description="Tasks, AI prompts, CRM, automations — and email preferences."
+          >
+            <GrowthUsagePanel />
           </SettingsSection>
 
           {/* Notifications */}

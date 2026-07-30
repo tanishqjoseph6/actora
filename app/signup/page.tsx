@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AuthBackLink,
   AuthCard,
@@ -18,14 +18,37 @@ import {
   validatePasswordMatch,
 } from "@/lib/auth/password-reset";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      try {
+        window.localStorage.setItem(
+          "actora_referral_code",
+          ref.trim().toUpperCase()
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+    const invite = searchParams.get("invite");
+    if (invite) {
+      try {
+        window.localStorage.setItem("actora_pending_invite", invite);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [searchParams]);
 
   const handleEmailSignup = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -176,5 +199,13 @@ export default function SignupPage() {
         Continue with Google
       </button>
     </AuthCard>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#0A0A0A]" />}>
+      <SignupForm />
+    </Suspense>
   );
 }

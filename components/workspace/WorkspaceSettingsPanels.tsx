@@ -412,19 +412,39 @@ export function WorkspaceMembersSection() {
                   </p>
                 </div>
                 {inv.status === "pending" && (
-                  <button
-                    type="button"
-                    className="text-xs text-red-300 hover:underline"
-                    onClick={async () => {
-                      await fetch(
-                        `/api/workspaces/${active.id}/invitations?invitationId=${inv.id}`,
-                        { method: "DELETE", credentials: "include" }
-                      );
-                      await load();
-                    }}
-                  >
-                    Revoke
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="text-xs text-[#60A5FA] hover:underline"
+                      onClick={async () => {
+                        await fetch(`/api/workspaces/${active.id}/invitations`, {
+                          method: "PATCH",
+                          credentials: "include",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            invitationId: inv.id,
+                            action: "resend",
+                          }),
+                        });
+                        await load();
+                      }}
+                    >
+                      Resend
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-300 hover:underline"
+                      onClick={async () => {
+                        await fetch(
+                          `/api/workspaces/${active.id}/invitations?invitationId=${inv.id}`,
+                          { method: "DELETE", credentials: "include" }
+                        );
+                        await load();
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 )}
               </li>
             ))}

@@ -18,6 +18,8 @@ export {
   createInvitation,
   listInvitations,
   revokeInvitation,
+  resendInvitation,
+  getInvitationByToken,
   acceptInvitation,
   leaveWorkspace,
   listActivity,

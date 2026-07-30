@@ -6,11 +6,14 @@ import {
   listInvitations,
   requireWorkspaceMembership,
   revokeInvitation,
+  resendInvitation,
   WORKSPACE_ROLES,
   type WorkspaceRole,
 } from "@/lib/workspace";
 import { sendWorkspaceInvitationEmail } from "@/lib/email/workspace-invite";
 import { getAppUrl } from "@/lib/email/config";
+import { createUserNotification } from "@/lib/notifications/repository";
+import { trackEngagement } from "@/lib/growth/engagement";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -29,6 +32,10 @@ function publicInvitation(invitation: {
 }) {
   const { token: _token, ...rest } = invitation;
   return rest;
+}
+
+function invitePageUrl(token: string) {
+  return `${getAppUrl()}/invite/${token}`;
 }
 
 export async function GET(request: NextRequest, { params }: Params) {
@@ -87,7 +94,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       invitedBy: auth.email,
     });
 
-    const inviteUrl = `${getAppUrl()}/dashboard/settings?invite=${invitation.token}#workspace-members`;
+    const inviteUrl = invitePageUrl(invitation.token);
 
     const workspace = await getWorkspaceById(id);
     void sendWorkspaceInvitationEmail({
@@ -100,6 +107,11 @@ export async function POST(request: NextRequest, { params }: Params) {
       console.error("[api/workspaces/invites] email failed", err);
     });
 
+    void trackEngagement({
+      userId: auth.email,
+      achievementId: "first_teammate",
+    });
+
     return Response.json(
       { invitation: publicInvitation(invitation), inviteSent: true, inviteUrl },
       { status: 201 }
@@ -109,6 +121,70 @@ export async function POST(request: NextRequest, { params }: Params) {
     return Response.json(
       { error: error instanceof Error ? error.message : "Invite failed." },
       { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const { id } = await params;
+  const auth = await requireWorkspaceMembership(id, request);
+  if (!auth.ok) return auth.response;
+
+  if (!canInviteMembers(auth.ctx.role)) {
+    return Response.json({ error: "Forbidden.", code: "FORBIDDEN" }, { status: 403 });
+  }
+
+  try {
+    const body = (await request.json()) as {
+      invitationId?: string;
+      action?: string;
+    };
+    if (!body.invitationId || body.action !== "resend") {
+      return Response.json(
+        { error: "invitationId and action=resend required." },
+        { status: 400 }
+      );
+    }
+
+    const invitation = await resendInvitation({
+      invitationId: body.invitationId,
+      workspaceId: id,
+      actorUserId: auth.email,
+    });
+
+    const inviteUrl = invitePageUrl(invitation.token);
+    const workspace = await getWorkspaceById(id);
+    void sendWorkspaceInvitationEmail({
+      to: invitation.email,
+      workspaceName: workspace?.name ?? "Actora workspace",
+      inviterEmail: auth.email,
+      roleLabel:
+        invitation.role_id === "admin"
+          ? "Admin"
+          : invitation.role_id === "viewer"
+            ? "Viewer"
+            : "Member",
+      inviteUrl,
+    }).catch((err) => {
+      console.error("[api/workspaces/invites] resend email failed", err);
+    });
+
+    void createUserNotification(auth.email, {
+      category: "Invites",
+      title: "Invitation resent",
+      body: `Resent invite to ${invitation.email}`,
+      href: "/dashboard/settings#workspace-members",
+    });
+
+    return Response.json({
+      invitation: publicInvitation(invitation),
+      inviteUrl,
+      inviteSent: true,
+    });
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Resend failed." },
+      { status: 400 }
     );
   }
 }

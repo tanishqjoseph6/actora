@@ -5,7 +5,9 @@ export type NotificationCategory =
   | "Automations"
   | "Roxx AI"
   | "Product Updates"
-  | "Billing Updates";
+  | "Billing Updates"
+  | "Growth"
+  | "Invites";
 
 export type UserNotification = {
   id: string;
@@ -36,6 +38,8 @@ export const NOTIFICATION_CATEGORY_HREF: Record<NotificationCategory, string> = 
   "Roxx AI": "/dashboard",
   "Product Updates": "/dashboard/settings",
   "Billing Updates": "/billing",
+  Growth: "/dashboard/settings#referrals",
+  Invites: "/dashboard/settings#workspace-members",
 };
 
 export function normalizeNotificationCategory(
@@ -52,6 +56,8 @@ export function normalizeNotificationCategory(
     "Roxx AI",
     "Product Updates",
     "Billing Updates",
+    "Growth",
+    "Invites",
   ];
   if (value && categories.includes(value as NotificationCategory)) {
     return value as NotificationCategory;

@@ -553,6 +553,84 @@ export async function revokeInvitation(input: {
   });
 }
 
+export async function getInvitationByToken(
+  token: string
+): Promise<(WorkspaceInvitationRecord & { workspace_name?: string }) | null> {
+  const db = requireSupabaseAdmin();
+  const { data: invite } = await db
+    .from("workspace_invitations")
+    .select("*")
+    .eq("token", token)
+    .maybeSingle();
+
+  if (!invite) return null;
+
+  // Expire if needed
+  if (
+    invite.status === "pending" &&
+    invite.expires_at &&
+    new Date(String(invite.expires_at)).getTime() < Date.now()
+  ) {
+    await db
+      .from("workspace_invitations")
+      .update({ status: "expired" })
+      .eq("id", invite.id);
+    return {
+      ...(invite as WorkspaceInvitationRecord),
+      status: "expired",
+    };
+  }
+
+  const workspace = await getWorkspaceById(String(invite.workspace_id));
+  return {
+    ...(invite as WorkspaceInvitationRecord),
+    workspace_name: workspace?.name,
+  };
+}
+
+export async function resendInvitation(input: {
+  invitationId: string;
+  workspaceId: string;
+  actorUserId: string;
+}): Promise<WorkspaceInvitationRecord> {
+  const db = requireSupabaseAdmin();
+  const { data: existing } = await db
+    .from("workspace_invitations")
+    .select("*")
+    .eq("id", input.invitationId)
+    .eq("workspace_id", input.workspaceId)
+    .maybeSingle();
+
+  if (!existing) throw new Error("Invitation not found.");
+  if (existing.status === "accepted") {
+    throw new Error("Invitation already accepted.");
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setUTCDate(expiresAt.getUTCDate() + 7);
+
+  const { data, error } = await db
+    .from("workspace_invitations")
+    .update({
+      status: "pending",
+      expires_at: expiresAt.toISOString(),
+    })
+    .eq("id", input.invitationId)
+    .select("*")
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? "Resend failed.");
+
+  await logWorkspaceActivity({
+    workspaceId: input.workspaceId,
+    actorUserId: normalizeSubscriptionUserId(input.actorUserId),
+    action: "invite.resent",
+    metadata: { invitationId: input.invitationId, email: data.email },
+  });
+
+  return data as WorkspaceInvitationRecord;
+}
+
 export async function acceptInvitation(input: {
   token: string;
   userId: string;

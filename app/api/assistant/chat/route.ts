@@ -17,6 +17,8 @@ import { subscriptionProvider } from "@/lib/subscription";
 import { requireWorkspacePermission } from "@/lib/workspace/require";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import type { PlanId } from "@/lib/subscription";
+import { trackEngagement } from "@/lib/growth/engagement";
+import { incrementGrowthMetric } from "@/lib/growth/repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -126,6 +128,12 @@ export async function POST(request: NextRequest) {
               tokens: totalTokens,
               model: resolved.model.id,
             });
+            void trackEngagement({
+              userId,
+              achievementId: "first_ai_prompt",
+              activateReferral: true,
+            });
+            void incrementGrowthMetric(userId, "ai_prompts", 1);
           } else {
             await refundAiCredits(userId, 1, {
               creditUserId: creditGate.creditUserId,

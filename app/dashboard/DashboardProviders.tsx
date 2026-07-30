@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, Suspense } from "react";
 import { PlanGateProvider } from "@/components/subscription/PlanGateProvider";
 import { PlanActivationToastListener } from "@/components/billing/PlanActivationToastListener";
 import { AiCreditUsageAlerts } from "@/components/subscription/AiCreditUsageAlerts";
@@ -8,6 +8,7 @@ import { TrialBanner } from "@/components/subscription/TrialBanner";
 import { DashboardShellLayout } from "@/components/dashboard/DashboardShellLayout";
 import { DashboardOnboarding } from "@/components/dashboard/ai/DashboardOnboarding";
 import { RoxxFloatingButton } from "@/components/dashboard/ai/RoxxFloatingButton";
+import { GrowthBootstrap } from "@/components/growth/GrowthBootstrap";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
 import { GmailAccountsProvider } from "@/providers/GmailAccountsProvider";
@@ -44,6 +45,9 @@ export function DashboardProviders({ children }: { children: React.ReactNode }) 
           <NotificationsProvider>
             <ToastProvider>
               <RoxxProvider>
+                <Suspense fallback={null}>
+                  <GrowthBootstrap />
+                </Suspense>
                 <PlanActivationToastListener />
                 <AiCreditUsageAlerts />
                 <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
