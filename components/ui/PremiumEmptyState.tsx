@@ -100,7 +100,7 @@ export function PremiumEmptyState({
   );
 }
 
-function EmptyIllustration({ type }: { type: EmptyStateIllustration }) {
+export function EmptyIllustration({ type }: { type: EmptyStateIllustration }) {
   const gradientId = `empty-grad-${type}`;
 
   switch (type) {

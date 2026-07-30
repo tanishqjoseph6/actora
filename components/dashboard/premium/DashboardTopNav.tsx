@@ -7,8 +7,10 @@ import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { GmailAccountSwitcher } from "@/components/dashboard/nav/GmailAccountSwitcher";
 import { NotificationsPanel } from "@/components/dashboard/nav/NotificationsPanel";
 import { UserProfileMenu } from "@/components/dashboard/nav/UserProfileMenu";
-import { GlobalCommandSearch } from "@/components/dashboard/nav/GlobalCommandSearch";
+import { RoxxCommandTrigger } from "@/components/dashboard/ai/GlobalAiCommandPalette";
 import { TrialUpgradeModal } from "@/components/dashboard/nav/TrialUpgradeModal";
+import { useRoxx } from "@/providers/RoxxProvider";
+import { Sparkles } from "lucide-react";
 
 type DashboardTopNavProps = {
   onMenuClick: () => void;
@@ -20,6 +22,7 @@ export const DashboardTopNav = memo(function DashboardTopNav({
   title,
 }: DashboardTopNavProps) {
   const { subscription, loading } = usePlanGate();
+  const { openCopilot } = useRoxx();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   return (
@@ -40,9 +43,18 @@ export const DashboardTopNav = memo(function DashboardTopNav({
           </p>
         )}
 
-        <GlobalCommandSearch />
+        <RoxxCommandTrigger />
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <button
+            type="button"
+            onClick={() => openCopilot()}
+            className="hidden rounded-xl border border-[#3B82F6]/25 bg-[#3B82F6]/10 p-2 text-[#93C5FD] transition-colors hover:border-[#3B82F6]/45 sm:inline-flex interactive-press"
+            aria-label="Open Roxx AI copilot"
+            title="Roxx AI (⌘J)"
+          >
+            <Sparkles className="h-[18px] w-[18px]" />
+          </button>
           <GmailAccountSwitcher />
           <NotificationsPanel />
 

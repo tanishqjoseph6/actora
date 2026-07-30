@@ -10,7 +10,8 @@ export type ShortcutChord = {
 };
 
 export const DASHBOARD_SHORTCUTS: ShortcutChord[] = [
-  { keys: "⌘/Ctrl + K", description: "Open command search", group: "General" },
+  { keys: "⌘/Ctrl + K", description: "Open AI command bar", group: "General" },
+  { keys: "⌘/Ctrl + J", description: "Open Roxx AI copilot", group: "General" },
   { keys: "?", description: "Show keyboard shortcuts", group: "General" },
   { keys: "Esc", description: "Close menus and dialogs", group: "General" },
   { keys: "G then I", description: "Go to AI Inbox", group: "Navigation" },

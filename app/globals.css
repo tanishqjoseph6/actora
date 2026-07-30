@@ -434,3 +434,21 @@ body {
   }
 }
 
+/* Light theme — toggled via ThemeProvider (data-theme on html) */
+[data-theme="light"] {
+  --actora-bg: #fafafa;
+  --actora-surface: #ffffff;
+  --actora-card: #f4f4f5;
+  --actora-border: rgba(0, 0, 0, 0.08);
+  --actora-text: #09090b;
+  --actora-text-secondary: #52525b;
+  --actora-muted: #71717a;
+  --background: var(--actora-bg);
+  --foreground: var(--actora-text);
+}
+
+[data-theme="light"] body {
+  background: var(--actora-bg);
+  color: var(--actora-text);
+}
+

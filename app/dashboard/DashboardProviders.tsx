@@ -6,10 +6,13 @@ import { PlanActivationToastListener } from "@/components/billing/PlanActivation
 import { AiCreditUsageAlerts } from "@/components/subscription/AiCreditUsageAlerts";
 import { TrialBanner } from "@/components/subscription/TrialBanner";
 import { DashboardShellLayout } from "@/components/dashboard/DashboardShellLayout";
+import { DashboardOnboarding } from "@/components/dashboard/ai/DashboardOnboarding";
+import { RoxxFloatingButton } from "@/components/dashboard/ai/RoxxFloatingButton";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
 import { GmailAccountsProvider } from "@/providers/GmailAccountsProvider";
 import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
+import { RoxxProvider } from "@/providers/RoxxProvider";
 import { KeyboardShortcutsModal } from "@/components/dashboard/nav/KeyboardShortcutsModal";
 import { useDashboardKeyboardShortcuts } from "@/hooks/useDashboardKeyboardShortcuts";
 
@@ -40,14 +43,18 @@ export function DashboardProviders({ children }: { children: React.ReactNode }) 
         <PlanGateProvider>
           <NotificationsProvider>
             <ToastProvider>
-              <PlanActivationToastListener />
-              <AiCreditUsageAlerts />
-              <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
-                <TrialBanner />
-              </div>
-              <DashboardKeyboardLayer>
-                <DashboardShellLayout>{children}</DashboardShellLayout>
-              </DashboardKeyboardLayer>
+              <RoxxProvider>
+                <PlanActivationToastListener />
+                <AiCreditUsageAlerts />
+                <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
+                  <TrialBanner />
+                </div>
+                <DashboardKeyboardLayer>
+                  <DashboardShellLayout>{children}</DashboardShellLayout>
+                </DashboardKeyboardLayer>
+                <RoxxFloatingButton />
+                <DashboardOnboarding />
+              </RoxxProvider>
             </ToastProvider>
           </NotificationsProvider>
         </PlanGateProvider>

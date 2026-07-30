@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { PremiumSidebar } from "./premium/PremiumSidebar";
 import { DashboardTopNav } from "./premium/DashboardTopNav";
 import { DashboardPageTransition } from "./DashboardPageTransition";
+import { ContextualAiBar } from "./ai/ContextualAiBar";
 import { dashboard } from "./premium/dashboard-tokens";
 import { DASHBOARD_MOBILE_TITLES } from "./nav-config";
 import { useResetSidebarOnMobile } from "@/hooks/useResetSidebarOnMobile";
@@ -66,6 +67,7 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
             ref={scrollRef}
             className="premium-scrollbar mx-auto w-full max-w-[1600px] min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6 md:p-8 lg:p-10"
           >
+            <ContextualAiBar />
             <DashboardPageTransition>{children}</DashboardPageTransition>
           </section>
         </div>

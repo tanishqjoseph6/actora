@@ -159,7 +159,19 @@ function renderMarkdownLite(text: string) {
   });
 }
 
-export function AiAssistantPanel() {
+export type AiAssistantPanelProps = {
+  variant?: "embedded" | "drawer";
+  pendingPrompt?: string | null;
+  onPendingPromptConsumed?: () => void;
+  onClose?: () => void;
+};
+
+export function AiAssistantPanel({
+  variant = "embedded",
+  pendingPrompt = null,
+  onPendingPromptConsumed,
+  onClose,
+}: AiAssistantPanelProps = {}) {
   const { checkAiAction, showLimitModal, refreshSubscription } =
     usePlanGateActions();
   const { subscription, loading: planLoading } = usePlanGate();
@@ -211,12 +223,13 @@ export function AiAssistantPanel() {
   }, [planId, selectedModel]);
 
   useEffect(() => {
+    if (variant === "drawer") return;
     const previous = document.title;
     document.title = "Roxx AI | Actora";
     return () => {
       document.title = previous;
     };
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
     if (!bootstrapped) return;
@@ -516,12 +529,21 @@ export function AiAssistantPanel() {
     void sendPrompt(prompt);
   };
 
+  useEffect(() => {
+    if (!pendingPrompt || !bootstrapped || streaming) return;
+    void sendPrompt(pendingPrompt);
+    onPendingPromptConsumed?.();
+  }, [pendingPrompt, bootstrapped]); // eslint-disable-line react-hooks/exhaustive-deps -- fire once per pending prompt
+
   const lastAssistant = [...messages]
     .reverse()
     .find((m) => m.role === "assistant" && m.content);
 
+  const isDrawer = variant === "drawer";
+
   return (
     <>
+    {!isDrawer && (
     <div className="mb-4 lg:hidden">
       <AiCreditsCard
         subscription={subscription}
@@ -530,12 +552,18 @@ export function AiAssistantPanel() {
         detailed
       />
     </div>
+    )}
     <motion.section
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.28 }}
-      className={`${dashboard.cardLg} mb-8 overflow-hidden lg:mb-10`}
+      className={
+        isDrawer
+          ? "flex h-full min-h-0 flex-col overflow-hidden"
+          : `${dashboard.cardLg} mb-8 overflow-hidden lg:mb-10`
+      }
     >
+      {!isDrawer && (
       <div className="flex items-start gap-3 border-b border-white/[0.06] p-5 sm:p-6">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/15 text-[#3B82F6]">
           <Bot className="h-5 w-5" strokeWidth={1.75} />
@@ -601,9 +629,54 @@ export function AiAssistantPanel() {
           </button>
         </div>
       </div>
+      )}
+
+      {isDrawer && (
+        <div className="flex shrink-0 items-center justify-end gap-1.5 border-b border-white/[0.06] px-3 py-2">
+          <RoxxModelSelector
+            planId={planId}
+            value={selectedModel}
+            disabled={streaming}
+            onChange={(modelId) => {
+              setSelectedModel(modelId);
+              saveSelectedModel(modelId);
+            }}
+            onLockedSelect={(_modelId, upgradePlan) => {
+              showLimitModal(
+                "This model isn’t included in your plan. Upgrade to unlock it in Roxx AI.",
+                "feature",
+                upgradePlan
+              );
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-[#71717A] hover:text-white"
+            aria-label="Conversation history"
+          >
+            <History className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={startNewChat}
+            disabled={streaming}
+            className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/[0.08] px-2 text-[11px] text-[#71717A] hover:text-white disabled:opacity-50"
+          >
+            <Plus className="h-3 w-3" />
+            New
+          </button>
+        </div>
+      )}
 
       {/* Fixed chat viewport: only the message list scrolls; page scroll stays stable. */}
-      <div className="relative flex h-[min(520px,70vh)] min-h-[400px] flex-col sm:h-[min(560px,72vh)]">
+      <div
+        className={
+          isDrawer
+            ? "relative flex min-h-0 flex-1 flex-col"
+            : "relative flex h-[min(520px,70vh)] min-h-[400px] flex-col sm:h-[min(560px,72vh)]"
+        }
+      >
         <AnimatePresence>
           {historyOpen && (
             <motion.aside

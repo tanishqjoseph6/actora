@@ -1,9 +1,11 @@
 "use client";
 
-import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
+import { SmartEmptyState } from "@/components/ui/SmartEmptyState";
+import { useRoxxOptional } from "@/providers/RoxxProvider";
 import type { Task } from "@/lib/tasks/types";
 import { groupTasks } from "@/lib/tasks/utils";
 import { TaskCard } from "./TaskCard";
+import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 
 type TasksListProps = {
   tasks: Task[];
@@ -24,6 +26,7 @@ export function TasksList({
   hasActiveFilters = false,
   onClearFilters,
 }: TasksListProps) {
+  const roxx = useRoxxOptional();
   const groups = groupTasks(tasks);
 
   if (tasks.length === 0) {
@@ -40,11 +43,19 @@ export function TasksList({
     }
 
     return (
-      <PremiumEmptyState
+      <SmartEmptyState
         illustration="tasks"
-        title="Stay on top of every deliverable"
-        description="Tasks bring due dates, priorities, and assignees into one view — so nothing slips through while your AI agents handle the inbox."
-        cta={{ label: "Add your first task", onClick: onAddTask ?? (() => {}) }}
+        title="Let's create your first task."
+        description="Turn conversations into action — assign owners, set due dates, and let Roxx prioritize what matters."
+        actions={[
+          { label: "Add your first task", onClick: onAddTask ?? (() => {}) },
+          {
+            label: "Ask Roxx to create one",
+            onClick: () =>
+              roxx?.askRoxx("Create a high-priority task for tomorrow based on my inbox."),
+            variant: "secondary",
+          },
+        ]}
         className="border-dashed bg-[#111111]/50"
       />
     );

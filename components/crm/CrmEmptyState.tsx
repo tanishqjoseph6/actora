@@ -1,5 +1,6 @@
 "use client";
 
+import { SmartEmptyState } from "@/components/ui/SmartEmptyState";
 import { PremiumEmptyState } from "@/components/ui/PremiumEmptyState";
 
 type CrmEmptyStateProps = {
@@ -10,9 +11,33 @@ type CrmEmptyStateProps = {
     href?: string;
     onClick?: () => void;
   };
+  /** First-run workspace empty with multiple setup actions */
+  smart?: boolean;
 };
 
-export function CrmEmptyState({ title, description, cta }: CrmEmptyStateProps) {
+export function CrmEmptyState({
+  title,
+  description,
+  cta,
+  smart = false,
+}: CrmEmptyStateProps) {
+  if (smart) {
+    return (
+      <SmartEmptyState
+        illustration="crm"
+        title={title}
+        description={description}
+        actions={[
+          cta,
+          { label: "Import contacts", href: "/dashboard/crm/contacts", variant: "secondary" },
+          { label: "Connect Gmail", href: "/dashboard/connect-gmail", variant: "secondary" },
+          { label: "Invite team", href: "/dashboard/settings", variant: "secondary" },
+        ]}
+        className="border-dashed bg-[#111111]/50"
+      />
+    );
+  }
+
   return (
     <PremiumEmptyState
       illustration="crm"

@@ -10,7 +10,9 @@ import {
   Keyboard,
   LogOut,
   MessageSquarePlus,
+  Moon,
   Settings,
+  Sun,
   UserRound,
   Users,
 } from "lucide-react";
@@ -18,6 +20,7 @@ import { ComingSoonBadge, useBillingPause } from "@/components/billing/BillingPa
 import { usePlanGate } from "@/components/subscription/PlanGateProvider";
 import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { useDismissible } from "@/hooks/useDismissible";
+import { useTheme } from "@/providers/ThemeProvider";
 import { KeyboardShortcutsModal } from "@/components/dashboard/nav/KeyboardShortcutsModal";
 import { getPlanBadgeStyles } from "@/lib/subscription/plans";
 import type { PlanId } from "@/lib/subscription/types";
@@ -30,6 +33,7 @@ export function UserProfileMenu() {
   const { subscription, loading } = usePlanGate();
   const { connected: gmailConnected, primaryAccount } = useGmailAccounts();
   const { paused: billingPaused, showComingSoon } = useBillingPause();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -145,6 +149,20 @@ export function UserProfileMenu() {
             >
               <Keyboard className="h-4 w-4" strokeWidth={1.75} />
               Keyboard Shortcuts
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                toggleTheme();
+              }}
+              className={linkClass}
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-4 w-4" strokeWidth={1.75} />
+              ) : (
+                <Moon className="h-4 w-4" strokeWidth={1.75} />
+              )}
+              {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
             </button>
             <Link
               href="/dashboard/settings"

@@ -350,22 +350,23 @@ export default function ContactsPage() {
 
         {filteredContacts.length === 0 ? (
           <CrmEmptyState
+            smart={!hasActiveFilters}
             title={
               hasActiveFilters
                 ? hasSearch
                   ? "No contacts match your search"
                   : "No contacts match your filters"
-                : "Add your first contact"
+                : "Let's build your CRM."
             }
             description={
               hasActiveFilters
                 ? "Try a different search term or reset your filters."
-                : "Create your first contact to start your CRM pipeline."
+                : "Import contacts, connect Gmail, and let Roxx turn conversations into pipeline."
             }
             cta={
               hasActiveFilters
                 ? { label: "Clear filters", onClick: handleClearFilters }
-                : { label: "Add contact", onClick: openCreate }
+                : { label: "Create workspace", href: "/dashboard/settings" }
             }
           />
         ) : (

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, Circle, MailOpen, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, Circle, MailOpen, Sparkles, Trash2 } from "lucide-react";
 import { useDismissible } from "@/hooks/useDismissible";
 import { useNotifications } from "@/providers/NotificationsProvider";
+import type { UserNotification } from "@/lib/notifications/types";
 import { DropdownShell } from "./DropdownShell";
 import { SkeletonListRows } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,89 @@ function formatRelative(iso: string): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function isPriorityNotification(item: UserNotification): boolean {
+  if (item.category === "Calendar" || item.category === "Roxx AI") return true;
+  const text = `${item.title} ${item.body}`.toLowerCase();
+  return text.includes("mention") || text.includes("reminder");
+}
+
+function groupNotifications(items: UserNotification[]) {
+  const priority: UserNotification[] = [];
+  const automations: UserNotification[] = [];
+  const updates: UserNotification[] = [];
+
+  for (const item of items) {
+    if (item.category === "Automations") {
+      automations.push(item);
+    } else if (isPriorityNotification(item)) {
+      priority.push(item);
+    } else {
+      updates.push(item);
+    }
+  }
+
+  return [
+    { id: "priority", label: "Priority", items: priority },
+    { id: "automations", label: "Automations", items: automations },
+    { id: "updates", label: "Updates", items: updates },
+  ].filter((group) => group.items.length > 0);
+}
+
+function NotificationRow({
+  item,
+  onOpen,
+  onToggleRead,
+}: {
+  item: UserNotification;
+  onOpen: (id: string, href: string) => void;
+  onToggleRead: (id: string) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "group mb-1 flex gap-1 rounded-xl border transition-colors",
+        item.read
+          ? "border-transparent hover:bg-white/[0.03]"
+          : "border-[#3B82F6]/20 bg-[#3B82F6]/[0.07] hover:bg-[#3B82F6]/10"
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onOpen(item.id, item.href)}
+        className="min-w-0 flex-1 px-3 py-3 text-left"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-[#3B82F6]">
+              {item.category}
+            </p>
+            <p className="mt-1 text-sm font-medium text-white">{item.title}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-[#A1A1AA]">
+              {item.body}
+            </p>
+          </div>
+          <span className="shrink-0 text-[11px] text-[#71717A]">
+            {formatRelative(item.createdAt)}
+          </span>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => onToggleRead(item.id)}
+        className="mr-2 mt-3 shrink-0 rounded-lg p-1.5 text-[#71717A] opacity-0 transition-all hover:bg-white/[0.04] hover:text-white group-hover:opacity-100"
+        title={item.read ? "Mark as unread" : "Mark as read"}
+        aria-label={item.read ? "Mark as unread" : "Mark as read"}
+      >
+        {item.read ? (
+          <Circle className="h-3.5 w-3.5" />
+        ) : (
+          <MailOpen className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </div>
+  );
 }
 
 export function NotificationsPanel() {
@@ -30,6 +114,8 @@ export function NotificationsPanel() {
     markAllRead,
     clearAll,
   } = useNotifications();
+
+  const groups = useMemo(() => groupNotifications(items), [items]);
 
   const close = useCallback(() => setOpen(false), []);
   const ref = useDismissible(open, close);
@@ -62,14 +148,17 @@ export function NotificationsPanel() {
 
       <DropdownShell
         open={open}
-        widthClassName="w-[min(100vw-2rem,380px)] sm:w-[380px]"
+        widthClassName="w-[min(100vw-2rem,400px)] sm:w-[400px]"
       >
         <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
           <div>
             <p className="text-sm font-medium text-white">Notifications</p>
             <p className="text-xs text-[#71717A]">
               {loading ? (
-                <span className="inline-block h-3 w-24 rounded skeleton-shimmer align-middle" aria-hidden />
+                <span
+                  className="inline-block h-3 w-24 rounded skeleton-shimmer align-middle"
+                  aria-hidden
+                />
               ) : unreadCount ? (
                 `${unreadCount} unread`
               ) : (
@@ -101,7 +190,7 @@ export function NotificationsPanel() {
           </div>
         </div>
 
-        <div className="max-h-[360px] overflow-y-auto p-2">
+        <div className="max-h-[400px] overflow-y-auto p-2 premium-scrollbar">
           {loading && items.length === 0 ? (
             <SkeletonListRows rows={4} className="px-2 py-2" />
           ) : items.length === 0 ? (
@@ -109,55 +198,27 @@ export function NotificationsPanel() {
               <Bell className="mx-auto h-5 w-5 text-[#52525B]" />
               <p className="mt-2 text-sm text-[#A1A1AA]">No notifications yet</p>
               <p className="mt-1 text-xs text-[#71717A]">
-                Gmail, CRM, calendar, and automation updates will show up here.
+                AI insights, mentions, meeting reminders, and automation updates
+                appear here.
               </p>
             </div>
           ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
-                className={cn(
-                  "group mb-1 flex gap-1 rounded-xl border transition-colors",
-                  item.read
-                    ? "border-transparent hover:bg-white/[0.03]"
-                    : "border-[#3B82F6]/20 bg-[#3B82F6]/[0.07] hover:bg-[#3B82F6]/10"
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => openItem(item.id, item.href)}
-                  className="min-w-0 flex-1 px-3 py-3 text-left"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-[#3B82F6]">
-                        {item.category}
-                      </p>
-                      <p className="mt-1 text-sm font-medium text-white">
-                        {item.title}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-[#A1A1AA]">
-                        {item.body}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[11px] text-[#71717A]">
-                      {formatRelative(item.createdAt)}
-                    </span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void toggleRead(item.id)}
-                  className="mr-2 mt-3 shrink-0 rounded-lg p-1.5 text-[#71717A] opacity-0 transition-all hover:bg-white/[0.04] hover:text-white group-hover:opacity-100"
-                  title={item.read ? "Mark as unread" : "Mark as read"}
-                  aria-label={item.read ? "Mark as unread" : "Mark as read"}
-                >
-                  {item.read ? (
-                    <Circle className="h-3.5 w-3.5" />
-                  ) : (
-                    <MailOpen className="h-3.5 w-3.5" />
+            groups.map((group) => (
+              <div key={group.id} className="mb-3 last:mb-0">
+                <p className="mb-1.5 flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
+                  {group.id === "priority" && (
+                    <Sparkles className="h-3 w-3 text-[#3B82F6]" />
                   )}
-                </button>
+                  {group.label}
+                </p>
+                {group.items.map((item) => (
+                  <NotificationRow
+                    key={item.id}
+                    item={item}
+                    onOpen={openItem}
+                    onToggleRead={(id) => void toggleRead(id)}
+                  />
+                ))}
               </div>
             ))
           )}
@@ -166,3 +227,4 @@ export function NotificationsPanel() {
     </div>
   );
 }
+
