@@ -3,6 +3,8 @@
 import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0 },
@@ -25,7 +27,7 @@ export function FadeUp({
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1], delay }}
+      transition={{ duration: 0.55, ease: EASE, delay }}
       className={cn(className)}
       {...props}
     >
@@ -67,7 +69,7 @@ export function StaggerItem({
   return (
     <motion.div
       variants={fadeUp}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, ease: EASE }}
       className={className}
     >
       {children}

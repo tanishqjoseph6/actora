@@ -3,19 +3,17 @@
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { PricingSection } from "@/components/billing/PricingSection";
-import { ComparisonSection } from "./ComparisonSection";
-import { LinearComparisonSection } from "./LinearComparisonSection";
-import { FeaturesGrid } from "./FeaturesGrid";
+import { FeatureShowcaseSection } from "./FeatureShowcaseSection";
+import { FinalCtaSection } from "./FinalCtaSection";
 import { HeroSection } from "./HeroSection";
-import { HowItWorksSection } from "./HowItWorksSection";
 import { LandingFaq } from "./LandingFaq";
+import { LinearComparisonSection } from "./LinearComparisonSection";
 import { ProductShowcase } from "./ProductShowcase";
 import { SectionHeader } from "./SectionHeader";
-import { TestimonialsSection } from "./TestimonialsSection";
-import { TrustedBySection } from "./TrustedBySection";
+import { TrustSection } from "./TrustSection";
 import { FadeUp } from "./motion";
-import Link from "next/link";
 
 const InteractiveDemoTour = dynamic(
   () =>
@@ -32,16 +30,13 @@ export function LandingPage() {
   return (
     <>
       <HeroSection onTryDemo={openDemo} />
-      <TrustedBySection />
-      <FeaturesGrid />
-      <HowItWorksSection />
+      <TrustSection />
+      <FeatureShowcaseSection />
       <ProductShowcase onTryDemo={openDemo} />
-      <ComparisonSection />
-      <LinearComparisonSection />
 
       <section
         id="pricing"
-        className="scroll-mt-24 border-t border-white/[0.06] bg-[#0A0A0A] py-20 sm:py-28"
+        className="scroll-mt-24 border-t border-white/[0.06] bg-[#0A0A0A] py-20 sm:py-28 lg:py-32"
       >
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <SectionHeader
@@ -69,18 +64,17 @@ export function LandingPage() {
         </div>
       </section>
 
-      <TestimonialsSection />
+      <LinearComparisonSection />
+      <FinalCtaSection />
       <LandingFaq limit={5} />
-      <p className="mx-auto -mt-12 max-w-3xl px-5 pb-16 text-center text-sm text-[#71717A] sm:px-8 sm:-mt-16 sm:pb-20">
+      <p className="mx-auto -mt-12 max-w-3xl px-5 pb-20 text-center text-sm text-[#71717A] sm:px-8 sm:-mt-16 sm:pb-24">
         <Link href="/faq" className="text-[#93C5FD] transition-colors hover:text-white">
           View all FAQs →
         </Link>
       </p>
 
       <AnimatePresence>
-        {demoOpen && (
-          <InteractiveDemoTour onClose={closeDemo} />
-        )}
+        {demoOpen && <InteractiveDemoTour onClose={closeDemo} />}
       </AnimatePresence>
     </>
   );

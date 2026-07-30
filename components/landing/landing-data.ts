@@ -217,6 +217,67 @@ export const LINEAR_COMPARISON_ROWS = [
 
 export type ComparisonCellValue = "yes" | "no" | "partial";
 
+export const LANDING_FEATURE_SECTIONS = [
+  {
+    id: "ai-inbox",
+    headline: "AI that triages before you do",
+    title: "AI Inbox",
+    description:
+      "Summaries, smart replies, and priority signals — every email moves work forward without manual triage.",
+  },
+  {
+    id: "crm",
+    headline: "Pipeline that stays in sync",
+    title: "CRM",
+    description:
+      "Contacts, companies, and deals update automatically from conversation context. No re-entry.",
+  },
+  {
+    id: "tasks",
+    headline: "Promises become owned work",
+    title: "Tasks",
+    description:
+      "AI creates tasks with owners and due dates the moment commitments appear in email.",
+  },
+  {
+    id: "meetings",
+    headline: "Every meeting connected",
+    title: "Meetings",
+    description:
+      "Prep notes, attendees, and follow-ups linked to the threads that scheduled them.",
+  },
+  {
+    id: "calendar",
+    headline: "Scheduling on autopilot",
+    title: "Calendar",
+    description:
+      "Actora finds open slots, sends invites, and syncs with Google Calendar instantly.",
+  },
+  {
+    id: "documents",
+    headline: "Documents in seconds",
+    title: "Documents",
+    description:
+      "Generate proposals, meeting notes, and summaries with AI — edit and share in one place.",
+  },
+  {
+    id: "automations",
+    headline: "Workflows that never sleep",
+    title: "Automations",
+    description:
+      "Reply triggers CRM updates, tasks, reminders, and notifications — fully automated.",
+  },
+  {
+    id: "analytics",
+    headline: "See what’s working",
+    title: "Analytics",
+    description:
+      "Track tasks, automations, revenue signals, and team productivity in one dashboard.",
+  },
+] as const;
+
+export type LandingFeatureId = (typeof LANDING_FEATURE_SECTIONS)[number]["id"];
+
 export const TRUSTED_SEGMENTS = [
   "Revenue Ops",
   "Founders",
