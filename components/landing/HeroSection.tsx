@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { DashboardMockup } from "./DashboardMockup";
+import { HeroPreview } from "./HeroPreview";
 
-export function HeroSection() {
+type HeroSectionProps = {
+  onTryDemo?: () => void;
+};
+
+export function HeroSection({ onTryDemo }: HeroSectionProps) {
   return (
     <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24 lg:pt-40 lg:pb-28">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute left-1/2 top-0 h-[520px] w-[780px] -translate-x-1/2 rounded-full bg-[#3B82F6]/[0.09] blur-[120px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.06),transparent_55%)]" />
+        <div className="absolute left-1/2 top-0 h-[520px] w-[780px] -translate-x-1/2 rounded-full bg-[#2563EB]/[0.09] blur-[120px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(37,99,235,0.06),transparent_55%)]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
@@ -18,9 +22,9 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-sm font-medium uppercase tracking-[0.18em] text-[#3B82F6]"
+            className="text-sm font-medium uppercase tracking-[0.18em] text-[#2563EB]"
           >
-            AI Inbox for operators
+            AI-powered workspace
           </motion.p>
 
           <motion.h1
@@ -29,7 +33,9 @@ export function HeroSection() {
             transition={{ duration: 0.55, delay: 0.06 }}
             className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl lg:leading-[1.08]"
           >
-            Where conversations become execution
+            One AI Workspace.
+            <br className="hidden sm:block" />
+            <span className="text-[#93C5FD]"> Every Conversation. Every Workflow.</span>
           </motion.h1>
 
           <motion.p
@@ -38,9 +44,8 @@ export function HeroSection() {
             transition={{ duration: 0.55, delay: 0.12 }}
             className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#A1A1AA] sm:text-lg"
           >
-            Actora connects Gmail, Roxx AI, CRM, calendar, and tasks in one
-            workspace — so every thread moves from reply to outcome without
-            switching tabs.
+            Actora is an AI-powered workspace that brings conversations, CRM, tasks,
+            meetings, documents and automations into one intelligent platform.
           </motion.p>
 
           <motion.div
@@ -51,16 +56,17 @@ export function HeroSection() {
           >
             <Link
               href="/signup"
-              className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-[#3B82F6] px-7 text-sm font-medium text-white transition-all hover:bg-[#2563EB] active:scale-[0.98]"
+              className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-xl bg-[#2563EB] px-7 text-sm font-semibold text-white shadow-[0_0_40px_rgba(37,99,235,0.25)] transition-all hover:bg-[#1D4ED8] active:scale-[0.98]"
             >
-              Start free trial
+              Start Free
             </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex h-12 min-w-[160px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] px-7 text-sm font-medium text-white transition-all hover:border-white/[0.18] hover:bg-white/[0.04] active:scale-[0.98]"
+            <button
+              type="button"
+              onClick={onTryDemo}
+              className="inline-flex h-12 min-w-[180px] items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.02] px-7 text-sm font-medium text-white backdrop-blur-sm transition-all hover:border-[#2563EB]/40 hover:bg-[#2563EB]/10 active:scale-[0.98]"
             >
-              View pricing
-            </Link>
+              Try Interactive Demo
+            </button>
           </motion.div>
 
           <motion.p
@@ -80,10 +86,10 @@ export function HeroSection() {
           className="relative mx-auto mt-14 max-w-5xl sm:mt-16"
         >
           <div
-            className="pointer-events-none absolute -inset-x-8 -bottom-8 top-1/3 rounded-[40%] bg-[#3B82F6]/[0.07] blur-3xl"
+            className="pointer-events-none absolute -inset-x-8 -bottom-8 top-1/3 rounded-[40%] bg-[#2563EB]/[0.07] blur-3xl"
             aria-hidden
           />
-          <DashboardMockup />
+          <HeroPreview onTryDemo={onTryDemo} />
         </motion.div>
       </div>
     </section>

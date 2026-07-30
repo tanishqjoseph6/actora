@@ -1,5 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useCallback, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { PricingSection } from "@/components/billing/PricingSection";
 import { ComparisonSection } from "./ComparisonSection";
 import { LinearComparisonSection } from "./LinearComparisonSection";
@@ -14,14 +17,25 @@ import { TrustedBySection } from "./TrustedBySection";
 import { FadeUp } from "./motion";
 import Link from "next/link";
 
+const InteractiveDemoTour = dynamic(
+  () =>
+    import("./demo/InteractiveDemoTour").then((m) => m.InteractiveDemoTour),
+  { ssr: false }
+);
+
 export function LandingPage() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
+  const openDemo = useCallback(() => setDemoOpen(true), []);
+  const closeDemo = useCallback(() => setDemoOpen(false), []);
+
   return (
     <>
-      <HeroSection />
+      <HeroSection onTryDemo={openDemo} />
       <TrustedBySection />
       <FeaturesGrid />
       <HowItWorksSection />
-      <ProductShowcase />
+      <ProductShowcase onTryDemo={openDemo} />
       <ComparisonSection />
       <LinearComparisonSection />
 
@@ -62,6 +76,12 @@ export function LandingPage() {
           View all FAQs →
         </Link>
       </p>
+
+      <AnimatePresence>
+        {demoOpen && (
+          <InteractiveDemoTour onClose={closeDemo} />
+        )}
+      </AnimatePresence>
     </>
   );
 }
