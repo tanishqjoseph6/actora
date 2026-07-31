@@ -143,11 +143,6 @@ export function isMissingWaitlistSchemaError(message: string): boolean {
   return isMissingTableSchemaError(message, "waitlist_notifications");
 }
 
-/** True when PostgREST reports the user_notifications schema is missing. */
-export function isMissingUserNotificationsSchemaError(message: string): boolean {
-  return isMissingTableSchemaError(message, "user_notifications");
-}
-
 /** True when PostgREST reports CRM tables or columns are missing. */
 export function isMissingCrmSchemaError(message: string): boolean {
   const lower = message.toLowerCase();
@@ -185,4 +180,14 @@ function isMissingTableSchemaError(message: string, table: string): boolean {
       lower.includes("schema cache") ||
       lower.includes("pgrst205"))
   );
+}
+
+/** True when PostgREST reports the user_notifications schema is missing. */
+export function isMissingUserNotificationsSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "user_notifications");
+}
+
+/** True when PostgREST reports the tasks schema is missing. */
+export function isMissingTasksSchemaError(message: string): boolean {
+  return isMissingTableSchemaError(message, "tasks");
 }

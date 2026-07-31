@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { fetchTaskAnalyticsRows } from "@/lib/tasks/repository";
 import { getUserUsage } from "@/lib/dashboard/user-usage";
 import { PIPELINE_STAGES } from "@/lib/crm/pipeline";
 import {
@@ -169,10 +170,7 @@ export async function getAnalyticsSnapshot(
       .from("meetings")
       .select("id, title, starts_at, ends_at, status")
       .eq("user_id", userId),
-    db
-      .from("tasks")
-      .select("id, status, due_date, updated_at, created_at")
-      .eq("user_id", userId),
+    fetchTaskAnalyticsRows(userId),
     db.from("workflows").select("id, name, status").eq("user_id", userId),
     db
       .from("workflow_runs")
@@ -205,7 +203,7 @@ export async function getAnalyticsSnapshot(
   const companies = companiesRes.data ?? [];
   const deals = dealsRes.data ?? [];
   const meetings = meetingsRes.data ?? [];
-  const tasks = tasksRes.data ?? [];
+  const tasks = tasksRes ?? [];
   const workflows = workflowsRes.data ?? [];
   const runs = (runsRes.data ?? []).filter((r) => !r.is_test);
   const emailLinks = emailLinksRes.data ?? [];

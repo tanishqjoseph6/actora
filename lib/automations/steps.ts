@@ -14,6 +14,7 @@ import {
   getGmailClientForUser,
 } from "@/lib/automations/integrations";
 import { simulateStepOutput } from "@/lib/automations/mock-payloads";
+import { createTaskRecord } from "@/lib/tasks/repository";
 import type { WorkflowNode } from "@/lib/automations/types";
 
 export type StepContext = Record<string, unknown> & {
@@ -411,15 +412,8 @@ async function createTask(
   userId: string,
   context: StepContext
 ): Promise<Record<string, unknown>> {
-  const db = getSupabaseAdmin();
-  if (!db) {
-    return {
-      taskId: "task-sim",
-      title: str(context.followUpTitle || context.subject, "Follow up"),
-    };
-  }
-
-  const due = str(context.followUpAt) ||
+  const due =
+    str(context.followUpAt) ||
     new Date(Date.now() + 24 * 60 * 60_000).toISOString();
   const title =
     str(context.followUpTitle) ||
@@ -433,30 +427,26 @@ async function createTask(
         ? "low"
         : "medium";
 
-  const { data, error } = await db
-    .from("tasks")
-    .insert({
-      user_id: userId,
-      title,
-      description: str(context.summary || context.draft || context.body).slice(
-        0,
-        2000
-      ),
-      priority,
-      status: "todo",
-      due_date: due,
-      assignee: "",
-      company_name: str(context.company || context.companyName) || null,
-      tags: ["automation"],
-    })
-    .select("id, title")
-    .single();
+  const result = await createTaskRecord({
+    userId,
+    title,
+    description: str(context.summary || context.draft || context.body).slice(
+      0,
+      2000
+    ),
+    priority,
+    status: "todo",
+    dueDate: due,
+    assignee: "",
+    companyName: str(context.company || context.companyName) || null,
+    tags: ["automation"],
+  });
 
-  if (error || !data) {
-    return { created: false, error: error?.message ?? "Task create failed" };
+  if (!result.ok) {
+    return { created: false, error: result.error.message, code: result.error.code };
   }
 
-  return { taskId: data.id, title: data.title, created: true };
+  return { taskId: result.data.id, title: result.data.title, created: true };
 }
 
 async function createMeeting(

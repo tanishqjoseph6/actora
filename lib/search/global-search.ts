@@ -4,7 +4,7 @@ import { searchInboxEmails } from "@/lib/gmail";
 import { automationRepository } from "@/lib/automations/repository";
 import { listStoredCalendarEvents } from "@/lib/calendar/meetings-store";
 import { fetchCompaniesWithStats, fetchDealsEnriched } from "@/lib/crm/repository";
-import { mapTaskRow, TASK_SELECT } from "@/lib/tasks/live";
+import { searchTaskRecords } from "@/lib/tasks/repository";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import {
@@ -92,17 +92,8 @@ export async function runGlobalSearch(
     }
 
     // Tasks
-    const { data: tasks } = await db
-      .from("tasks")
-      .select(TASK_SELECT)
-      .eq("user_id", userId)
-      .or(
-        `title.ilike.${ilike},description.ilike.${ilike},company_name.ilike.${ilike}`
-      )
-      .limit(PER_CATEGORY_LIMIT);
-
-    for (const row of tasks ?? []) {
-      const task = mapTaskRow(row);
+    const tasks = await searchTaskRecords(userId, q, PER_CATEGORY_LIMIT);
+    for (const task of tasks) {
       push({
         id: `task-${task.id}`,
         label: task.title,

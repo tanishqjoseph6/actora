@@ -3,6 +3,7 @@ import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { listStoredCalendarEvents } from "@/lib/calendar/meetings-store";
 import { fetchDealsEnriched } from "@/lib/crm/repository";
+import { listTasksForContext } from "@/lib/tasks/repository";
 import type { ReplyBusinessContext } from "./prompts";
 
 function extractEmail(from: string): string | null {
@@ -24,7 +25,7 @@ export async function buildReplyBusinessContext(
   const db = getSupabaseAdmin();
 
   try {
-    const [deals, meetings, contactResult, tasksResult] = await Promise.all([
+    const [deals, meetings, contactResult, openTasks] = await Promise.all([
       fetchDealsEnriched(userId).catch(() => []),
       listStoredCalendarEvents(userId, {
         from: new Date().toISOString(),
@@ -39,15 +40,7 @@ export async function buildReplyBusinessContext(
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null }),
-      db
-        ? db
-            .from("tasks")
-            .select("title, status, due_date")
-            .eq("user_id", userId)
-            .neq("status", "done")
-            .order("due_date", { ascending: true })
-            .limit(5)
-        : Promise.resolve({ data: [] }),
+      listTasksForContext(userId, 5),
     ]);
 
     const contact = (contactResult as { data?: {
@@ -80,11 +73,8 @@ export async function buildReplyBusinessContext(
       .map((m) => `${m.title} @ ${new Date(m.startAt).toLocaleString()}`)
       .join("; ");
 
-    const tasks = ((tasksResult as { data?: unknown[] }).data ?? [])
-      .map((row) => {
-        const r = row as { title: string; due_date: string };
-        return `${r.title} (due ${new Date(r.due_date).toLocaleDateString()})`;
-      })
+    const tasks = openTasks
+      .map((t) => `${t.title} (due ${new Date(t.dueDate).toLocaleDateString()})`)
       .join("; ");
 
     const ctx: ReplyBusinessContext = {

@@ -1,66 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { mapTaskRow, TASK_SELECT, type TaskInput } from "@/lib/tasks/live";
+import { tasksJsonError } from "@/lib/tasks/api-response";
+import type { TaskInput } from "@/lib/tasks/live";
+import {
+  createTaskRecord,
+  listTaskRecords,
+  taskInputToUpdate,
+} from "@/lib/tasks/repository";
 import {
   requireTasksUserId,
   requireTasksWriteUserId,
 } from "@/lib/tasks/session";
+import { taskValidationError } from "@/lib/tasks/errors";
 
 export async function GET(request: NextRequest) {
   const userId = await requireTasksUserId(request);
   if (userId instanceof NextResponse) return userId;
 
-  const db = getSupabaseAdmin();
-  if (!db) {
-    return NextResponse.json({ error: "Database not configured." }, { status: 503 });
-  }
+  const result = await listTaskRecords(userId, {
+    excludeDone: false,
+    orderByDueDate: true,
+  });
+  if (!result.ok) return tasksJsonError(result.error);
 
-  const { data, error } = await db
-    .from("tasks")
-    .select(TASK_SELECT)
-    .eq("user_id", userId)
-    .order("due_date", { ascending: true });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ tasks: (data ?? []).map((row) => mapTaskRow(row)) });
+  return NextResponse.json({ tasks: result.data });
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await requireTasksWriteUserId(request);
-  if (userId instanceof NextResponse) return userId;
-
-  const db = getSupabaseAdmin();
-  if (!db) {
-    return NextResponse.json({ error: "Database not configured." }, { status: 503 });
-  }
+  const auth = await requireTasksWriteUserId(request);
+  if (auth instanceof NextResponse) return auth;
 
   const body = (await request.json()) as TaskInput;
   const title = body.title?.trim();
   if (!title || !body.dueDate) {
-    return NextResponse.json(
-      { error: "Title and due date are required." },
-      { status: 400 }
+    return tasksJsonError(
+      taskValidationError(
+        "MISSING_FIELDS",
+        "Title and due date are required."
+      )
     );
   }
 
-  const { data, error } = await db
-    .from("tasks")
-    .insert({
-      user_id: userId,
-      title,
-      description: body.description?.trim() ?? "",
-      priority: body.priority ?? "medium",
-      status: body.status ?? "todo",
-      due_date: body.dueDate,
-      assignee: body.assignee?.trim() ?? "",
-      company_name: body.companyName?.trim() || null,
-      tags: body.tags ?? [],
-    })
-    .select(TASK_SELECT)
-    .single();
+  const result = await createTaskRecord({
+    userId: auth,
+    title,
+    description: body.description,
+    priority: body.priority,
+    status: body.status,
+    dueDate: body.dueDate,
+    assignee: body.assignee,
+    companyName: body.companyName,
+    tags: body.tags,
+  });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!result.ok) return tasksJsonError(result.error);
 
-  return NextResponse.json({ task: mapTaskRow(data) }, { status: 201 });
+  return NextResponse.json({ task: result.data }, { status: 201 });
 }

@@ -1,4 +1,3 @@
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getDashboardData } from "@/lib/dashboard/stats";
 import { listStoredCalendarEvents } from "@/lib/calendar/meetings-store";
 import { fetchDealsEnriched, fetchCompaniesWithStats } from "@/lib/crm/repository";
@@ -6,6 +5,7 @@ import { automationRepository } from "@/lib/automations/repository";
 import { getGmailClientForUser } from "@/lib/automations/integrations";
 import { fetchInboxEmails } from "@/lib/gmail";
 import { runGlobalSearch } from "@/lib/search/global-search";
+import { listTasksForContext } from "@/lib/tasks/repository";
 
 export type WorkspaceContext = {
   summaryText: string;
@@ -49,10 +49,9 @@ export async function buildWorkspaceContext(
 async function buildWorkspaceContextFresh(
   userId: string
 ): Promise<WorkspaceContext> {
-  const db = getSupabaseAdmin();
   const dashboard = await getDashboardData(userId);
 
-  const [deals, companies, workflows, meetings, tasksResult, emails] =
+  const [deals, companies, workflows, meetings, tasks, emails] =
     await Promise.all([
       fetchDealsEnriched(userId).catch(() => []),
       fetchCompaniesWithStats(userId).catch(() => []),
@@ -61,36 +60,9 @@ async function buildWorkspaceContextFresh(
         from: startOfToday().toISOString(),
         to: new Date(Date.now() + 7 * 24 * 60 * 60_000).toISOString(),
       }).catch(() => []),
-      db
-        ? db
-            .from("tasks")
-            .select("id, title, status, due_date, priority")
-            .eq("user_id", userId)
-            .neq("status", "done")
-            .order("due_date", { ascending: true })
-            .limit(15)
-        : Promise.resolve({ data: [] }),
+      listTasksForContext(userId, 15),
       loadRecentEmails(userId),
     ]);
-
-  const tasks = ((tasksResult as { data?: unknown[] }).data ?? []).map(
-    (row) => {
-      const r = row as {
-        id: string;
-        title: string;
-        status: string;
-        due_date: string;
-        priority: string;
-      };
-      return {
-        id: r.id,
-        title: r.title,
-        status: r.status,
-        dueDate: r.due_date,
-        priority: r.priority,
-      };
-    }
-  );
 
   const openStages = new Set(["lead", "qualified", "proposal", "negotiation"]);
   const openDeals = deals.filter((d) => openStages.has(d.stage));

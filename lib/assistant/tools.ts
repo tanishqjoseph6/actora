@@ -1,4 +1,3 @@
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createUserNotification } from "@/lib/notifications/repository";
 import { generateEmailReply } from "@/lib/openai";
 import { getCalendarProvider } from "@/lib/calendar/providers";
@@ -7,6 +6,9 @@ import { getCalendarAuthForUser } from "@/lib/automations/integrations";
 import { blockToNode, getBlockById } from "@/lib/automations/constants";
 import { automationRepository } from "@/lib/automations/repository";
 import { searchWorkspace, type WorkspaceContext } from "@/lib/assistant/context";
+import { formatTaskToolError } from "@/lib/tasks/api-response";
+import { createTaskRecord } from "@/lib/tasks/repository";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import type OpenAI from "openai";
 
 export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -344,33 +346,27 @@ export async function executeAssistantTool(
     }
 
     case "create_task": {
-      const db = getSupabaseAdmin();
-      if (!db) return { ok: false, error: "Database not configured" };
       const title = String(args.title ?? "").trim();
       if (!title) return { ok: false, error: "Title required" };
-      const dueInDays = typeof args.dueInDays === "number" ? args.dueInDays : 1;
-      const due = new Date(Date.now() + dueInDays * 24 * 60 * 60_000).toISOString();
-      const { data, error } = await db
-        .from("tasks")
-        .insert({
-          user_id: userId,
-          title,
-          description: String(args.description ?? ""),
-          priority: (args.priority as string) || "medium",
-          status: "todo",
-          due_date: due,
-          tags: ["assistant"],
-        })
-        .select("id, title")
-        .single();
-      if (error || !data) return { ok: false, error: error?.message };
+      const dueInDays =
+        typeof args.dueInDays === "number" ? args.dueInDays : 1;
+      const result = await createTaskRecord({
+        userId,
+        title,
+        description: String(args.description ?? ""),
+        priority: (args.priority as "high" | "medium" | "low") || "medium",
+        status: "todo",
+        dueInDays,
+        tags: ["assistant"],
+      });
+      if (!result.ok) return formatTaskToolError(result.error);
       await createUserNotification(userId, {
         category: "Roxx AI",
         title: "Task created",
-        body: data.title,
+        body: result.data.title,
         href: "/dashboard/tasks",
       });
-      return { ok: true, taskId: data.id, title: data.title };
+      return { ok: true, taskId: result.data.id, title: result.data.title };
     }
 
     case "create_crm_contact": {
@@ -643,25 +639,18 @@ export async function executeAssistantTool(
       });
 
       const taskIds: string[] = [];
-      if (db && leads.length) {
+      if (leads.length) {
         for (const lead of leads.slice(0, 5)) {
-          const due = new Date(
-            Date.now() + 1 * 24 * 60 * 60_000
-          ).toISOString();
-          const { data } = await db
-            .from("tasks")
-            .insert({
-              user_id: userId,
-              title: `Follow up: ${lead.title}`,
-              description: `Auto-created by Roxx agent · ${lead.companyName} · stage ${lead.stage}`,
-              priority: "high",
-              status: "todo",
-              due_date: due,
-              tags: ["assistant", "follow-up"],
-            })
-            .select("id")
-            .single();
-          if (data?.id) taskIds.push(String(data.id));
+          const created = await createTaskRecord({
+            userId,
+            title: `Follow up: ${lead.title}`,
+            description: `Auto-created by Roxx agent · ${lead.companyName} · stage ${lead.stage}`,
+            priority: "high",
+            status: "todo",
+            dueInDays: 1,
+            tags: ["assistant", "follow-up"],
+          });
+          if (created.ok) taskIds.push(created.data.id);
         }
       }
       steps.push({

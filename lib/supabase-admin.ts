@@ -10,6 +10,7 @@ export {
   isMissingUserSubscriptionsSchemaError,
   isMissingWaitlistSchemaError,
   isMissingCrmSchemaError,
+  isMissingTasksSchemaError,
 } from "./supabase/server";
 
 export {
