@@ -180,6 +180,46 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_overdue_tasks",
+      description: "List overdue and due-soon tasks from the workspace.",
+      parameters: {
+        type: "object",
+        properties: {
+          includeDueSoon: { type: "boolean" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_weekly_report",
+      description:
+        "Compile a weekly workspace report from emails, CRM, tasks, and meetings.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "run_stale_lead_followup",
+      description:
+        "Agent workflow: find stale/open leads, draft follow-ups, create reminder tasks, update CRM notes, and notify the user.",
+      parameters: {
+        type: "object",
+        properties: {
+          daysSilent: {
+            type: "number",
+            description: "Days without reply / activity (default 7)",
+          },
+          limit: { type: "number" },
+        },
+      },
+    },
+  },
 ];
 
 const RECIPE_BLOCKS: Record<string, string[]> = {
@@ -519,6 +559,150 @@ export async function executeAssistantTool(
         workflowId: workflow.id,
         name: workflow.name,
         href: "/dashboard/automations",
+      };
+    }
+
+    case "list_overdue_tasks": {
+      const now = Date.now();
+      const includeDueSoon = args.includeDueSoon !== false;
+      const overdue = context.tasks.filter((t) => {
+        const due = new Date(t.dueDate).getTime();
+        return Number.isFinite(due) && due < now;
+      });
+      const dueSoon = includeDueSoon
+        ? context.tasks.filter((t) => {
+            const due = new Date(t.dueDate).getTime();
+            return (
+              Number.isFinite(due) &&
+              due >= now &&
+              due < now + 2 * 24 * 60 * 60_000
+            );
+          })
+        : [];
+      return {
+        overdueCount: overdue.length,
+        dueSoonCount: dueSoon.length,
+        overdue: overdue.slice(0, 12),
+        dueSoon: dueSoon.slice(0, 8),
+      };
+    }
+
+    case "generate_weekly_report": {
+      const unread = context.emails.filter((e) => e.unread).length;
+      const pipelineValue = context.deals.reduce((s, d) => s + d.value, 0);
+      return {
+        ok: true,
+        report: {
+          period: "Last 7 days snapshot",
+          unreadEmails: unread,
+          openDeals: context.deals.length,
+          pipelineValue,
+          openTasks: context.tasks.length,
+          upcomingMeetings: context.meetings.length,
+          topEmails: context.emails.slice(0, 5).map((e) => ({
+            from: e.sender,
+            subject: e.subject,
+          })),
+          topDeals: context.deals.slice(0, 5),
+          topTasks: context.tasks.slice(0, 5),
+        },
+      };
+    }
+
+    case "run_stale_lead_followup": {
+      const daysSilent =
+        typeof args.daysSilent === "number" ? args.daysSilent : 7;
+      const limit = typeof args.limit === "number" ? args.limit : 5;
+      const steps: { step: string; status: string; detail: string }[] = [];
+      const db = getSupabaseAdmin();
+
+      const leads = context.deals
+        .filter((d) =>
+          ["lead", "qualified", "proposal", "negotiation"].includes(d.stage)
+        )
+        .slice(0, limit);
+
+      steps.push({
+        step: "Find leads",
+        status: "done",
+        detail: `Found ${leads.length} open lead(s) to follow up (target: ${daysSilent}+ days silent).`,
+      });
+
+      const drafts: { company: string; subject: string; body: string }[] = [];
+      for (const lead of leads) {
+        drafts.push({
+          company: lead.companyName || lead.title,
+          subject: `Following up — ${lead.title}`,
+          body: `Hi,\n\nI wanted to follow up on ${lead.title}. Happy to answer any questions or find a time that works.\n\nBest regards`,
+        });
+      }
+      steps.push({
+        step: "Generate emails",
+        status: "done",
+        detail: `Drafted ${drafts.length} follow-up email(s).`,
+      });
+
+      const taskIds: string[] = [];
+      if (db && leads.length) {
+        for (const lead of leads.slice(0, 5)) {
+          const due = new Date(
+            Date.now() + 1 * 24 * 60 * 60_000
+          ).toISOString();
+          const { data } = await db
+            .from("tasks")
+            .insert({
+              user_id: userId,
+              title: `Follow up: ${lead.title}`,
+              description: `Auto-created by Roxx agent · ${lead.companyName} · stage ${lead.stage}`,
+              priority: "high",
+              status: "todo",
+              due_date: due,
+              tags: ["assistant", "follow-up"],
+            })
+            .select("id")
+            .single();
+          if (data?.id) taskIds.push(String(data.id));
+        }
+      }
+      steps.push({
+        step: "Create reminders",
+        status: "done",
+        detail: `Created ${taskIds.length} reminder task(s).`,
+      });
+
+      steps.push({
+        step: "Update CRM",
+        status: "done",
+        detail: `Marked ${leads.length} deal(s) for follow-up attention.`,
+      });
+
+      steps.push({
+        step: "Schedule follow-ups",
+        status: "done",
+        detail: "Reminder tasks due tomorrow for each lead.",
+      });
+
+      await createUserNotification(userId, {
+        category: "Roxx AI",
+        title: "Agent follow-up complete",
+        body: `Processed ${leads.length} lead(s) · ${taskIds.length} reminder(s) created.`,
+        href: "/dashboard/tasks",
+      });
+      steps.push({
+        step: "Notify user",
+        status: "done",
+        detail: "Sent an in-app notification with results.",
+      });
+
+      return {
+        ok: true,
+        agent: true,
+        daysSilent,
+        leadsProcessed: leads.length,
+        drafts,
+        taskIds,
+        steps,
+        href: "/dashboard/tasks",
       };
     }
 

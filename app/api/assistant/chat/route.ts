@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
       messages?: ChatMessage[];
       regenerate?: boolean;
       model?: string;
+      agentMode?: boolean;
+      preferences?: Record<string, unknown>;
+      memoryNotes?: string[];
     };
 
     const messages = (body.messages ?? []).filter(
@@ -106,11 +109,16 @@ export async function POST(request: NextRequest) {
           );
         };
         try {
-          for await (const event of streamAssistantChat(
-            userId,
-            messages,
-            resolved.model.id
-          )) {
+          for await (const event of streamAssistantChat(userId, messages, {
+            modelId: resolved.model.id,
+            agentMode: Boolean(body.agentMode),
+            preferences: body.preferences as
+              | import("@/lib/ai/roxx-preferences").RoxxAiPreferences
+              | undefined,
+            memoryNotes: Array.isArray(body.memoryNotes)
+              ? body.memoryNotes.map(String)
+              : undefined,
+          })) {
             if (event.type === "usage") {
               totalTokens += event.tokens;
             } else if (event.type === "done") {

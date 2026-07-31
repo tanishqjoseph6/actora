@@ -13,6 +13,7 @@ import {
   Kanban,
   ListTodo,
   Loader2,
+  Pin,
   Search,
   Settings,
   Sparkles,
@@ -28,6 +29,11 @@ import {
   loadPromptHistory,
   type PromptHistoryEntry,
 } from "@/lib/ai/prompt-history";
+import {
+  loadPinnedCommands,
+  ROXX_OS_COMMANDS,
+  togglePinnedCommand,
+} from "@/lib/ai/roxx-preferences";
 import type { GlobalSearchCategory, GlobalSearchResult } from "@/lib/search/types";
 import { useRoxx } from "@/providers/RoxxProvider";
 import { cn } from "@/lib/utils";
@@ -194,11 +200,13 @@ export function GlobalAiCommandPalette({
   const [searching, setSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [promptHistory, setPromptHistory] = useState<PromptHistoryEntry[]>([]);
+  const [pinned, setPinned] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
     setRecentSearches(loadRecentSearches());
     setPromptHistory(loadPromptHistory());
+    setPinned(loadPinnedCommands());
     setQuery("");
     setMode("ai");
     setActiveIndex(0);
@@ -248,26 +256,39 @@ export function GlobalAiCommandPalette({
   const listItems = useMemo(() => {
     if (mode === "ai") {
       if (trimmedQuery) {
-        return aiSuggestions.map((prompt, i) => ({
+        const osMatches = ROXX_OS_COMMANDS.filter((p) =>
+          p.toLowerCase().includes(trimmedQuery.toLowerCase())
+        );
+        const merged = [...new Set([...osMatches, ...aiSuggestions])];
+        return merged.map((prompt, i) => ({
           id: `ai-${i}`,
           type: "ai" as const,
           label: prompt,
           icon: Sparkles,
         }));
       }
+      const pinnedItems = pinned.slice(0, 6).map((prompt, i) => ({
+        id: `pinned-${i}`,
+        type: "pinned" as const,
+        label: prompt,
+        icon: Sparkles,
+      }));
       const history = promptHistory.slice(0, 4).map((entry, i) => ({
         id: `history-${i}`,
         type: "history" as const,
         label: entry.prompt,
         icon: Clock,
       }));
-      const examples = ROXX_EXAMPLE_PROMPTS.slice(0, 6).map((prompt, i) => ({
+      const examples = [
+        ...ROXX_OS_COMMANDS.slice(0, 4),
+        ...ROXX_EXAMPLE_PROMPTS.slice(0, 3),
+      ].map((prompt, i) => ({
         id: `example-${i}`,
         type: "example" as const,
         label: prompt,
         icon: Sparkles,
       }));
-      return [...history, ...examples];
+      return [...pinnedItems, ...history, ...examples];
     }
     return searchResults.map((item) => ({
       id: item.id,
@@ -278,7 +299,7 @@ export function GlobalAiCommandPalette({
       href: item.href,
       icon: item.icon,
     }));
-  }, [mode, trimmedQuery, aiSuggestions, promptHistory, searchResults]);
+  }, [mode, trimmedQuery, aiSuggestions, promptHistory, pinned, searchResults]);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -428,14 +449,14 @@ export function GlobalAiCommandPalette({
           </div>
 
           <div className="max-h-[380px] overflow-y-auto p-2 premium-scrollbar">
-            {mode === "ai" && !trimmedQuery && promptHistory.length > 0 && (
+            {mode === "ai" && !trimmedQuery && pinned.length > 0 && (
               <p className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
-                Recent prompts
+                Pinned commands
               </p>
             )}
-            {mode === "ai" && !trimmedQuery && promptHistory.length === 0 && (
+            {mode === "ai" && !trimmedQuery && pinned.length === 0 && (
               <p className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
-                Try asking Roxx
+                {promptHistory.length ? "Recent & quick actions" : "OS commands"}
               </p>
             )}
             {mode === "search" && !trimmedQuery && recentSearches.length > 0 && (
@@ -471,39 +492,72 @@ export function GlobalAiCommandPalette({
 
             {listItems.map((item, index) => {
               const Icon = item.icon;
+              const isPinned =
+                mode === "ai" &&
+                pinned.some(
+                  (p) => p.toLowerCase() === item.label.toLowerCase()
+                );
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => {
-                    if (mode === "ai") {
-                      submitAi(item.label);
-                    } else if ("href" in item && item.href) {
-                      goTo(item.href, trimmedQuery || undefined);
-                    }
-                  }}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                    "flex w-full items-center gap-1 rounded-xl transition-colors",
                     index === activeIndex
                       ? "bg-[#3B82F6]/15 text-white"
                       : "text-[#A1A1AA] hover:bg-white/[0.03]"
                   )}
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06] bg-[#0A0A0A]">
-                    <Icon className="h-4 w-4 text-[#3B82F6]" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-white">
-                      {item.label}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mode === "ai") {
+                        submitAi(item.label);
+                      } else if ("href" in item && item.href) {
+                        goTo(item.href, trimmedQuery || undefined);
+                      }
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-[#0A0A0A]">
+                      <Icon className="h-4 w-4 text-[#3B82F6]" />
                     </span>
-                    {"description" in item && item.description && (
-                      <span className="block truncate text-xs text-[#71717A]">
-                        {item.category} · {item.description}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-white">
+                        {item.label}
                       </span>
-                    )}
-                  </span>
-                </button>
+                      {"description" in item && item.description && (
+                        <span className="block truncate text-xs text-[#71717A]">
+                          {item.category} · {item.description}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                  {mode === "ai" && (
+                    <button
+                      type="button"
+                      aria-label={isPinned ? "Unpin command" : "Pin command"}
+                      title={isPinned ? "Unpin" : "Pin"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPinned(togglePinnedCommand(item.label));
+                      }}
+                      className={cn(
+                        "mr-2 rounded-lg p-2 transition-colors",
+                        isPinned
+                          ? "text-[#93C5FD]"
+                          : "text-[#52525B] hover:text-[#A1A1AA]"
+                      )}
+                    >
+                      <Pin
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          isPinned && "fill-current"
+                        )}
+                      />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

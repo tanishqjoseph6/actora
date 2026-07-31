@@ -29,6 +29,7 @@ import { IntegrationsPanel } from "@/components/settings/IntegrationsPanel";
 import { ReferralSettingsPanel } from "@/components/growth/ReferralSettingsPanel";
 import { AchievementsPanel } from "@/components/growth/AchievementsPanel";
 import { GrowthUsagePanel } from "@/components/growth/GrowthUsagePanel";
+import { RoxxAiSettingsPanel } from "@/components/dashboard/ai/RoxxAiSettingsPanel";
 import { SkeletonListRows } from "@/components/ui/Skeleton";
 import {
   WorkspaceActivitySection,
@@ -87,6 +88,7 @@ export default function SettingsPage() {
       "workspace-activity",
       "referrals",
       "achievements",
+      "roxx-ai",
       "usage-analytics",
       "notifications",
       "integrations",
@@ -244,6 +246,14 @@ export default function SettingsPage() {
             description="Streaks, badges, and workspace progress."
           >
             <AchievementsPanel />
+          </SettingsSection>
+
+          <SettingsSection
+            id="roxx-ai"
+            title="Roxx AI"
+            description="Response style, voice, agent mode, pinned commands, and memory."
+          >
+            <RoxxAiSettingsPanel />
           </SettingsSection>
 
           <SettingsSection

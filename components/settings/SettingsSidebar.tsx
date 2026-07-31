@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: "workspace-activity", label: "Audit log" },
   { id: "referrals", label: "Referrals" },
   { id: "achievements", label: "Achievements" },
+  { id: "roxx-ai", label: "Roxx AI" },
   { id: "usage-analytics", label: "Usage" },
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
