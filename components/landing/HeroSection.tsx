@@ -28,7 +28,7 @@ function FloatingOrb({
 
 export function HeroSection({ onTryDemo }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28 lg:pt-40 lg:pb-32">
+    <section className="relative overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24 md:pt-36 md:pb-28 lg:pt-40 lg:pb-32">
       {/* Animated gradient background */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <motion.div
@@ -72,7 +72,7 @@ export function HeroSection({ onTryDemo }: HeroSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.06 }}
-            className="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-[3.5rem] lg:leading-[1.08]"
+            className="mt-5 text-3xl font-semibold tracking-tight text-white min-[400px]:text-4xl sm:text-5xl lg:text-[3.5rem] lg:leading-[1.08] mobile-text-balance"
           >
             One AI Workspace.
             <br />
@@ -95,12 +95,12 @@ export function HeroSection({ onTryDemo }: HeroSectionProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.18 }}
-            className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+            className="mt-10 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:mx-auto sm:max-w-none sm:flex-row sm:items-center"
           >
-            <LandingButton href="/signup" variant="primary">
+            <LandingButton href="/signup" variant="primary" className="w-full sm:w-auto">
               Start Free
             </LandingButton>
-            <LandingButton variant="secondary" onClick={onTryDemo}>
+            <LandingButton variant="secondary" onClick={onTryDemo} className="w-full sm:w-auto">
               Try Interactive Demo
             </LandingButton>
           </motion.div>
@@ -120,7 +120,7 @@ export function HeroSection({ onTryDemo }: HeroSectionProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.6 }}
-          className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-3 sm:gap-4"
+          className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-3 min-[400px]:grid-cols-3 sm:mt-10 sm:gap-4"
         >
           {[
             { label: "AI surfaces", value: "8+" },

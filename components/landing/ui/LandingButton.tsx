@@ -20,7 +20,7 @@ export function LandingButton({
   className,
 }: LandingButtonProps) {
   const base =
-    "inline-flex h-12 min-h-[48px] min-w-[160px] items-center justify-center rounded-xl px-7 text-sm font-semibold transition-all active:scale-[0.98] sm:min-w-[180px]";
+    "inline-flex h-12 min-h-[44px] w-full items-center justify-center rounded-xl px-7 text-sm font-semibold transition-all active:scale-[0.98] sm:min-w-[180px] sm:w-auto";
 
   const styles =
     variant === "primary"

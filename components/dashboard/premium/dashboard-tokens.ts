@@ -16,8 +16,12 @@ export const dashboard = {
   panelLg:
     "rounded-[20px] border border-white/[0.06] bg-[#111111] p-5 sm:p-6 lg:p-8 shadow-sm",
   pageTitle:
-    "text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-white",
+    "text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-white",
+  pageSubtitle: "text-sm sm:text-base leading-relaxed text-[#A1A1AA]",
   pagePadding: "p-4 sm:p-6 md:p-8 lg:p-10",
+  touchBtn:
+    "min-h-11 min-w-[44px] inline-flex items-center justify-center",
+  mobileFabOffset: "bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]",
   pageMaxWidth: "max-w-[1600px] mx-auto w-full",
   input:
     "w-full rounded-xl bg-[#0A0A0A] border border-white/[0.08] text-sm text-white placeholder:text-[#71717A] focus:outline-none focus:border-[#3B82F6]/50 focus:ring-1 focus:ring-[#3B82F6]/20 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[#3B82F6]/30",

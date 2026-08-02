@@ -27,14 +27,14 @@ const AiAssistantPanel = dynamic(
     loading: () => (
       <div
         className={`${dashboard.cardLg} mb-8 overflow-hidden lg:mb-10`}
-        style={{ minHeight: 520 }}
+        style={{ minHeight: 320 }}
         aria-busy="true"
       >
-        <div className="border-b border-white/[0.06] p-5 sm:p-6">
+        <div className="border-b border-white/[0.06] p-4 sm:p-6">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="mt-2 h-4 w-72" />
         </div>
-        <div className="flex h-[min(520px,70vh)] min-h-[400px] flex-col p-5">
+        <div className="flex h-[min(420px,58dvh)] min-h-[280px] flex-col p-4 sm:h-[min(520px,70vh)] sm:min-h-[400px] sm:p-5">
           <Skeleton className="h-20 w-full" />
           <div className="mt-4 flex gap-2">
             <Skeleton className="h-8 w-32" />

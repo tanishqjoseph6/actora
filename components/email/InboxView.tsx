@@ -404,7 +404,7 @@ function InboxViewInner({ compact = false }: InboxViewProps) {
               inbox.openEmailWithAiReply(target);
             }
           }}
-          className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#3B82F6] text-white shadow-[0_12px_40px_rgba(59,130,246,0.35)] transition-colors hover:bg-[#3B82F6] sm:bottom-8 sm:right-8"
+          className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-4 z-40 flex h-12 w-12 min-h-[48px] min-w-[48px] items-center justify-center rounded-2xl bg-[#3B82F6] text-white shadow-[0_12px_40px_rgba(59,130,246,0.35)] transition-colors hover:bg-[#2563EB] sm:bottom-8 sm:left-auto sm:right-8"
           aria-label="Compose AI reply"
         >
           <PenSquare className="h-5 w-5" strokeWidth={1.75} />

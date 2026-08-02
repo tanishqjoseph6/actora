@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { PremiumMetricCard } from "@/components/dashboard/premium/PremiumMetricCard";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { CalendarConnectCard } from "@/components/calendar/CalendarConnectCard";
 import { MeetingDetailPanel } from "@/components/calendar/MeetingDetailPanel";
 import { ScheduleMeetingModal } from "@/components/calendar/ScheduleMeetingModal";
@@ -41,6 +42,7 @@ const VIEWS: { id: CalendarViewMode; label: string }[] = [
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 7); // 7am–7pm
 
 export function CalendarWorkspace() {
+  const isMobile = useIsMobile();
   const {
     connected,
     account,
@@ -50,6 +52,15 @@ export function CalendarWorkspace() {
   } = useCalendarAccount();
   const [view, setView] = useState<CalendarViewMode>("week");
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
+  const [mobileViewInit, setMobileViewInit] = useState(false);
+
+  useEffect(() => {
+    if (mobileViewInit) return;
+    if (isMobile) {
+      setView("agenda");
+    }
+    setMobileViewInit(true);
+  }, [isMobile, mobileViewInit]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [tasksDue, setTasksDue] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -294,14 +305,14 @@ export function CalendarWorkspace() {
               {title}
             </p>
           </div>
-          <div className="flex rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-1">
+          <div className="mobile-scroll-x flex w-full rounded-xl border border-white/[0.06] bg-[#0A0A0A] p-1 sm:w-auto">
             {VIEWS.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setView(item.id)}
                 className={cn(
-                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  "shrink-0 rounded-lg px-3 py-2 text-xs font-medium transition min-h-[44px] sm:min-h-0 sm:py-1.5",
                   view === item.id
                     ? "bg-[#3B82F6]/20 text-white"
                     : "text-[#71717A] hover:text-white"
@@ -600,8 +611,8 @@ function WeekHourView({
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
 
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[720px] grid-cols-7 gap-2">
+    <div className="overflow-x-auto premium-scrollbar md:overflow-visible">
+      <div className="grid grid-cols-2 gap-2 min-[480px]:grid-cols-4 md:min-w-[720px] md:grid-cols-7">
         {days.map((day) => {
           const dayEvents = eventsForDay(events, day);
           const isToday = sameDay(day, new Date());
@@ -668,8 +679,8 @@ function MonthView({
 }) {
   const weeks = monthMatrix(anchor);
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[640px] grid-cols-7 gap-2">
+    <div className="overflow-x-auto premium-scrollbar md:overflow-visible">
+      <div className="grid min-w-0 grid-cols-7 gap-1 sm:gap-2 md:min-w-[640px]">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <p
             key={d}
@@ -686,7 +697,7 @@ function MonthView({
             <div
               key={day.toISOString()}
               className={cn(
-                "min-h-[88px] rounded-xl border p-2 text-left transition",
+                "min-h-[72px] rounded-xl border p-1.5 text-left transition sm:min-h-[88px] sm:p-2",
                 inMonth
                   ? "border-white/[0.06] bg-[#0A0A0A]"
                   : "border-transparent bg-transparent opacity-40",

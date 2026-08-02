@@ -390,7 +390,7 @@ export function GlobalAiCommandPalette({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.98 }}
           transition={{ duration: 0.2 }}
-          className="relative mx-auto mt-[10vh] w-[min(100%-1.5rem,620px)] overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111] shadow-[0_32px_100px_rgba(0,0,0,0.55),0_0_80px_rgba(59,130,246,0.12)]"
+          className="relative mx-auto flex max-h-[min(85dvh,calc(100dvh-2rem))] w-[min(100%-1rem,620px)] flex-col overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111] shadow-[0_32px_100px_rgba(0,0,0,0.55),0_0_80px_rgba(59,130,246,0.12)] max-sm:fixed max-sm:inset-x-3 max-sm:bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:top-auto max-sm:mt-0 max-sm:max-h-[min(88dvh,calc(100dvh-1.5rem))] max-sm:w-auto max-sm:rounded-2xl sm:mt-[8vh] md:mt-[10vh]"
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#3B82F6]/40 to-transparent" />
 
@@ -448,7 +448,7 @@ export function GlobalAiCommandPalette({
             )}
           </div>
 
-          <div className="max-h-[380px] overflow-y-auto p-2 premium-scrollbar">
+          <div className="max-h-[min(380px,50dvh)] overflow-y-auto p-2 premium-scrollbar sm:max-h-[380px]">
             {mode === "ai" && !trimmedQuery && pinned.length > 0 && (
               <p className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#52525B]">
                 Pinned commands
@@ -600,7 +600,7 @@ export const RoxxCommandTrigger = memo(function RoxxCommandTrigger() {
       <button
         type="button"
         onClick={openCommand}
-        className="rounded-xl border border-white/[0.08] p-2 text-[#A1A1AA] md:hidden interactive-press"
+        className="rounded-xl border border-white/[0.08] p-2.5 text-[#A1A1AA] md:hidden interactive-press touch-target"
         aria-label="Open AI command bar"
       >
         <Sparkles className="h-4 w-4 text-[#3B82F6]" />

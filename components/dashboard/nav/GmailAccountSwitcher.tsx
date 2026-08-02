@@ -92,19 +92,169 @@ export function GmailAccountSwitcher() {
     [disconnectAccount]
   );
 
+  const dropdownPanel = (
+    <>
+      <div className="border-b border-white/[0.06] px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-white">Gmail accounts</p>
+            <p className="mt-0.5 text-xs text-[#71717A]">
+              Switch the active inbox for Actora
+            </p>
+          </div>
+          <span
+            className={cn(
+              "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+              connected
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                : "border-white/[0.08] text-[#71717A]"
+            )}
+          >
+            {connected ? "Connected" : "Not connected"}
+          </span>
+        </div>
+        <p className="mt-2 text-[11px] text-[#52525B]">{limitLabel}</p>
+      </div>
+
+      <div className="max-h-[min(280px,45dvh)] space-y-1 overflow-y-auto p-2">
+        {loading && <SkeletonListRows rows={2} className="px-2 py-2" />}
+
+        {!loading && accounts.length === 0 && (
+          <div className="px-3 py-6 text-center">
+            <Mail className="mx-auto h-5 w-5 text-[#52525B]" />
+            <p className="mt-2 text-sm text-[#A1A1AA]">No Gmail connected</p>
+            <p className="mt-1 text-xs text-[#71717A]">
+              Connect an account to sync your inbox.
+            </p>
+          </div>
+        )}
+
+        {accounts.map((account) => {
+          const active = account.email === primaryAccount?.email;
+          const busy = actionEmail === account.email;
+          return (
+            <div
+              key={account.id}
+              className={cn(
+                "rounded-xl border px-3 py-2.5 transition-colors",
+                active
+                  ? "border-[#3B82F6]/35 bg-[#3B82F6]/10"
+                  : "border-transparent hover:bg-white/[0.03]"
+              )}
+            >
+              <button
+                type="button"
+                className="flex w-full min-h-[44px] items-start gap-3 text-left"
+                onClick={() => {
+                  setSelectedEmail(account.email);
+                  close();
+                }}
+              >
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/15 text-xs font-semibold text-[#93C5FD]">
+                  {account.email.charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-medium text-white">
+                      {account.email}
+                    </span>
+                    {active && (
+                      <>
+                        <span className="rounded-full border border-[#3B82F6]/35 bg-[#3B82F6]/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#93C5FD]">
+                          Primary
+                        </span>
+                        <Check className="h-3.5 w-3.5 shrink-0 text-[#3B82F6]" />
+                      </>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-[#71717A]">
+                    Connected · Last sync {formatGmailSyncTime(account.lastSyncedAt)}
+                  </span>
+                </span>
+              </button>
+              <div className="mt-2 flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void syncAccount(account.email)}
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white disabled:opacity-50 sm:min-h-0"
+                >
+                  <RefreshCw
+                    className={cn("h-3 w-3", busy && "animate-spin")}
+                  />
+                  {busy ? "Syncing…" : "Sync"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || active}
+                  title={
+                    active
+                      ? "Switch to another account before disconnecting"
+                      : "Disconnect account"
+                  }
+                  onClick={() => void handleDisconnect(account.email, active)}
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
+                >
+                  <Unplug className="h-3 w-3" />
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="border-t border-white/[0.06] p-2">
+        {canAddAccount ? (
+          <button
+            type="button"
+            onClick={() => void handleConnectAnother()}
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
+          >
+            <Link2 className="h-4 w-4 text-[#3B82F6]" />
+            Add another Gmail account
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              checkInbox();
+            }}
+            className="flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#71717A] transition-colors hover:bg-white/[0.04] hover:text-[#A1A1AA]"
+          >
+            <Link2 className="h-4 w-4 text-[#52525B]" />
+            Account limit reached
+          </button>
+        )}
+        {!connected && (
+          <PrefetchLink
+            href="/dashboard/connect-gmail"
+            onClick={close}
+            className="mt-1 flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
+          >
+            <Mail className="h-4 w-4 text-[#3B82F6]" />
+            Connect Gmail
+          </PrefetchLink>
+        )}
+      </div>
+    </>
+  );
+
   return (
-    <div className="relative hidden sm:block" ref={ref}>
+    <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex max-w-[220px] items-center gap-2 rounded-xl border border-white/[0.08] bg-[#111111] px-3 py-2 text-xs font-medium text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/30 hover:text-white"
+        aria-label={connected ? `Gmail: ${label}` : "Connect Gmail"}
+        className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/[0.08] bg-[#111111] text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/30 hover:text-white sm:h-auto sm:w-auto sm:max-w-[220px] sm:gap-2 sm:px-3 sm:py-2 sm:text-xs sm:font-medium"
       >
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#3B82F6]/15 text-[11px] font-semibold text-[#93C5FD]">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#3B82F6]/15 text-[11px] font-semibold text-[#93C5FD] sm:flex">
           {connected ? initial : <Mail className="h-3.5 w-3.5" />}
         </span>
-        <span className="truncate capitalize">
+        <span className="hidden truncate capitalize sm:inline">
           {loading && !primaryAccount ? (
             <Skeleton className="inline-block h-3 w-16 align-middle" />
           ) : connected ? (
@@ -113,156 +263,15 @@ export function GmailAccountSwitcher() {
             "Gmail"
           )}
         </span>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-[#71717A]" />
+        <ChevronsUpDown className="hidden h-3.5 w-3.5 shrink-0 text-[#71717A] sm:block" />
       </button>
 
-      <DropdownShell open={open} widthClassName="w-[340px]">
-        <div className="border-b border-white/[0.06] px-4 py-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-white">Gmail accounts</p>
-              <p className="mt-0.5 text-xs text-[#71717A]">
-                Switch the active inbox for Actora
-              </p>
-            </div>
-            <span
-              className={cn(
-                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                connected
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                  : "border-white/[0.08] text-[#71717A]"
-              )}
-            >
-              {connected ? "Connected" : "Not connected"}
-            </span>
-          </div>
-          <p className="mt-2 text-[11px] text-[#52525B]">{limitLabel}</p>
-        </div>
-
-        <div className="max-h-[280px] space-y-1 overflow-y-auto p-2">
-          {loading && (
-            <SkeletonListRows rows={2} className="px-2 py-2" />
-          )}
-
-          {!loading && accounts.length === 0 && (
-            <div className="px-3 py-6 text-center">
-              <Mail className="mx-auto h-5 w-5 text-[#52525B]" />
-              <p className="mt-2 text-sm text-[#A1A1AA]">No Gmail connected</p>
-              <p className="mt-1 text-xs text-[#71717A]">
-                Connect an account to sync your inbox.
-              </p>
-            </div>
-          )}
-
-          {accounts.map((account) => {
-            const active = account.email === primaryAccount?.email;
-            const busy = actionEmail === account.email;
-            return (
-              <div
-                key={account.id}
-                className={cn(
-                  "rounded-xl border px-3 py-2.5 transition-colors",
-                  active
-                    ? "border-[#3B82F6]/35 bg-[#3B82F6]/10"
-                    : "border-transparent hover:bg-white/[0.03]"
-                )}
-              >
-                <button
-                  type="button"
-                  className="flex w-full items-start gap-3 text-left"
-                  onClick={() => {
-                    setSelectedEmail(account.email);
-                    close();
-                  }}
-                >
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#3B82F6]/15 text-xs font-semibold text-[#93C5FD]">
-                    {account.email.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-sm font-medium text-white">
-                        {account.email}
-                      </span>
-                      {active && (
-                        <>
-                          <span className="rounded-full border border-[#3B82F6]/35 bg-[#3B82F6]/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#93C5FD]">
-                            Primary
-                          </span>
-                          <Check className="h-3.5 w-3.5 shrink-0 text-[#3B82F6]" />
-                        </>
-                      )}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-[#71717A]">
-                      Connected · Last sync {formatGmailSyncTime(account.lastSyncedAt)}
-                    </span>
-                  </span>
-                </button>
-                <div className="mt-2 flex items-center justify-end gap-1">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void syncAccount(account.email)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white disabled:opacity-50"
-                  >
-                    <RefreshCw
-                      className={cn("h-3 w-3", busy && "animate-spin")}
-                    />
-                    {busy ? "Syncing…" : "Sync"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || active}
-                    title={
-                      active
-                        ? "Switch to another account before disconnecting"
-                        : "Disconnect account"
-                    }
-                    onClick={() => void handleDisconnect(account.email, active)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <Unplug className="h-3 w-3" />
-                    Disconnect
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="border-t border-white/[0.06] p-2">
-          {canAddAccount ? (
-            <button
-              type="button"
-              onClick={() => void handleConnectAnother()}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
-            >
-              <Link2 className="h-4 w-4 text-[#3B82F6]" />
-              Add another Gmail account
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                close();
-                checkInbox();
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#71717A] transition-colors hover:bg-white/[0.04] hover:text-[#A1A1AA]"
-            >
-              <Link2 className="h-4 w-4 text-[#52525B]" />
-              Account limit reached
-            </button>
-          )}
-          {!connected && (
-            <PrefetchLink
-              href="/dashboard/connect-gmail"
-              onClick={close}
-              className="mt-1 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-[#A1A1AA] transition-colors hover:bg-white/[0.04] hover:text-white"
-            >
-              <Mail className="h-4 w-4 text-[#3B82F6]" />
-              Connect Gmail
-            </PrefetchLink>
-          )}
-        </div>
+      <DropdownShell
+        open={open}
+        widthClassName="w-[min(calc(100vw-2rem),340px)] sm:w-[340px]"
+        align="right"
+      >
+        {dropdownPanel}
       </DropdownShell>
     </div>
   );

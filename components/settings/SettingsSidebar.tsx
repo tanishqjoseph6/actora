@@ -41,7 +41,7 @@ export function SettingsSidebar({ activeId }: SettingsSidebarProps) {
               <a
                 href={`#${section.id}`}
                 className={`
-                  block px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
+                  block min-h-[44px] px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap lg:min-h-0 lg:py-2
                   ${
                     active
                       ? "bg-[#2563EB]/15 text-[#93C5FD] border border-[#2563EB]/30"

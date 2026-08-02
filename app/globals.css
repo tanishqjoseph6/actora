@@ -39,6 +39,49 @@ body {
   color: var(--actora-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile-first utilities (320px–768px) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.mobile-scroll-x {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-full-width {
+    width: 100%;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-text-balance {
+    text-wrap: balance;
+  }
 }
 
 @keyframes slide-in-right {

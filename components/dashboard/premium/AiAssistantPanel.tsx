@@ -744,7 +744,7 @@ export function AiAssistantPanel({
         className={
           isDrawer
             ? "relative flex min-h-0 flex-1 flex-col"
-            : "relative flex h-[min(520px,70vh)] min-h-[400px] flex-col sm:h-[min(560px,72vh)]"
+            : "relative flex h-[min(420px,58dvh)] min-h-[280px] flex-col sm:h-[min(520px,70vh)] sm:min-h-[400px] md:h-[min(560px,72vh)]"
         }
       >
         <AnimatePresence>

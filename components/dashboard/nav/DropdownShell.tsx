@@ -29,7 +29,7 @@ export function DropdownShell({
           className={cn(
             "absolute top-[calc(100%+8px)] z-50 overflow-hidden rounded-[18px] border border-white/[0.08] bg-[#111111]/95 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl",
             align === "right" ? "right-0" : "left-0",
-            widthClassName,
+              widthClassName,
             className
           )}
         >

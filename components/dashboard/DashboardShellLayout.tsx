@@ -65,7 +65,7 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
 
           <section
             ref={scrollRef}
-            className="premium-scrollbar mx-auto w-full max-w-[1600px] min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-6 md:p-8 lg:p-10"
+            className="premium-scrollbar mx-auto w-full max-w-[1600px] min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 pb-20 sm:p-4 sm:pb-6 md:p-8 md:pb-8 lg:p-10 safe-bottom"
           >
             <ContextualAiBar />
             <DashboardPageTransition>{children}</DashboardPageTransition>

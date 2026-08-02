@@ -10,6 +10,7 @@ import { UserProfileMenu } from "@/components/dashboard/nav/UserProfileMenu";
 import { RoxxCommandTrigger } from "@/components/dashboard/ai/GlobalAiCommandPalette";
 import { TrialUpgradeModal } from "@/components/dashboard/nav/TrialUpgradeModal";
 import { useRoxx } from "@/providers/RoxxProvider";
+import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { Sparkles } from "lucide-react";
 
 type DashboardTopNavProps = {
@@ -27,29 +28,29 @@ export const DashboardTopNav = memo(function DashboardTopNav({
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex min-w-0 items-center gap-2 border-b border-white/[0.06] bg-[#0A0A0A]/85 px-4 py-3 backdrop-blur-xl sm:gap-3 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-30 flex min-w-0 items-center gap-2 border-b border-white/[0.06] bg-[#0A0A0A]/85 px-3 py-2.5 backdrop-blur-xl safe-top sm:gap-3 sm:px-6 sm:py-3 lg:px-8">
         <button
           type="button"
           onClick={onMenuClick}
-          className="rounded-xl border border-white/[0.08] p-2 text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/35 hover:text-white lg:hidden interactive-press"
+          className={`${dashboard.touchBtn} rounded-xl border border-white/[0.08] p-2.5 text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/35 hover:text-white lg:hidden interactive-press`}
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </button>
 
         {title && (
-          <p className="truncate text-sm font-medium text-white md:hidden">
+          <p className="min-w-0 max-w-[38%] truncate text-sm font-medium text-white sm:max-w-none sm:flex-1 lg:hidden">
             {title}
           </p>
         )}
 
         <RoxxCommandTrigger />
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2.5">
           <button
             type="button"
             onClick={() => openCopilot()}
-            className="hidden rounded-xl border border-[#3B82F6]/25 bg-[#3B82F6]/10 p-2 text-[#93C5FD] transition-colors hover:border-[#3B82F6]/45 sm:inline-flex interactive-press"
+            className={`${dashboard.touchBtn} hidden rounded-xl border border-[#3B82F6]/25 bg-[#3B82F6]/10 p-2.5 text-[#93C5FD] transition-colors hover:border-[#3B82F6]/45 sm:inline-flex interactive-press`}
             aria-label="Open Roxx AI copilot"
             title="Roxx AI (⌘J)"
           >

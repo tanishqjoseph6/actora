@@ -15,8 +15,9 @@ export const landing = {
     "border border-white/[0.08] bg-[#111111]/60 backdrop-blur-xl",
   glassHover:
     "hover:border-[#2563EB]/30 hover:bg-[#111111]/80 hover:shadow-[0_8px_32px_rgba(37,99,235,0.12)]",
-  section: "py-20 sm:py-28 lg:py-32",
-  container: "mx-auto max-w-6xl px-5 sm:px-8",
+  section: "py-16 sm:py-24 md:py-28 lg:py-32",
+  container: "mx-auto max-w-6xl px-4 sm:px-6 md:px-8",
+  containerTight: "mx-auto max-w-6xl px-4 sm:px-6",
   rounded: "rounded-[20px]",
   roundedLg: "rounded-[24px]",
 } as const;
