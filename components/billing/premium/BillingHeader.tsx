@@ -1,18 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { BillingPeriod } from "../pricing-data";
-import { PricingToggles } from "../PricingToggles";
 
-type BillingHeaderProps = {
-  period: BillingPeriod;
-  onPeriodChange: (period: BillingPeriod) => void;
-};
-
-export function BillingHeader({
-  period,
-  onPeriodChange,
-}: BillingHeaderProps) {
+export function BillingHeader() {
   return (
     <motion.header
       initial={{ opacity: 0, y: 16 }}
@@ -33,9 +23,6 @@ export function BillingHeader({
         Manage your subscription, invoices and usage.
       </p>
 
-      <div className="mt-8">
-        <PricingToggles period={period} onPeriodChange={onPeriodChange} />
-      </div>
     </motion.header>
   );
 }

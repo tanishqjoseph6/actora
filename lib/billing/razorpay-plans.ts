@@ -5,15 +5,9 @@ const PLAN_LABELS: Record<PaidPlanId, string> = {
   starter: "Team",
 };
 
-const PLAN_ENV_KEYS: Record<PaidPlanId, Record<BillingPeriod, string>> = {
-  pro: {
-    monthly: "RAZORPAY_PRO_PLAN_ID",
-    yearly: "RAZORPAY_PRO_YEARLY_PLAN_ID",
-  },
-  starter: {
-    monthly: "RAZORPAY_TEAM_PLAN_ID",
-    yearly: "RAZORPAY_TEAM_YEARLY_PLAN_ID",
-  },
+const PLAN_ENV_KEYS: Record<PaidPlanId, string> = {
+  pro: "RAZORPAY_PRO_PLAN_ID",
+  starter: "RAZORPAY_TEAM_PLAN_ID",
 };
 
 export type RazorpayKeyMode = "LIVE" | "TEST" | "UNKNOWN";
@@ -66,7 +60,7 @@ export function getRazorpayPlanId(
   planId: PaidPlanId,
   period: BillingPeriod
 ): string {
-  const envKey = PLAN_ENV_KEYS[planId][period];
+  const envKey = PLAN_ENV_KEYS[planId];
   return validatePlanId(envKey, planId, period);
 }
 
@@ -74,7 +68,7 @@ export function getRazorpayPlanEnvKey(
   planId: PaidPlanId,
   period: BillingPeriod
 ): string {
-  return PLAN_ENV_KEYS[planId][period];
+  return PLAN_ENV_KEYS[planId];
 }
 
 /** Logs configured plan IDs (for debugging). Safe to print — not secrets. */
@@ -83,16 +77,11 @@ export function getConfiguredRazorpayPlanIds(): Record<
   string | undefined
 > {
   const out: Record<string, string | undefined> = {};
-  for (const [planId, periods] of Object.entries(PLAN_ENV_KEYS) as [
+  for (const [planId, envKey] of Object.entries(PLAN_ENV_KEYS) as [
     PaidPlanId,
-    Record<BillingPeriod, string>,
+    string,
   ][]) {
-    for (const [period, envKey] of Object.entries(periods) as [
-      BillingPeriod,
-      string,
-    ][]) {
-      out[`${planId}.${period}`] = readPlanEnv(envKey);
-    }
+    out[`${planId}.monthly`] = readPlanEnv(envKey);
   }
   return out;
 }
@@ -109,11 +98,9 @@ export function resolveAppPlanFromRazorpayPlanId(
   if (!trimmed) return null;
 
   for (const planId of ["pro", "starter"] as PaidPlanId[]) {
-    for (const period of ["monthly", "yearly"] as BillingPeriod[]) {
-      const configured = readPlanEnv(PLAN_ENV_KEYS[planId][period]);
-      if (configured && configured === trimmed) {
-        return { planId, period };
-      }
+    const configured = readPlanEnv(PLAN_ENV_KEYS[planId]);
+    if (configured && configured === trimmed) {
+      return { planId, period: "monthly" };
     }
   }
 

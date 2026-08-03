@@ -62,11 +62,7 @@ const memoryStore = new Map<string, StoredSubscription>();
 
 function getNextRenewalDate(billingInterval: BillingInterval = "monthly"): string {
   const date = new Date();
-  if (billingInterval === "yearly") {
-    date.setFullYear(date.getFullYear() + 1);
-  } else {
-    date.setMonth(date.getMonth() + 1);
-  }
+  date.setMonth(date.getMonth() + 1);
   return date.toISOString();
 }
 

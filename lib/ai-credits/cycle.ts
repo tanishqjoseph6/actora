@@ -36,11 +36,7 @@ export async function resolveCreditCycle(userId: string): Promise<{
   if (stored?.currentPeriodEnd) {
     const end = new Date(stored.currentPeriodEnd);
     const start = new Date(end);
-    if (stored.billingInterval === "yearly") {
-      start.setFullYear(start.getFullYear() - 1);
-    } else {
-      start.setMonth(start.getMonth() - 1);
-    }
+    start.setMonth(start.getMonth() - 1);
     return {
       planId,
       allotment,

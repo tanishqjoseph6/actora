@@ -78,9 +78,8 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { planId, billingInterval } = body as {
+    const { planId } = body as {
       planId?: PlanId;
-      billingInterval?: "monthly" | "yearly";
     };
 
     const validPlans: PlanId[] = ["free", "starter", "pro", "enterprise"];
@@ -94,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     const updated = await subscriptionProvider.setPlan(
       userId,
       planId,
-      billingInterval ?? "monthly"
+      "monthly"
     );
 
     return NextResponse.json({

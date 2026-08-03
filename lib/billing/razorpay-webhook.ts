@@ -99,7 +99,7 @@ async function extractActivationContext(
 ): Promise<{
   userId: string;
   planId: PaidPlanId;
-  period: BillingInterval;
+  period: "monthly";
   razorpayPlanId?: string;
   subscriptionId?: string;
   paymentId?: string;

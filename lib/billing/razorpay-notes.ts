@@ -82,5 +82,5 @@ export function isPaidAppPlan(planId: string): planId is PaidPlanId {
 }
 
 export function parseBillingPeriod(period: string | undefined): BillingPeriod {
-  return period === "yearly" ? "yearly" : "monthly";
+  return "monthly";
 }

@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
       razorpay_payment_id,
       razorpay_signature,
       planId,
-      period,
       currency,
       razorpayPlanId,
     } = body as {
@@ -76,10 +75,10 @@ export async function POST(request: NextRequest) {
       razorpay_payment_id?: string;
       razorpay_signature?: string;
       planId?: PlanId;
-      period?: BillingPeriod;
       currency?: string;
       razorpayPlanId?: string;
     };
+    const period: BillingPeriod = "monthly";
 
     console.log("[razorpay/verify] step:payload", {
       userId,
@@ -346,7 +345,7 @@ export async function POST(request: NextRequest) {
     void sendBillingPaymentConfirmationEmail({
       to: sessionEmail,
       planName: getPlanDisplayName(planId),
-      billingInterval: period === "yearly" ? "Yearly" : "Monthly",
+      billingInterval: "Monthly",
       amountLabel,
     }).catch((err) => {
       console.error("[razorpay/verify] billing email failed", err);

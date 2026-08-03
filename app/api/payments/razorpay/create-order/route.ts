@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { planId, period } = body as {
+    const { planId } = body as {
       planId?: PlanId;
-      period?: BillingPeriod;
       currency?: string;
     };
+    const period: BillingPeriod = "monthly";
 
     // Payment currency is determined server-side from geo — never trust client amounts.
     const currency = resolvePaymentCurrency(request);
@@ -41,13 +41,6 @@ export async function POST(request: NextRequest) {
     if (!planId || !isPaidPlan(planId)) {
       return NextResponse.json(
         { error: "Invalid plan for checkout." },
-        { status: 400 }
-      );
-    }
-
-    if (period !== "monthly" && period !== "yearly") {
-      return NextResponse.json(
-        { error: "Invalid billing period." },
         { status: 400 }
       );
     }
@@ -95,13 +88,12 @@ export async function GET(request: NextRequest) {
   const periodParam = searchParams.get("period");
   const currency = resolvePaymentCurrency(request);
 
-  const period: BillingPeriod =
-    periodParam === "yearly" ? "yearly" : "monthly";
+  const period: BillingPeriod = "monthly";
 
   if (
     !planIdParam ||
     !isPaidPlan(planIdParam as PlanId) ||
-    (periodParam !== "monthly" && periodParam !== "yearly")
+    (periodParam !== null && periodParam !== "monthly")
   ) {
     return NextResponse.json({ error: "Invalid preview parameters." }, { status: 400 });
   }

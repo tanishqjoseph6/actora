@@ -18,7 +18,6 @@ export function PricingCard({
 }: PricingCardProps) {
   const pricing = getDisplayPrice(plan.id, period);
   const isEnterprise = plan.id === "enterprise";
-  const showYearlyNote = Boolean(plan.saveNote);
 
   const isActionableCta =
     plan.cta === "Upgrade" || plan.cta === "Contact Sales";
@@ -38,7 +37,6 @@ export function PricingCard({
           <PlanContent
             plan={plan}
             pricing={pricing}
-            showYearlyNote={showYearlyNote}
             isEnterprise={isEnterprise}
             ctaVariant="gradient"
             onCtaClick={handleCtaClick}
@@ -56,7 +54,6 @@ export function PricingCard({
       <PlanContent
         plan={plan}
         pricing={pricing}
-        showYearlyNote={showYearlyNote}
         isEnterprise={isEnterprise}
         ctaVariant={plan.ctaVariant}
         onCtaClick={handleCtaClick}
@@ -70,7 +67,6 @@ export function PricingCard({
 function PlanContent({
   plan,
   pricing,
-  showYearlyNote,
   isEnterprise,
   ctaVariant,
   onCtaClick,
@@ -79,7 +75,6 @@ function PlanContent({
 }: {
   plan: PricingPlan;
   pricing: ReturnType<typeof getDisplayPrice>;
-  showYearlyNote: boolean;
   isEnterprise: boolean;
   ctaVariant: PricingPlan["ctaVariant"];
   onCtaClick?: () => void;
@@ -108,9 +103,6 @@ function PlanContent({
             <span className="text-gray-400 text-sm">{pricing.suffix}</span>
           )}
         </div>
-        {showYearlyNote && pricing.saveNote && (
-          <p className="text-xs text-[#3B82F6] mt-1">{pricing.saveNote}</p>
-        )}
         {pricing.billingNote && (
           <p className="text-xs text-gray-500 mt-1">{pricing.billingNote}</p>
         )}

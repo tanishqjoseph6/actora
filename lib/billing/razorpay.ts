@@ -57,11 +57,10 @@ async function createDynamicRazorpayPlan({
 
   const razorpay = getRazorpayClient();
   const label = getPlanLabel(planId);
-  const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
-  const planName = `Actora ${label} — ${periodLabel}`;
+  const planName = `Actora ${label} — Monthly`;
 
   const plan = await razorpay.plans.create({
-    period: period === "yearly" ? "yearly" : "monthly",
+    period: "monthly",
     interval: 1,
     item: {
       name: planName,
@@ -129,7 +128,7 @@ export async function createRazorpayOrder({
     plan_id: razorpayPlanId,
     customer_notify: 1 as const,
     quantity: 1,
-    total_count: period === "yearly" ? 10 : 120,
+    total_count: 120,
     notes: {
       userId: normalizedUserId,
       workspaceId: normalizedUserId,

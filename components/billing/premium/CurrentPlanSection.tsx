@@ -26,9 +26,7 @@ type CurrentPlanSectionProps = {
 };
 
 function formatBillingCycle(interval?: string): string {
-  if (interval === "yearly") return "Yearly";
-  if (interval === "monthly") return "Monthly";
-  return "—";
+  return interval ? "Monthly" : "—";
 }
 
 export function CurrentPlanSection({

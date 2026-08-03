@@ -1,11 +1,9 @@
 import {
   getUsdChargeAmount,
-  getUsdCompareAtLabel,
   getUsdPriceLabel,
-  YEARLY_DISCOUNT,
 } from "@/lib/billing/pricing-amounts";
 
-export type BillingPeriod = "monthly" | "yearly";
+export type BillingPeriod = "monthly";
 
 export type PlanId = "free" | "trial" | "starter" | "pro" | "enterprise";
 
@@ -15,13 +13,9 @@ export type PlanDisplayConfig = {
   priceLabel: string;
   priceSuffix: string;
   billingNote?: string;
-  saveNote?: string;
-  compareAtLabel?: string;
   /** USD charge amount in cents (for reference only — never sent to payment UI). */
   chargeAmount: number;
 };
-
-export { YEARLY_DISCOUNT };
 
 function buildPlanDisplayConfig(
   period: BillingPeriod,
@@ -29,34 +23,14 @@ function buildPlanDisplayConfig(
 ): PlanDisplayConfig {
   const chargeAmount = getUsdChargeAmount(planId, period);
   const priceLabel = getUsdPriceLabel(planId, period);
-  const priceSuffix = period === "yearly" ? "/year" : "/month";
-
-  if (period === "yearly") {
-    return {
-      priceLabel,
-      priceSuffix,
-      billingNote: "Billed yearly",
-      saveNote: "Save 15% with annual billing",
-      compareAtLabel: getUsdCompareAtLabel(planId, period) ?? undefined,
-      chargeAmount,
-    };
-  }
-
-  return { priceLabel, priceSuffix, chargeAmount };
+  return { priceLabel, priceSuffix: "/month", chargeAmount };
 }
 
 /** USD display prices — single currency shown across the product. */
-export const BILLING_PRICING: Record<
-  BillingPeriod,
-  Record<PaidPlanId, PlanDisplayConfig>
-> = {
+export const BILLING_PRICING: Record<BillingPeriod, Record<PaidPlanId, PlanDisplayConfig>> = {
   monthly: {
     pro: buildPlanDisplayConfig("monthly", "pro"),
     starter: buildPlanDisplayConfig("monthly", "starter"),
-  },
-  yearly: {
-    pro: buildPlanDisplayConfig("yearly", "pro"),
-    starter: buildPlanDisplayConfig("yearly", "starter"),
   },
 };
 
@@ -69,8 +43,6 @@ export type PricingPlan = {
   priceLabel: string;
   priceSuffix: string;
   billingNote?: string;
-  saveNote?: string;
-  compareAtLabel?: string;
   chargeAmount?: number | null;
   monthlyPrice: number | null;
   badge?: string;
@@ -85,8 +57,6 @@ const PRICING_PLAN_TEMPLATES: Omit<
   | "priceLabel"
   | "priceSuffix"
   | "billingNote"
-  | "saveNote"
-  | "compareAtLabel"
   | "chargeAmount"
 >[] = [
   {
@@ -188,17 +158,12 @@ export function getDisplayPlans(period: BillingPeriod): PricingPlan[] {
       };
     }
 
-    const priceConfig = getPlanPriceConfig(
-      period,
-      template.id as PaidPlanId
-    );
+    const priceConfig = getPlanPriceConfig("monthly", template.id as PaidPlanId);
     return {
       ...template,
       priceLabel: priceConfig.priceLabel,
       priceSuffix: priceConfig.priceSuffix,
       billingNote: priceConfig.billingNote,
-      saveNote: priceConfig.saveNote,
-      compareAtLabel: priceConfig.compareAtLabel,
       chargeAmount: priceConfig.chargeAmount,
     };
   });

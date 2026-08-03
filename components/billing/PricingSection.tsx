@@ -13,7 +13,6 @@ import {
   useUpgradeModal,
 } from "@/components/billing/UpgradeModal";
 import { PremiumPricingCard } from "@/components/billing/premium/PremiumPricingCard";
-import { PricingToggles } from "@/components/billing/PricingToggles";
 import {
   getDisplayPlans,
   getPlanById,
@@ -70,7 +69,7 @@ export function PricingSection({
     applySubscription,
   } = useSubscription();
   const { paymentCurrency, isIndia } = usePaymentRegion();
-  const [period, setPeriod] = useState<BillingPeriod>("monthly");
+  const period: BillingPeriod = "monthly";
   const { selection, openUpgrade, closeUpgrade } = useUpgradeModal();
   const [toast, setToast] = useState<PaymentToastState>(null);
 
@@ -177,10 +176,7 @@ export function PricingSection({
       }
 
       if (!session) {
-        const params = new URLSearchParams({
-          plan: plan.id,
-          period,
-        });
+        const params = new URLSearchParams({ plan: plan.id });
         router.push(`/login?callbackUrl=${encodeURIComponent(`/billing?${params}`)}`);
         return;
       }
@@ -278,13 +274,7 @@ export function PricingSection({
     queueMicrotask(() => {
       const params = new URLSearchParams(window.location.search);
       const planParam = params.get("plan");
-      const periodParam = params.get("period");
-      const billingPeriod: BillingPeriod =
-        periodParam === "yearly" ? "yearly" : "monthly";
-
-      if (periodParam === "yearly" || periodParam === "monthly") {
-        setPeriod(billingPeriod);
-      }
+      const billingPeriod: BillingPeriod = "monthly";
 
       if (planParam === "starter" || planParam === "pro") {
         const plan = getPlanById(planParam, billingPeriod);
@@ -347,9 +337,6 @@ export function PricingSection({
             </p>
           ) : null}
 
-          <div className={title || subtitle ? "mt-8" : undefined}>
-            <PricingToggles period={period} onPeriodChange={setPeriod} />
-          </div>
         </motion.header>
 
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 lg:gap-6 items-stretch">

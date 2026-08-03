@@ -117,28 +117,6 @@ export function PremiumPricingCard({
             {plan.billingNote}
           </motion.p>
         )}
-        {plan.saveNote && (
-          <motion.p
-            key={`${plan.id}-save-${plan.saveNote}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.05 }}
-            className="mt-2 text-xs text-[#3B82F6]"
-          >
-            {plan.saveNote}
-          </motion.p>
-        )}
-        {plan.compareAtLabel && plan.saveNote && (
-          <motion.p
-            key={`${plan.id}-compare-${plan.compareAtLabel}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.08 }}
-            className="mt-1 text-xs text-[#71717A] line-through"
-          >
-            {plan.compareAtLabel}/year
-          </motion.p>
-        )}
         {isEnterprise && (
           <p className="mt-2 text-sm text-[#A1A1AA]">
             Tailored to your organization

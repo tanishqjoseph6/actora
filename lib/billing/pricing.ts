@@ -5,7 +5,6 @@ import type {
 } from "@/components/billing/pricing-data";
 import {
   getPlanPriceConfig,
-  YEARLY_DISCOUNT,
 } from "@/components/billing/pricing-data";
 import type { BillingCurrency } from "./currency";
 import { CURRENCY_SYMBOLS } from "./currency";
@@ -13,8 +12,6 @@ import {
   convertUsdCentsToInrPaise,
   getUsdChargeAmount,
 } from "./pricing-amounts";
-
-export { YEARLY_DISCOUNT };
 
 export function isPaidPlan(planId: PlanId): planId is PaidPlanId {
   return planId === "starter" || planId === "pro";
@@ -48,7 +45,6 @@ export function getDisplayPrice(
   amount: string;
   suffix: string;
   billingNote?: string;
-  saveNote?: string;
 } {
   if (planId === "enterprise") {
     return { amount: "Custom", suffix: "" };
@@ -67,7 +63,6 @@ export function getDisplayPrice(
     amount: config.priceLabel,
     suffix: config.priceSuffix,
     billingNote: config.billingNote,
-    saveNote: config.saveNote,
   };
 }
 
@@ -76,16 +71,11 @@ export function getChargeDescription(
   planId: PlanId,
   period: BillingPeriod
 ): string {
-  const periodLabel = period === "yearly" ? "Yearly" : "Monthly";
+  const periodLabel = "Monthly";
   const planName =
     planId === "starter"
       ? "Team"
       : planId.charAt(0).toUpperCase() + planId.slice(1);
-
-  if (period === "yearly" && isPaidPlan(planId)) {
-    const config = getPlanPriceConfig(period, planId);
-    return `Actora ${planName} — ${periodLabel} (${config.priceLabel}${config.priceSuffix})`;
-  }
 
   return `Actora ${planName} — ${periodLabel}`;
 }

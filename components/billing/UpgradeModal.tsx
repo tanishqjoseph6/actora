@@ -182,7 +182,7 @@ export function UpgradeModal({
 
             <div className="mb-6">
               <p className="text-xs font-medium uppercase tracking-wider text-[#3B82F6] mb-2">
-                {period === "yearly" ? "Yearly billing" : "Monthly billing"}
+                Monthly billing
               </p>
               <h2
                 id="upgrade-modal-title"
@@ -206,9 +206,6 @@ export function UpgradeModal({
               </div>
               {plan.billingNote && (
                 <p className="text-xs text-gray-500 mt-1">{plan.billingNote}</p>
-              )}
-              {plan.saveNote && (
-                <p className="text-xs text-[#3B82F6] mt-1">{plan.saveNote}</p>
               )}
             </div>
 

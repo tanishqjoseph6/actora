@@ -401,9 +401,7 @@ export default function SettingsPage() {
                   <span className="text-white">
                     {formatRenewalDate(subscription.currentPeriodEnd)}
                   </span>
-                  {" · "}
-                  {subscription.billingInterval === "yearly" ? "Yearly" : "Monthly"}{" "}
-                  billing
+                  {" · Monthly billing"}
                 </p>
               )}
             </div>
