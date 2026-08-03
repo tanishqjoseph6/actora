@@ -29,9 +29,10 @@ import { queuePlanActivationToast } from "@/components/billing/PlanActivationToa
 import { isDevBillingEnabled } from "@/lib/billing/config";
 import { BILLING_TEMPORARILY_DISABLED } from "@/lib/billing/billing-pause";
 import { useBillingPause } from "@/components/billing/BillingPauseProvider";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 const ENTERPRISE_MAILTO =
-  "mailto:sales@useactora.com?subject=Actora%20Enterprise%20Inquiry";
+  `mailto:${FOUNDER_EMAIL}?subject=Actora%20Enterprise%20Inquiry`;
 
 type PricingSectionProps = {
   title: string;

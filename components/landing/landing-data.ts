@@ -1,3 +1,5 @@
+import { FOUNDER_EMAIL } from "@/lib/contact";
+
 export const NAV_LINKS = [
   { label: "Features", href: "/features" },
   { label: "Pricing", href: "/pricing" },
@@ -47,7 +49,7 @@ export const MENU_GROUPS: MenuGroup[] = [
     label: "Company",
     links: [
       { label: "Contact sales", href: "/contact" },
-      { label: "Book a demo", href: "mailto:sales@useactora.com?subject=Actora%20Demo" },
+      { label: "Book a demo", href: `mailto:${FOUNDER_EMAIL}?subject=Actora%20Demo` },
       { label: "Sign up", href: "/signup" },
       { label: "Log in", href: "/login" },
     ],

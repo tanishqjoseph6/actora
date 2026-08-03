@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ActoraLogo } from "@/components/branding/ActoraLogo";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 import { FOOTER_LINKS } from "./landing-data";
 import { SocialLinks } from "./SocialLinks";
 
@@ -57,10 +58,10 @@ export function LandingFooter() {
               ))}
               <li>
                 <a
-                  href="mailto:sales@useactora.com"
+                  href={`mailto:${FOUNDER_EMAIL}`}
                   className="text-sm text-[#A1A1AA] transition-colors hover:text-white"
                 >
-                  sales@useactora.com
+                  {FOUNDER_EMAIL}
                 </a>
               </li>
             </ul>

@@ -13,6 +13,7 @@ import {
 import { REFERRAL_REWARDS } from "@/lib/growth/types";
 import { sendWelcomeOnboardingEmail } from "@/lib/growth/onboarding-emails";
 import { trackEngagement } from "@/lib/growth/engagement";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export async function GET(request: NextRequest) {
   const email = await getApiUserEmail(request);
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         x: `https://twitter.com/intent/tweet?text=${encodeURIComponent(
           "Where conversations become execution."
         )}&url=${encodeURIComponent(link)}`,
-        email: `mailto:?subject=${encodeURIComponent(
+        email: `mailto:${FOUNDER_EMAIL}?subject=${encodeURIComponent(
           "Join me on Actora"
         )}&body=${encodeURIComponent(
           `Hey — I've been using Actora for inbox, CRM, and AI workflows.\n\nJoin with my link: ${link}`

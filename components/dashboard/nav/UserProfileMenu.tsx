@@ -26,6 +26,7 @@ import { getPlanBadgeStyles } from "@/lib/subscription/plans";
 import type { PlanId } from "@/lib/subscription/types";
 import { DropdownShell } from "./DropdownShell";
 import { cn } from "@/lib/utils";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export function UserProfileMenu() {
   const router = useRouter();
@@ -189,7 +190,7 @@ export function UserProfileMenu() {
               {billingPaused ? <ComingSoonBadge /> : null}
             </button>
             <a
-              href="mailto:sales@useactora.com?subject=Actora%20Help"
+              href={`mailto:${FOUNDER_EMAIL}?subject=Actora%20Help`}
               onClick={close}
               className={linkClass}
             >
@@ -197,7 +198,7 @@ export function UserProfileMenu() {
               Help Center
             </a>
             <a
-              href="mailto:sales@useactora.com?subject=Actora%20Feedback"
+              href={`mailto:${FOUNDER_EMAIL}?subject=Actora%20Feedback`}
               onClick={close}
               className={linkClass}
             >

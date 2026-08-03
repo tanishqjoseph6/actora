@@ -1,5 +1,6 @@
 import { getSiteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { SITE_TAGLINE } from "@/lib/marketing/seo";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 const siteUrl = getSiteUrl();
 
@@ -18,7 +19,7 @@ export function organizationSchema() {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "sales",
-      email: "sales@useactora.com",
+      email: FOUNDER_EMAIL,
       url: `${siteUrl}/contact`,
     },
   };

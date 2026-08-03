@@ -4,6 +4,7 @@ import {
   MarketingPageHero,
 } from "@/components/landing/MarketingPrimitives";
 import { createPageMetadata } from "@/lib/marketing/seo";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export const metadata = createPageMetadata({
   title: "Privacy Policy",
@@ -101,7 +102,7 @@ export default function PrivacyPage() {
           Depending on your location, you may have rights to access, correct,
           export, or delete personal data, or to object to certain processing.
           Contact{" "}
-          <a href="mailto:privacy@useactora.com">privacy@useactora.com</a>.
+          <a href={`mailto:${FOUNDER_EMAIL}`}>{FOUNDER_EMAIL}</a>.
         </p>
 
         <h2>9. Children</h2>
@@ -119,7 +120,7 @@ export default function PrivacyPage() {
         <h2>11. Contact</h2>
         <p>
           Privacy questions:{" "}
-          <a href="mailto:privacy@useactora.com">privacy@useactora.com</a>.
+          <a href={`mailto:${FOUNDER_EMAIL}`}>{FOUNDER_EMAIL}</a>.
           General contact: <Link href="/contact">Contact page</Link>.
         </p>
       </LegalProse>

@@ -8,6 +8,7 @@ import { automationRepository } from "@/lib/automations/repository";
 import { searchWorkspace, type WorkspaceContext } from "@/lib/assistant/context";
 import { formatTaskToolError } from "@/lib/tasks/api-response";
 import { createTaskRecord } from "@/lib/tasks/repository";
+import { FOUNDER_SIGNATURE } from "@/lib/contact";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import type OpenAI from "openai";
 
@@ -629,7 +630,7 @@ export async function executeAssistantTool(
         drafts.push({
           company: lead.companyName || lead.title,
           subject: `Following up — ${lead.title}`,
-          body: `Hi,\n\nI wanted to follow up on ${lead.title}. Happy to answer any questions or find a time that works.\n\nBest regards`,
+          body: `Hi,\n\nI wanted to follow up on ${lead.title}. Happy to answer any questions or find a time that works.\n\n${FOUNDER_SIGNATURE}`,
         });
       }
       steps.push({

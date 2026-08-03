@@ -73,9 +73,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const from =
-      Deno.env.get("EMAIL_FROM")?.trim() ||
-      "Actora <onboarding@useactora.com>";
+    const from = "Actora <founder@useactora.com>";
 
     const body = (await req.json()) as SendEmailBody;
     const recipients = Array.isArray(body.to) ? body.to : [body.to];

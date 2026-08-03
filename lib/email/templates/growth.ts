@@ -1,5 +1,6 @@
 import { actoraEmailLayout } from "./layout";
 import { getAppUrl } from "../config";
+import { withFounderSignature } from "@/lib/contact";
 
 export function welcomeOnboardingEmail(name?: string) {
   const app = getAppUrl();
@@ -12,7 +13,7 @@ export function welcomeOnboardingEmail(name?: string) {
       ctaLabel: "Open Actora",
       ctaHref: `${app}/dashboard`,
     }),
-    text: `Welcome to Actora. Open ${app}/dashboard to get started.`,
+    text: withFounderSignature(`Welcome to Actora. Open ${app}/dashboard to get started.`),
   };
 }
 
@@ -27,7 +28,7 @@ export function workspaceOnboardingEmail() {
       ctaLabel: "Open settings",
       ctaHref: `${app}/dashboard/settings#workspace-general`,
     }),
-    text: `Create your workspace: ${app}/dashboard/settings`,
+    text: withFounderSignature(`Create your workspace: ${app}/dashboard/settings`),
   };
 }
 
@@ -42,7 +43,7 @@ export function roxxOnboardingEmail() {
       ctaLabel: "Open Roxx AI",
       ctaHref: `${app}/dashboard`,
     }),
-    text: `Ask Roxx AI: ${app}/dashboard`,
+    text: withFounderSignature(`Ask Roxx AI: ${app}/dashboard`),
   };
 }
 
@@ -57,7 +58,7 @@ export function inviteTeammatesOnboardingEmail() {
       ctaLabel: "Invite teammates",
       ctaHref: `${app}/dashboard/settings#workspace-members`,
     }),
-    text: `Invite teammates: ${app}/dashboard/settings#workspace-members`,
+    text: withFounderSignature(`Invite teammates: ${app}/dashboard/settings#workspace-members`),
   };
 }
 
@@ -72,7 +73,7 @@ export function workflowsOnboardingEmail() {
       ctaLabel: "Open Automations",
       ctaHref: `${app}/dashboard/automations`,
     }),
-    text: `Automations: ${app}/dashboard/automations`,
+    text: withFounderSignature(`Automations: ${app}/dashboard/automations`),
   };
 }
 
@@ -87,7 +88,7 @@ export function upgradeOnboardingEmail() {
       ctaLabel: "View pricing",
       ctaHref: `${app}/pricing`,
     }),
-    text: `Upgrade: ${app}/pricing`,
+    text: withFounderSignature(`Upgrade: ${app}/pricing`),
   };
 }
 
@@ -105,6 +106,6 @@ export function referralRewardEmail(input: {
       ctaLabel: "View referrals",
       ctaHref: `${app}/dashboard/settings#referrals`,
     }),
-    text: `Referral reward: ${input.rewardLabel}. ${app}/dashboard/settings#referrals`,
+    text: withFounderSignature(`Referral reward: ${input.rewardLabel}. ${app}/dashboard/settings#referrals`),
   };
 }

@@ -1,3 +1,5 @@
+import { FOUNDER_EMAIL, FOUNDER_SIGNATURE } from "@/lib/contact";
+
 export function actoraEmailLayout(input: {
   eyebrow?: string;
   heading: string;
@@ -15,6 +17,9 @@ export function actoraEmailLayout(input: {
   const eyebrow = input.eyebrow
     ? `<tr><td style="font-size:13px;color:#3B82F6;font-weight:600;letter-spacing:0.04em;">${input.eyebrow}</td></tr>`
     : `<tr><td style="font-size:13px;color:#3B82F6;font-weight:600;letter-spacing:0.04em;">ACTORA</td></tr>`;
+  const signature = FOUNDER_SIGNATURE.split("\n")
+    .map((line) => line.replace("https://useactora.com", `<a href="https://useactora.com" style="color:#93C5FD;">https://useactora.com</a>`).replace(FOUNDER_EMAIL, `<a href="mailto:${FOUNDER_EMAIL}" style="color:#93C5FD;">${FOUNDER_EMAIL}</a>`))
+    .join("<br />");
 
   return `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#05070B;color:#E2E8F0;font-family:Inter,system-ui,sans-serif;">
@@ -25,6 +30,7 @@ export function actoraEmailLayout(input: {
         <tr><td style="padding-top:16px;font-size:24px;font-weight:700;color:#fff;">${input.heading}</td></tr>
         <tr><td style="padding-top:12px;font-size:15px;line-height:1.6;color:#94A3B8;">${input.body}</td></tr>
         ${cta}
+        <tr><td style="padding-top:28px;font-size:13px;line-height:1.6;color:#94A3B8;">${signature}</td></tr>
       </table>
     </td></tr>
   </table>

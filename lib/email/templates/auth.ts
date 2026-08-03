@@ -1,4 +1,5 @@
 import { actoraEmailLayout } from "@/lib/email/templates/layout";
+import { withFounderSignature } from "@/lib/contact";
 
 export function buildPasswordResetEmail(actionLink: string) {
   return {
@@ -10,7 +11,7 @@ export function buildPasswordResetEmail(actionLink: string) {
       ctaLabel: "Reset password",
       ctaHref: actionLink,
     }),
-    text: `Reset your Actora password: ${actionLink}`,
+    text: withFounderSignature(`Reset your Actora password: ${actionLink}`),
   };
 }
 
@@ -24,7 +25,7 @@ export function buildEmailVerificationEmail(actionLink: string) {
       ctaLabel: "Verify email",
       ctaHref: actionLink,
     }),
-    text: `Verify your Actora email: ${actionLink}`,
+    text: withFounderSignature(`Verify your Actora email: ${actionLink}`),
   };
 }
 

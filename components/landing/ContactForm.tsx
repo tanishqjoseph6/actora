@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FadeUp } from "./motion";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export function ContactForm() {
   const [name, setName] = useState("");
@@ -16,7 +17,7 @@ export function ContactForm() {
     const body = encodeURIComponent(
       `Name: ${name}\nEmail: ${email}\nCompany: ${company}\n\n${message}`
     );
-    window.location.href = `mailto:sales@useactora.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${FOUNDER_EMAIL}?subject=${subject}&body=${body}`;
     setStatus("sent");
   }
 
@@ -26,7 +27,7 @@ export function ContactForm() {
         onSubmit={onSubmit}
         className="rounded-[18px] border border-white/[0.06] bg-[#111111] p-6 sm:p-8"
         noValidate
-        aria-label="Contact Actora sales"
+        aria-label="Contact Actora"
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="block">
@@ -89,17 +90,17 @@ export function ContactForm() {
             Send message
           </button>
           <a
-            href="mailto:sales@useactora.com"
+            href={`mailto:${FOUNDER_EMAIL}`}
             className="text-sm text-[#93C5FD] transition-colors hover:text-white"
           >
-            or email sales@useactora.com
+            or email {FOUNDER_EMAIL}
           </a>
         </div>
 
         {status === "sent" && (
           <p className="mt-4 text-xs text-[#71717A]" role="status">
             Opening your email client… If nothing opens, write us at
-            sales@useactora.com.
+            {FOUNDER_EMAIL}.
           </p>
         )}
       </form>

@@ -2,11 +2,12 @@ import { ContactForm } from "@/components/landing/ContactForm";
 import { MarketingPageHero } from "@/components/landing/MarketingPrimitives";
 import { SocialLinks } from "@/components/landing/SocialLinks";
 import { createPageMetadata } from "@/lib/marketing/seo";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export const metadata = createPageMetadata({
   title: "Contact",
   description:
-    "Contact Actora sales for demos, enterprise plans, and partnership inquiries. Email sales@useactora.com.",
+    `Contact Actora for demos, enterprise plans, and partnership inquiries. Email ${FOUNDER_EMAIL}.`,
   path: "/contact",
 });
 
@@ -25,10 +26,10 @@ export default function ContactPage() {
               Sales
             </p>
             <a
-              href="mailto:sales@useactora.com"
+              href={`mailto:${FOUNDER_EMAIL}`}
               className="mt-2 block text-lg font-medium text-white transition-colors hover:text-[#93C5FD]"
             >
-              sales@useactora.com
+              {FOUNDER_EMAIL}
             </a>
             <p className="mt-3 text-sm text-[#A1A1AA]">
               Demos, Team plans, and enterprise security reviews.
@@ -39,10 +40,10 @@ export default function ContactPage() {
               Support
             </p>
             <a
-              href="mailto:support@useactora.com"
+              href={`mailto:${FOUNDER_EMAIL}`}
               className="mt-2 block text-lg font-medium text-white transition-colors hover:text-[#93C5FD]"
             >
-              support@useactora.com
+              {FOUNDER_EMAIL}
             </a>
             <p className="mt-3 text-sm text-[#A1A1AA]">
               Account help, billing questions, and product issues.

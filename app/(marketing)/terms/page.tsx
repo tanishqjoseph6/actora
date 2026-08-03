@@ -4,6 +4,7 @@ import {
   MarketingPageHero,
 } from "@/components/landing/MarketingPrimitives";
 import { createPageMetadata } from "@/lib/marketing/seo";
+import { FOUNDER_EMAIL } from "@/lib/contact";
 
 export const metadata = createPageMetadata({
   title: "Terms of Service",
@@ -167,7 +168,7 @@ export default function TermsPage() {
         <h2>14. Contact</h2>
         <p>
           Questions about these Terms:{" "}
-          <a href="mailto:legal@useactora.com">legal@useactora.com</a> or our{" "}
+          <a href={`mailto:${FOUNDER_EMAIL}`}>{FOUNDER_EMAIL}</a> or our{" "}
           <Link href="/contact">Contact</Link> page.
         </p>
       </LegalProse>
