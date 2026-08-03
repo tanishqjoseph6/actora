@@ -3,6 +3,7 @@ import { FOUNDER_EMAIL } from "@/lib/contact";
 export const NAV_LINKS = [
   { label: "Features", href: "/features" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Docs", href: "/docs" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ] as const;
@@ -58,6 +59,8 @@ export const MENU_GROUPS: MenuGroup[] = [
 
 export const MENU_FLAT_LINKS: MenuLink[] = [
   { label: "Pricing", href: "/pricing" },
+  { label: "Docs", href: "/docs" },
+  { label: "Developers", href: "/developers" },
   { label: "Security", href: "/faq#security" },
 ];
 
@@ -405,6 +408,9 @@ export const FOOTER_LINKS = {
   product: [
     { label: "Features", href: "/features" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Docs", href: "/docs" },
+    { label: "API", href: "/api/v1/openapi.json" },
+    { label: "Developers", href: "/developers" },
     { label: "FAQ", href: "/faq" },
     { label: "Dashboard", href: "/dashboard" },
   ],
