@@ -24,6 +24,7 @@ import { CreditTopUpSection } from "@/components/billing/CreditTopUpSection";
 import { AiCreditUsageAlerts } from "@/components/subscription/AiCreditUsageAlerts";
 import { TrialBillingCard } from "@/components/billing/TrialBillingCard";
 import { useSubscription } from "@/hooks/useSubscription";
+import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
 
 export default function Billing() {
   if (BILLING_TEMPORARILY_DISABLED) {
@@ -76,6 +77,9 @@ function BillingPageActive() {
               subscription={subscription}
               loading={loading}
             />
+            <div className="mb-10">
+              <ApiUsageCard />
+            </div>
 
             <motion.div
               initial={{ opacity: 0 }}

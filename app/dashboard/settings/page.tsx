@@ -48,6 +48,7 @@ import { useGmailAccounts } from "@/hooks/useGmailAccounts";
 import { formatLimit } from "@/lib/subscription";
 import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/email-reply/tones";
 import { DASHBOARD_SHORTCUTS } from "@/hooks/useDashboardKeyboardShortcuts";
+import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
 
 export default function SettingsPage() {
   const { subscription, loading } = usePlanGate();
@@ -92,6 +93,7 @@ export default function SettingsPage() {
       "usage-analytics",
       "notifications",
       "integrations",
+      "api-usage",
       "preferences",
       "shortcuts",
       "billing",
@@ -316,6 +318,14 @@ export default function SettingsPage() {
             >
               <IntegrationsPanel />
             </Suspense>
+          </SettingsSection>
+
+          <SettingsSection
+            id="api-usage"
+            title="API Usage"
+            description="Monitor public API calls, limits, keys, and the next billing-cycle reset."
+          >
+            <ApiUsageCard />
           </SettingsSection>
 
           {/* Preferences */}

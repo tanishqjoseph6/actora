@@ -16,6 +16,7 @@ import {
   AiCreditWarningBanner,
 } from "@/components/subscription/AiCreditsCard";
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
+import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
 
 const AiAssistantPanel = dynamic(
   () =>
@@ -86,6 +87,9 @@ export default function Dashboard() {
           detailed
           className="lg:col-span-1"
         />
+      </div>
+      <div className="mb-8">
+        <ApiUsageCard />
       </div>
       <AiAssistantPanel />
 

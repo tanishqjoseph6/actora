@@ -16,6 +16,7 @@ const SECTIONS = [
   { id: "usage-analytics", label: "Usage" },
   { id: "notifications", label: "Notifications" },
   { id: "integrations", label: "Integrations" },
+  { id: "api-usage", label: "API Usage" },
   { id: "preferences", label: "Preferences" },
   { id: "shortcuts", label: "Shortcuts" },
   { id: "billing", label: "Account billing" },

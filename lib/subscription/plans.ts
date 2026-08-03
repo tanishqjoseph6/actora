@@ -1,5 +1,6 @@
 import type { PlanId } from "./types";
 import type { PlanLimits } from "./types";
+import { getPublicApiLimits } from "@/lib/public-api/limits";
 
 export const DEFAULT_PLAN_ID: PlanId = "free";
 
@@ -12,26 +13,36 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     aiActionsPerMonth: 100,
     inboxes: 1,
     unlimited: false,
+    publicApiCallsPerMonth: getPublicApiLimits("free").monthlyCalls,
+    publicApiRequestsPerMinute: getPublicApiLimits("free").requestsPerMinute,
   },
   trial: {
     aiActionsPerMonth: 100,
     inboxes: 1,
     unlimited: false,
+    publicApiCallsPerMonth: getPublicApiLimits("trial").monthlyCalls,
+    publicApiRequestsPerMinute: getPublicApiLimits("trial").requestsPerMinute,
   },
   starter: {
     aiActionsPerMonth: 5_000,
     inboxes: Infinity,
     unlimited: false,
+    publicApiCallsPerMonth: getPublicApiLimits("starter").monthlyCalls,
+    publicApiRequestsPerMinute: getPublicApiLimits("starter").requestsPerMinute,
   },
   pro: {
     aiActionsPerMonth: 1_000,
     inboxes: 5,
     unlimited: false,
+    publicApiCallsPerMonth: getPublicApiLimits("pro").monthlyCalls,
+    publicApiRequestsPerMinute: getPublicApiLimits("pro").requestsPerMinute,
   },
   enterprise: {
     aiActionsPerMonth: Infinity,
     inboxes: Infinity,
     unlimited: true,
+    publicApiCallsPerMonth: getPublicApiLimits("enterprise").monthlyCalls,
+    publicApiRequestsPerMinute: getPublicApiLimits("enterprise").requestsPerMinute,
   },
 };
 

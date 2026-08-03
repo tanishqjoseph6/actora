@@ -11,6 +11,8 @@ export type PlanLimits = {
   aiActionsPerMonth: number;
   inboxes: number;
   unlimited: boolean;
+  publicApiCallsPerMonth: number;
+  publicApiRequestsPerMinute: number;
 };
 
 export type UsageMetrics = {
