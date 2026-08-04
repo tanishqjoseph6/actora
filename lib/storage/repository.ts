@@ -28,20 +28,25 @@ export function isAllowedMimeType(mimeType: string) {
 }
 
 export async function getWorkspaceStorageSnapshot(workspaceId: string, userId: string) {
-  const db = getSupabaseAdmin();
-  const subscription = await getStoredSubscription(userId);
-  const limitBytes = getStorageLimitBytes(subscription?.planId ?? "free");
-  if (!db) return { usedBytes: 0, reservedBytes: 0, fileCount: 0, limitBytes };
-  const { data } = await db.from("workspace_storage_usage")
-    .select("used_bytes,reserved_bytes,file_count")
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-  return {
-    usedBytes: Number(data?.used_bytes ?? 0),
-    reservedBytes: Number(data?.reserved_bytes ?? 0),
-    fileCount: Number(data?.file_count ?? 0),
-    limitBytes,
-  };
+  try {
+    const db = getSupabaseAdmin();
+    const subscription = await getStoredSubscription(userId);
+    const limitBytes = getStorageLimitBytes(subscription?.planId ?? "free");
+    if (!db) return { usedBytes: 0, reservedBytes: 0, fileCount: 0, limitBytes };
+    const { data } = await db.from("workspace_storage_usage")
+      .select("used_bytes,reserved_bytes,file_count")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+    return {
+      usedBytes: Number(data?.used_bytes ?? 0),
+      reservedBytes: Number(data?.reserved_bytes ?? 0),
+      fileCount: Number(data?.file_count ?? 0),
+      limitBytes,
+    };
+  } catch (error) {
+    console.error("[storage] Falling back to empty storage snapshot:", error);
+    return { usedBytes: 0, reservedBytes: 0, fileCount: 0, limitBytes: 5 * 1024 ** 3 };
+  }
 }
 
 export async function reserveWorkspaceFile({

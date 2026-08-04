@@ -36,6 +36,7 @@ function percent(used: number, limit: number) {
 }
 
 export async function getWorkspaceUsage(workspaceId: string, userId: string): Promise<WorkspaceUsageSnapshot> {
+  try {
   const db = getSupabaseAdmin();
   const subscription = await getStoredSubscription(userId);
   const planId = (subscription?.planId ?? "free") as PlanId;
@@ -78,6 +79,10 @@ export async function getWorkspaceUsage(workspaceId: string, userId: string): Pr
     meetings,
     calendarEvents,
   };
+  } catch (error) {
+    console.error("[workspace/usage] Falling back to empty usage snapshot:", error);
+    return emptyUsage("free", undefined, { usedBytes: 0, reservedBytes: 0, fileCount: 0, limitBytes: 5 * 1024 ** 3 }, getPlanLimits("free"));
+  }
 }
 
 function emptyUsage(planId: PlanId, periodEnd: string | undefined, storage: Awaited<ReturnType<typeof getWorkspaceStorageSnapshot>>, limits: ReturnType<typeof getPlanLimits>): WorkspaceUsageSnapshot {

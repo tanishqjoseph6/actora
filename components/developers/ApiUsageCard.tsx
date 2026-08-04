@@ -21,7 +21,9 @@ export function ApiUsageCard() {
   useEffect(() => {
     let active = true;
     fetch("/api/developers/usage")
-      .then((response) => response.json())
+      .then((response) => {
+        return response.json();
+      })
       .then((body) => {
         if (active) setUsage(body.usage ?? null);
       })
