@@ -5,7 +5,7 @@ import { getPlanLimits } from "@/lib/subscription/plans";
 
 export async function GET(request: NextRequest) {
   try {
-  const auth = await requireWorkspacePermission("files", request);
+  const auth = await requireWorkspacePermission(null, request);
   if (!auth.ok) {
     return auth.response;
   }

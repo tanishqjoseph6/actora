@@ -109,10 +109,13 @@ export class GmailAccountRepository {
     const db = this.clientForRead();
 
     if (!db) {
-      if (!shouldUseMemoryFallback()) {
-        throw new Error("Supabase admin client unavailable for listAccounts");
+      if (shouldUseMemoryFallback()) {
+        return memoryGmailAccountStore.listAccounts(normalizedUserId);
       }
-      return memoryGmailAccountStore.listAccounts(normalizedUserId);
+      console.error(
+        "[gmail/repository] Supabase admin client unavailable for listAccounts — returning empty list"
+      );
+      return [];
     }
 
     const { data, error, status, statusText } = await db
@@ -122,7 +125,8 @@ export class GmailAccountRepository {
       .order("connected_at", { ascending: false });
 
     if (error) {
-      this.handleDbError("listAccounts", error, { user_id: normalizedUserId });
+      console.error("[gmail/repository] listAccounts query failed:", error.message);
+      return [];
     }
 
     logDbWriteResult(SCOPE, "listAccounts", TABLE, {

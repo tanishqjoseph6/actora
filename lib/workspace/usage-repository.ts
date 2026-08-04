@@ -59,7 +59,7 @@ export async function getWorkspaceUsage(workspaceId: string, userId: string): Pr
     countRows(db, "crm_contacts", "user_id", userId),
     countRows(db, "meetings", "user_id", userId),
     countRows(db, "calendar_events", "user_id", userId),
-    getUserUsage(userId),
+    getUserUsage(userId).catch(() => ({ aiActionsUsed: 0, purchasedCreditsRemaining: 0, aiCreditsAllotment: 0, periodEnd: null, cycleKey: null })),
   ]);
   const apiCalls = (apiResult.data ?? []).reduce((total, row) => total + Number(row.calls_count ?? 0), 0);
   const aiUsed = aiUsage.aiActionsUsed;

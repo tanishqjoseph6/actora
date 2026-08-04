@@ -7,6 +7,7 @@ import type { PlanId } from "@/lib/subscription";
 import {
   subscriptionProvider,
   toSubscriptionSnapshot,
+  createDefaultSubscription,
 } from "@/lib/subscription";
 import { normalizeSubscriptionUserId } from "@/lib/subscription/user-id";
 import { isSupabaseConfigured } from "@/lib/supabase-admin";
@@ -49,12 +50,11 @@ export async function GET() {
   } catch (error) {
     logApiError("api/subscription", error, { userId, method: "GET" });
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to load subscription.";
-
-    return NextResponse.json({ error: message }, { status: 503 });
+    const fallback = createDefaultSubscription(userId);
+    return NextResponse.json({
+      subscription: toSubscriptionSnapshot(fallback),
+      degraded: true,
+    });
   }
 }
 

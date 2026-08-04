@@ -213,11 +213,26 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name;
       }
 
+      const applyDefaultSubscriptionToToken = () => {
+        token.planId = "free";
+        token.isTrial = false;
+        token.trialEndsAt = null;
+        token.trialExpired = false;
+        token.subscriptionStatus = "active";
+        token.currentPeriodEnd =
+          token.currentPeriodEnd ??
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      };
+
       const applySubscriptionToToken = async () => {
         if (!email) return;
         try {
           if (account || user) {
-            await provisionTrialOnSignIn(email);
+            try {
+              await provisionTrialOnSignIn(email);
+            } catch (trialError) {
+              console.error("[next-auth] provisionTrialOnSignIn failed:", trialError);
+            }
           }
           const stored = await getStoredSubscription(
             normalizeSubscriptionUserId(email)
@@ -233,7 +248,7 @@ export const authOptions: NextAuthOptions = {
           if (error instanceof Error) {
             console.error(error.stack);
           }
-          throw error;
+          applyDefaultSubscriptionToToken();
         }
       };
 
@@ -297,7 +312,13 @@ export const authOptions: NextAuthOptions = {
         if (error instanceof Error) {
           console.error(error.stack);
         }
-        throw error;
+        if (!token.planId) {
+          token.planId = "free";
+        }
+        token.isTrial = Boolean(token.isTrial);
+        token.trialExpired = Boolean(token.trialExpired);
+        token.subscriptionStatus = token.subscriptionStatus ?? "active";
+        return token;
       }
     },
 
@@ -330,7 +351,11 @@ export const authOptions: NextAuthOptions = {
         if (error instanceof Error) {
           console.error(error.stack);
         }
-        throw error;
+        session.planId = session.planId ?? "free";
+        session.isTrial = Boolean(session.isTrial);
+        session.trialExpired = Boolean(session.trialExpired);
+        session.subscriptionStatus = session.subscriptionStatus ?? "active";
+        return session;
       }
     },
 

@@ -13,6 +13,7 @@ import { HowActoraWorksSection } from "./HowActoraWorksSection";
 import { LandingFaq } from "./LandingFaq";
 import { LinearComparisonSection } from "./LinearComparisonSection";
 import { ProductShowcase } from "./ProductShowcase";
+import { PublicApiSection } from "./PublicApiSection";
 import { SectionHeader } from "./SectionHeader";
 import { SecuritySection } from "./SecuritySection";
 import { WhyActoraSection } from "./WhyActoraSection";
@@ -36,6 +37,7 @@ export function LandingPage() {
       <ProductShowcase onTryDemo={openDemo} />
       <HowActoraWorksSection />
       <FeatureShowcaseSection />
+      <PublicApiSection />
       <WhyActoraSection />
       <SecuritySection />
 

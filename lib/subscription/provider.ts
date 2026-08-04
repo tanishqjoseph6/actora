@@ -179,7 +179,16 @@ async function loadInboxCountSafely(userId: string): Promise<number> {
 
 class SupabaseSubscriptionProvider implements SubscriptionProvider {
   async getSubscription(userId: string): Promise<UserSubscription> {
-    const stored = await getStoredSubscription(userId);
+    let stored: StoredSubscription;
+    try {
+      stored = await getStoredSubscription(userId);
+    } catch (error) {
+      logApiError("subscription/provider", error, {
+        operation: "getStoredSubscription",
+        userId,
+      });
+      return createDefaultSubscription(userId);
+    }
 
     const [usageBase, inboxesConnected] = await Promise.all([
       loadUsageSafely(userId),

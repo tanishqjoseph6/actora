@@ -20,94 +20,115 @@ function endOfToday(): Date {
   return d;
 }
 
+
 async function countContacts(userId: string): Promise<number> {
-  const db = getSupabaseAdmin();
-  if (!db) return 0;
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return 0;
 
-  const { count, error } = await db
-    .from("crm_contacts")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId);
+    const { count, error } = await db
+      .from("crm_contacts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-  if (error) {
-    if (error.message.toLowerCase().includes("crm_contacts")) return 0;
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] countContacts failed:", error.message);
+      return 0;
+    }
+
+    return count ?? 0;
+  } catch (error) {
+    console.error("[dashboard] countContacts exception:", error);
+    return 0;
   }
-
-  return count ?? 0;
 }
 
 async function countMeetings(userId: string): Promise<number> {
-  const db = getSupabaseAdmin();
-  if (!db) return 0;
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return 0;
 
-  const { count, error } = await db
-    .from("meetings")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .neq("status", "cancelled");
+    const { count, error } = await db
+      .from("meetings")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .neq("status", "cancelled");
 
-  if (error) {
-    if (error.message.toLowerCase().includes("meetings")) return 0;
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] countMeetings failed:", error.message);
+      return 0;
+    }
+
+    return count ?? 0;
+  } catch (error) {
+    console.error("[dashboard] countMeetings exception:", error);
+    return 0;
   }
-
-  return count ?? 0;
 }
 
 async function listTodaysMeetings(
   userId: string
 ): Promise<DashboardMeetingPreview[]> {
-  const db = getSupabaseAdmin();
-  if (!db) return [];
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return [];
 
-  const { data, error } = await db
-    .from("meetings")
-    .select("id, title, starts_at, status")
-    .eq("user_id", userId)
-    .neq("status", "cancelled")
-    .gte("starts_at", startOfToday().toISOString())
-    .lte("starts_at", endOfToday().toISOString())
-    .order("starts_at", { ascending: true });
+    const { data, error } = await db
+      .from("meetings")
+      .select("id, title, starts_at, status")
+      .eq("user_id", userId)
+      .neq("status", "cancelled")
+      .gte("starts_at", startOfToday().toISOString())
+      .lte("starts_at", endOfToday().toISOString())
+      .order("starts_at", { ascending: true });
 
-  if (error) {
-    if (error.message.toLowerCase().includes("meetings")) return [];
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] listTodaysMeetings failed:", error.message);
+      return [];
+    }
+
+    return (data ?? []).map((row) => ({
+      id: row.id as string,
+      title: row.title as string,
+      startsAt: row.starts_at as string,
+      status: row.status as string,
+    }));
+  } catch (error) {
+    console.error("[dashboard] listTodaysMeetings exception:", error);
+    return [];
   }
-
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    title: row.title as string,
-    startsAt: row.starts_at as string,
-    status: row.status as string,
-  }));
 }
 
 async function listTopContacts(
   userId: string
 ): Promise<DashboardContactPreview[]> {
-  const db = getSupabaseAdmin();
-  if (!db) return [];
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return [];
 
-  const { data, error } = await db
-    .from("crm_contacts")
-    .select("id, name, company_name, ai_lead_score, status")
-    .eq("user_id", userId)
-    .order("ai_lead_score", { ascending: false })
-    .limit(4);
+    const { data, error } = await db
+      .from("crm_contacts")
+      .select("id, name, company_name, ai_lead_score, status")
+      .eq("user_id", userId)
+      .order("ai_lead_score", { ascending: false })
+      .limit(4);
 
-  if (error) {
-    if (error.message.toLowerCase().includes("crm_contacts")) return [];
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] listTopContacts failed:", error.message);
+      return [];
+    }
+
+    return (data ?? []).map((row) => ({
+      id: row.id as string,
+      name: row.name as string,
+      companyName: (row.company_name as string | null) ?? null,
+      aiLeadScore: (row.ai_lead_score as number) ?? 0,
+      status: row.status as string,
+    }));
+  } catch (error) {
+    console.error("[dashboard] listTopContacts exception:", error);
+    return [];
   }
-
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    companyName: (row.company_name as string | null) ?? null,
-    aiLeadScore: (row.ai_lead_score as number) ?? 0,
-    status: row.status as string,
-  }));
 }
 
 async function listAutomationPreviews(
@@ -125,8 +146,8 @@ async function listAutomationPreviews(
       .limit(5);
 
     if (workflowError) {
-      if (workflowError.message.toLowerCase().includes("workflows")) return [];
-      throw new Error(workflowError.message);
+      console.error("[dashboard] listAutomationPreviews workflows failed:", workflowError.message);
+      return [];
     }
 
     const workflowIds = (workflows ?? []).map((w) => w.id as string);
@@ -139,8 +160,8 @@ async function listAutomationPreviews(
       .in("workflow_id", workflowIds)
       .gte("started_at", startOfToday().toISOString());
 
-    if (runsError && !runsError.message.toLowerCase().includes("workflow_runs")) {
-      throw new Error(runsError.message);
+    if (runsError) {
+      console.error("[dashboard] listAutomationPreviews runs failed:", runsError.message);
     }
 
     const runsTodayByWorkflow = new Map<string, number>();
@@ -164,36 +185,46 @@ async function listAutomationPreviews(
 }
 
 async function countAutomations(userId: string): Promise<number> {
-  const db = getSupabaseAdmin();
-  if (!db) return 0;
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return 0;
 
-  const { count, error } = await db
-    .from("workflows")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId);
+    const { count, error } = await db
+      .from("workflows")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-  if (error) {
-    if (error.message.toLowerCase().includes("workflows")) return 0;
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] countAutomations failed:", error.message);
+      return 0;
+    }
+    return count ?? 0;
+  } catch (error) {
+    console.error("[dashboard] countAutomations exception:", error);
+    return 0;
   }
-  return count ?? 0;
 }
 
 async function countActiveWorkflows(userId: string): Promise<number> {
-  const db = getSupabaseAdmin();
-  if (!db) return 0;
+  try {
+    const db = getSupabaseAdmin();
+    if (!db) return 0;
 
-  const { count, error } = await db
-    .from("workflows")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("status", "active");
+    const { count, error } = await db
+      .from("workflows")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "active");
 
-  if (error) {
-    if (error.message.toLowerCase().includes("workflows")) return 0;
-    throw new Error(error.message);
+    if (error) {
+      console.error("[dashboard] countActiveWorkflows failed:", error.message);
+      return 0;
+    }
+    return count ?? 0;
+  } catch (error) {
+    console.error("[dashboard] countActiveWorkflows exception:", error);
+    return 0;
   }
-  return count ?? 0;
 }
 
 async function getEmailCountFromAccounts(
@@ -218,7 +249,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       automationPreviews,
       topContacts,
     ] = await Promise.all([
-      gmailAccountRepository.listAccounts(userId),
+      gmailAccountRepository.listAccounts(userId).catch(() => [] as Awaited<ReturnType<typeof gmailAccountRepository.listAccounts>>),
       countAutomations(userId),
       countActiveWorkflows(userId),
       countMeetings(userId),

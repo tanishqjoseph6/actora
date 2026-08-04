@@ -438,6 +438,10 @@ export async function startTrialSubscription(
   return { stored, created: true };
 }
 
+function fallbackStoredSubscription(userId: string): StoredSubscription {
+  return memoryStore.get(userId) ?? createDefaultStored(userId);
+}
+
 export async function getStoredSubscription(
   userId: string
 ): Promise<StoredSubscription> {
@@ -445,48 +449,62 @@ export async function getStoredSubscription(
   const db = getSupabaseAdmin();
 
   if (!db) {
-    const message =
-      "[subscription/repository] Supabase service role client unavailable — cannot read subscription";
-    console.error(message);
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(message);
-    }
-    return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
+    console.error(
+      "[subscription/repository] Supabase service role client unavailable — using default subscription"
+    );
+    return fallbackStoredSubscription(normalizedUserId);
   }
 
-  const { data, error } = await db
-    .from(TABLE)
-    .select("*")
-    .eq("user_id", normalizedUserId)
-    .maybeSingle();
+  try {
+    const { data, error } = await db
+      .from(TABLE)
+      .select("*")
+      .eq("user_id", normalizedUserId)
+      .maybeSingle();
 
-  if (error) {
+    if (error) {
+      logApiError("subscription/repository", error, {
+        operation: "getStoredSubscription",
+        userId: normalizedUserId,
+      });
+
+      if (isMissingUserSubscriptionsSchemaError(error.message)) {
+        return fallbackStoredSubscription(normalizedUserId);
+      }
+
+      if (isSupabaseNetworkError(error.message)) {
+        return fallbackStoredSubscription(normalizedUserId);
+      }
+
+      console.error(
+        "[subscription/repository] getStoredSubscription query failed — using default:",
+        error.message
+      );
+      return fallbackStoredSubscription(normalizedUserId);
+    }
+
+    if (!data) {
+      return createDefaultStored(normalizedUserId);
+    }
+
+    let subscription = mapRow(data as UserSubscriptionRow);
+    try {
+      subscription = await expireTrialIfNeeded(subscription);
+    } catch (expireError) {
+      console.error(
+        "[subscription/repository] expireTrialIfNeeded failed — returning stored row:",
+        expireError
+      );
+    }
+    memoryStore.set(normalizedUserId, subscription);
+    return subscription;
+  } catch (error) {
     logApiError("subscription/repository", error, {
       operation: "getStoredSubscription",
       userId: normalizedUserId,
     });
-
-    if (isMissingUserSubscriptionsSchemaError(error.message)) {
-      return memoryStore.get(normalizedUserId) ?? createDefaultStored(normalizedUserId);
-    }
-
-    if (isSupabaseNetworkError(error.message)) {
-      const cached = memoryStore.get(normalizedUserId);
-      if (cached) return cached;
-      throw new Error(`Supabase network error on read: ${error.message}`);
-    }
-
-    throw new Error(error.message);
+    return fallbackStoredSubscription(normalizedUserId);
   }
-
-  if (!data) {
-    return createDefaultStored(normalizedUserId);
-  }
-
-  let subscription = mapRow(data as UserSubscriptionRow);
-  subscription = await expireTrialIfNeeded(subscription);
-  memoryStore.set(normalizedUserId, subscription);
-  return subscription;
 }
 
 export async function persistSubscription(
