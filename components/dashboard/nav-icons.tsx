@@ -4,6 +4,7 @@ import {
   Calendar,
   Contact,
   CreditCard,
+  FolderOpen,
   Handshake,
   Inbox,
   Kanban,
@@ -32,4 +33,5 @@ export const NAV_ICONS: Record<NavIconName, LucideIcon> = {
   deals: Handshake,
   overview: LayoutDashboard,
   actions: Sparkles,
+  files: FolderOpen,
 };

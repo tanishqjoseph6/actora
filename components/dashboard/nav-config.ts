@@ -15,7 +15,8 @@ export type NavIconName =
   | "pipeline"
   | "deals"
   | "overview"
-  | "actions";
+  | "actions"
+  | "files";
 
 export type NavItem = {
   href: string;
@@ -36,6 +37,7 @@ export type NavSection = {
 
 /** Primary workspace nav — matches landing product surfaces */
 export const MAIN_NAV: NavItem[] = [
+  { href: "/dashboard/files", label: "Files", icon: "files", matchPrefix: "/dashboard/files" },
   {
     href: "/dashboard/inbox",
     label: "AI Inbox",
@@ -123,6 +125,7 @@ export const FOOTER_NAV: NavItem[] = [
 export const DASHBOARD_PREFETCH_ROUTES = [
   "/dashboard",
   "/dashboard/inbox",
+  "/dashboard/files",
   "/dashboard/crm",
   "/dashboard/crm/contacts",
   "/dashboard/crm/companies",
@@ -141,6 +144,7 @@ export const DASHBOARD_PREFETCH_ROUTES = [
 
 export const DASHBOARD_MOBILE_TITLES: Record<string, string> = {
   "/dashboard/inbox": "AI Inbox",
+  "/dashboard/files": "Files",
   "/dashboard/crm": "CRM",
   "/dashboard/tasks": "Tasks",
   "/dashboard/calendar": "Calendar",

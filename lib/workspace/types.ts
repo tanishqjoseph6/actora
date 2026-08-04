@@ -13,6 +13,7 @@ export const WORKSPACE_PERMISSIONS = [
   "settings",
   "members",
   "credits",
+  "files",
 ] as const;
 export type WorkspacePermission = (typeof WORKSPACE_PERMISSIONS)[number];
 

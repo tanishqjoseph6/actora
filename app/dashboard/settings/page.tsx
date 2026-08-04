@@ -49,6 +49,7 @@ import { formatLimit } from "@/lib/subscription";
 import { REPLY_TONE_LABELS, REPLY_TONES } from "@/lib/email-reply/tones";
 import { DASHBOARD_SHORTCUTS } from "@/hooks/useDashboardKeyboardShortcuts";
 import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
+import { WorkspaceUsageGrid } from "@/components/usage/WorkspaceUsageGrid";
 
 export default function SettingsPage() {
   const { subscription, loading } = usePlanGate();
@@ -326,6 +327,9 @@ export default function SettingsPage() {
             description="Monitor public API calls, limits, keys, and the next billing-cycle reset."
           >
             <ApiUsageCard />
+            <div className="mt-5">
+              <WorkspaceUsageGrid compact />
+            </div>
           </SettingsSection>
 
           {/* Preferences */}

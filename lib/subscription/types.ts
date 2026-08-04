@@ -13,6 +13,7 @@ export type PlanLimits = {
   unlimited: boolean;
   publicApiCallsPerMonth: number;
   publicApiRequestsPerMinute: number;
+  storageBytes: number;
 };
 
 export type UsageMetrics = {

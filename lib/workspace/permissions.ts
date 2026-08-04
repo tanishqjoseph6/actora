@@ -18,6 +18,7 @@ export const ROLE_PERMISSIONS: Record<WorkspaceRole, readonly WorkspacePermissio
     "settings",
     "members",
     "credits",
+    "files",
   ],
   admin: [
     "analytics",
@@ -30,6 +31,7 @@ export const ROLE_PERMISSIONS: Record<WorkspaceRole, readonly WorkspacePermissio
     "settings",
     "members",
     "credits",
+    "files",
   ],
   member: [
     "analytics",
@@ -39,8 +41,9 @@ export const ROLE_PERMISSIONS: Record<WorkspaceRole, readonly WorkspacePermissio
     "tasks",
     "automations",
     "roxx_ai",
+    "files",
   ],
-  viewer: ["analytics", "crm", "inbox", "calendar", "tasks", "automations"],
+  viewer: ["analytics", "crm", "inbox", "calendar", "tasks", "automations", "files"],
 };
 
 export function permissionsForRole(role: WorkspaceRole): WorkspacePermission[] {

@@ -37,8 +37,11 @@ export async function authenticateApiKey(request: Request): Promise<PublicApiAut
   if (!data) return null;
   const member = await getMembershipContext(data.workspace_id, data.created_by);
   if (!member) return null;
-  const subscription = await getStoredSubscription(data.created_by);
-  const planId = subscription?.planId ?? "free";
+  const [{ data: workspace }, subscription] = await Promise.all([
+    db.from("workspaces").select("plan_id").eq("id", data.workspace_id).maybeSingle(),
+    getStoredSubscription(data.created_by),
+  ]);
+  const planId = (subscription?.planId ?? workspace?.plan_id ?? "free") as import("@/components/billing/pricing-data").PlanId;
   const limits = getPublicApiLimits(planId);
   await db.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", data.id);
   return { keyId: data.id, workspaceId: data.workspace_id, userId: data.created_by, role: member.role, permissions: data.permissions ?? [], planId, monthlyCallsLimit: limits.monthlyCalls, requestsPerMinuteLimit: limits.requestsPerMinute };

@@ -25,6 +25,7 @@ import { AiCreditUsageAlerts } from "@/components/subscription/AiCreditUsageAler
 import { TrialBillingCard } from "@/components/billing/TrialBillingCard";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
+import { WorkspaceUsageGrid } from "@/components/usage/WorkspaceUsageGrid";
 
 export default function Billing() {
   if (BILLING_TEMPORARILY_DISABLED) {
@@ -79,6 +80,9 @@ function BillingPageActive() {
             />
             <div className="mb-10">
               <ApiUsageCard />
+            </div>
+            <div className="mb-16 lg:mb-20">
+              <WorkspaceUsageGrid />
             </div>
 
             <motion.div
