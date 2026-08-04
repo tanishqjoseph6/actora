@@ -18,6 +18,7 @@ import {
 import { dashboard } from "@/components/dashboard/premium/dashboard-tokens";
 import { ApiUsageCard } from "@/components/developers/ApiUsageCard";
 import { WorkspaceUsageGrid } from "@/components/usage/WorkspaceUsageGrid";
+import { ComponentErrorBoundary } from "@/components/ui/ComponentErrorBoundary";
 
 const AiAssistantPanel = dynamic(
   () =>
@@ -79,23 +80,35 @@ export default function Dashboard() {
 
   return (
     <>
-      <DashboardHero />
-      <AiCreditWarningBanner subscription={subscription} />
+      <ComponentErrorBoundary name="DashboardHero">
+        <DashboardHero />
+      </ComponentErrorBoundary>
+      <ComponentErrorBoundary name="AiCreditWarningBanner">
+        <AiCreditWarningBanner subscription={subscription} />
+      </ComponentErrorBoundary>
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <AiCreditsCard
-          subscription={subscription}
-          loading={planLoading}
-          detailed
-          className="lg:col-span-1"
-        />
+        <ComponentErrorBoundary name="AiCreditsCard">
+          <AiCreditsCard
+            subscription={subscription}
+            loading={planLoading}
+            detailed
+            className="lg:col-span-1"
+          />
+        </ComponentErrorBoundary>
       </div>
-      <div className="mb-8">
-        <ApiUsageCard />
-      </div>
-      <div className="mb-8">
-        <WorkspaceUsageGrid />
-      </div>
-      <AiAssistantPanel />
+      <ComponentErrorBoundary name="ApiUsageCard">
+        <div className="mb-8">
+          <ApiUsageCard />
+        </div>
+      </ComponentErrorBoundary>
+      <ComponentErrorBoundary name="WorkspaceUsageGrid">
+        <div className="mb-8">
+          <WorkspaceUsageGrid />
+        </div>
+      </ComponentErrorBoundary>
+      <ComponentErrorBoundary name="AiAssistantPanel">
+        <AiAssistantPanel />
+      </ComponentErrorBoundary>
 
       {statsError && !statsLoading && (
         <div className="mb-6">
@@ -146,20 +159,26 @@ export default function Dashboard() {
         />
       </div>
 
-      <DashboardWidgets
-        todaysMeetings={todaysMeetings}
-        automations={automations}
-        connectedGmailAccounts={stats.connectedGmailAccounts}
-        loading={statsLoading}
-      />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 lg:gap-6">
-        <InboxView compact />
-        <CrmPreviewSection
-          contacts={topContacts}
-          contactCount={stats.crmContacts}
+      <ComponentErrorBoundary name="DashboardWidgets">
+        <DashboardWidgets
+          todaysMeetings={todaysMeetings}
+          automations={automations}
+          connectedGmailAccounts={stats.connectedGmailAccounts}
           loading={statsLoading}
         />
+      </ComponentErrorBoundary>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 lg:gap-6">
+        <ComponentErrorBoundary name="InboxView">
+          <InboxView compact />
+        </ComponentErrorBoundary>
+        <ComponentErrorBoundary name="CrmPreviewSection">
+          <CrmPreviewSection
+            contacts={topContacts}
+            contactCount={stats.crmContacts}
+            loading={statsLoading}
+          />
+        </ComponentErrorBoundary>
       </div>
     </>
   );

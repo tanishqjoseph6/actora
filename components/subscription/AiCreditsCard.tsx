@@ -19,13 +19,13 @@ type AiCreditsCardProps = {
 };
 
 function resolveBalance(subscription: SubscriptionSnapshot | null) {
-  if (!subscription) {
+  if (!subscription?.usage || !subscription.limits) {
     return computeCreditBalance(0, 100);
   }
   const allotment =
-    subscription.usage.aiCreditsAllotment ??
+    subscription.usage?.aiCreditsAllotment ??
     subscription.limits.aiActionsPerMonth;
-  return computeCreditBalance(subscription.usage.aiActionsUsed, allotment);
+  return computeCreditBalance(subscription.usage?.aiActionsUsed ?? 0, allotment);
 }
 
 function StatRow({
@@ -60,7 +60,7 @@ export function AiCreditsCard({
   className,
   showUpgradeLink = true,
 }: AiCreditsCardProps) {
-  if (loading || !subscription) {
+  if (loading || !subscription?.usage || !subscription.limits) {
     return (
       <div
         className={cn(dashboard.cardLg, "p-4 sm:p-5", className)}
@@ -76,15 +76,15 @@ export function AiCreditsCard({
   const balance = resolveBalance(subscription);
   const percent = getUsagePercent(balance.used, balance.allotment);
   const remaining =
-    subscription.usage.aiCreditsRemaining ?? balance.remaining;
+    subscription.usage?.aiCreditsRemaining ?? balance.remaining;
   const monthlyRemaining =
-    subscription.usage.monthlyCreditsRemaining ?? balance.remaining;
+    subscription.usage?.monthlyCreditsRemaining ?? balance.remaining;
   const purchasedRemaining =
-    subscription.usage.purchasedCreditsRemaining ?? 0;
+    subscription.usage?.purchasedCreditsRemaining ?? 0;
   const totalMonthly =
-    subscription.usage.aiCreditsAllotment ??
+    subscription.usage?.aiCreditsAllotment ??
     subscription.limits.aiActionsPerMonth;
-  const nextReset = formatNextResetDate(subscription.usage.periodEnd);
+  const nextReset = formatNextResetDate(subscription.usage?.periodEnd);
 
   const barColor =
     balance.warning === "exhausted"

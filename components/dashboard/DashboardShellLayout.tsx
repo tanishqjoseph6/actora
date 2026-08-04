@@ -11,6 +11,7 @@ import { DASHBOARD_MOBILE_TITLES } from "./nav-config";
 import { useResetSidebarOnMobile } from "@/hooks/useResetSidebarOnMobile";
 import { useRoutePrefetch } from "@/hooks/useRoutePrefetch";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { ComponentErrorBoundary } from "@/components/ui/ComponentErrorBoundary";
 
 function resolveMobileTitle(pathname: string): string | undefined {
   if (pathname === "/dashboard") return "Roxx AI";
@@ -50,25 +51,33 @@ function DashboardShellLayoutInner({ children }: { children: ReactNode }) {
   return (
     <main className={`h-dvh max-h-dvh overflow-hidden ${dashboard.bg} text-white`}>
       <div className="relative flex h-full min-h-0 min-w-0">
-        <PremiumSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={handleToggleSidebar}
-          mobileOpen={mobileNavOpen}
-          onMobileClose={handleCloseMobileNav}
-        />
+        <ComponentErrorBoundary name="PremiumSidebar">
+          <PremiumSidebar
+            collapsed={sidebarCollapsed}
+            onToggle={handleToggleSidebar}
+            mobileOpen={mobileNavOpen}
+            onMobileClose={handleCloseMobileNav}
+          />
+        </ComponentErrorBoundary>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <DashboardTopNav
-            onMenuClick={handleOpenMobileNav}
-            title={mobileTitle}
-          />
+          <ComponentErrorBoundary name="DashboardTopNav">
+            <DashboardTopNav
+              onMenuClick={handleOpenMobileNav}
+              title={mobileTitle}
+            />
+          </ComponentErrorBoundary>
 
           <section
             ref={scrollRef}
             className="premium-scrollbar mx-auto w-full max-w-[1600px] min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-3 pb-20 sm:p-4 sm:pb-6 md:p-8 md:pb-8 lg:p-10 safe-bottom"
           >
-            <ContextualAiBar />
-            <DashboardPageTransition>{children}</DashboardPageTransition>
+            <ComponentErrorBoundary name="ContextualAiBar">
+              <ContextualAiBar />
+            </ComponentErrorBoundary>
+            <ComponentErrorBoundary name="DashboardPageTransition">
+              <DashboardPageTransition>{children}</DashboardPageTransition>
+            </ComponentErrorBoundary>
           </section>
         </div>
       </div>

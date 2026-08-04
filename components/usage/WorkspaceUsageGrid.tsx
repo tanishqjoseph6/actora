@@ -22,14 +22,86 @@ type UsageResponse = {
   };
 };
 
+type WorkspaceUsage = NonNullable<UsageResponse["usage"]>;
+
+function normalizeWorkspaceUsage(value: unknown): WorkspaceUsage | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<WorkspaceUsage>;
+  const storage =
+    raw.storage && typeof raw.storage === "object"
+      ? (raw.storage as Record<string, unknown>)
+      : {};
+  const api =
+    raw.api && typeof raw.api === "object"
+      ? (raw.api as Record<string, unknown>)
+      : {};
+  const aiCredits =
+    raw.aiCredits && typeof raw.aiCredits === "object"
+      ? (raw.aiCredits as Record<string, unknown>)
+      : {};
+  const teamMembers =
+    raw.teamMembers && typeof raw.teamMembers === "object"
+      ? (raw.teamMembers as Record<string, unknown>)
+      : {};
+  const workspaces =
+    raw.workspaces && typeof raw.workspaces === "object"
+      ? (raw.workspaces as Record<string, unknown>)
+      : {};
+  return {
+    nextResetAt:
+      typeof raw.nextResetAt === "string"
+        ? raw.nextResetAt
+        : new Date().toISOString(),
+    storage: {
+      usedBytes: Number(storage.usedBytes) || 0,
+      limitBytes: Number(storage.limitBytes) || 0,
+      percent: Number(storage.percent) || 0,
+      remainingBytes: Number(storage.remainingBytes) || 0,
+    },
+    api: {
+      callsUsed: Number(api.callsUsed) || 0,
+      monthlyLimit:
+        api.monthlyLimit === null || api.monthlyLimit === undefined
+          ? 0
+          : Number(api.monthlyLimit) || 0,
+      remaining:
+        api.remaining === null
+          ? null
+          : Number(api.remaining) || 0,
+      percent: Number(api.percent) || 0,
+    },
+    aiCredits: {
+      used: Number(aiCredits.used) || 0,
+      limit: Number(aiCredits.limit) || 0,
+      percent: Number(aiCredits.percent) || 0,
+    },
+    teamMembers: {
+      used: Number(teamMembers.used) || 0,
+      limit: Number(teamMembers.limit) || 0,
+      percent: Number(teamMembers.percent) || 0,
+    },
+    workspaces: {
+      used: Number(workspaces.used) || 0,
+      limit: Number(workspaces.limit) || 0,
+      percent: Number(workspaces.percent) || 0,
+    },
+    automationRuns: Number(raw.automationRuns) || 0,
+    tasks: Number(raw.tasks) || 0,
+    documents: Number(raw.documents) || 0,
+    crmContacts: Number(raw.crmContacts) || 0,
+    meetings: Number(raw.meetings) || 0,
+    calendarEvents: Number(raw.calendarEvents) || 0,
+  };
+}
+
 export function WorkspaceUsageGrid({ compact = false }: { compact?: boolean }) {
-  const [data, setData] = useState<UsageResponse["usage"]>();
+  const [data, setData] = useState<WorkspaceUsage>();
   useEffect(() => {
     let mounted = true;
     fetch("/api/developers/usage")
       .then((response) => response.json())
       .then((body: UsageResponse) => {
-        if (mounted) setData(body.usage);
+        if (mounted) setData(normalizeWorkspaceUsage(body.usage));
       })
       .catch(() => undefined);
     return () => { mounted = false; };

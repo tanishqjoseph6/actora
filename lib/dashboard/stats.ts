@@ -8,6 +8,17 @@ import {
   type DashboardMeetingPreview,
 } from "./types";
 
+function debugDashboardLog(
+  hypothesisId: string,
+  location: string,
+  message: string,
+  data: Record<string, unknown>
+) {
+  // #region agent log
+  fetch("http://127.0.0.1:7591/ingest/ba758f26-6384-42d0-bcfa-81310e1b9c4c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"5e59d5"},body:JSON.stringify({sessionId:"5e59d5",runId:"initial",hypothesisId,location,message,data,timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+}
+
 function startOfToday(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -33,12 +44,15 @@ async function countContacts(userId: string): Promise<number> {
 
     if (error) {
       console.error("[dashboard] countContacts failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:countContacts", "crm_contacts count query failed", {errorMessage:error.message});
       return 0;
     }
 
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countContacts", "crm_contacts count query completed", {count:count ?? 0});
     return count ?? 0;
   } catch (error) {
     console.error("[dashboard] countContacts exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countContacts", "crm_contacts count query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return 0;
   }
 }
@@ -56,12 +70,15 @@ async function countMeetings(userId: string): Promise<number> {
 
     if (error) {
       console.error("[dashboard] countMeetings failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:countMeetings", "meetings count query failed", {errorMessage:error.message});
       return 0;
     }
 
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countMeetings", "meetings count query completed", {count:count ?? 0});
     return count ?? 0;
   } catch (error) {
     console.error("[dashboard] countMeetings exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countMeetings", "meetings count query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return 0;
   }
 }
@@ -84,9 +101,11 @@ async function listTodaysMeetings(
 
     if (error) {
       console.error("[dashboard] listTodaysMeetings failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:listTodaysMeetings", "meetings list query failed", {errorMessage:error.message});
       return [];
     }
 
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listTodaysMeetings", "meetings list query completed", {rows:data?.length ?? 0});
     return (data ?? []).map((row) => ({
       id: row.id as string,
       title: row.title as string,
@@ -95,6 +114,7 @@ async function listTodaysMeetings(
     }));
   } catch (error) {
     console.error("[dashboard] listTodaysMeetings exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listTodaysMeetings", "meetings list query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return [];
   }
 }
@@ -115,9 +135,11 @@ async function listTopContacts(
 
     if (error) {
       console.error("[dashboard] listTopContacts failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:listTopContacts", "crm_contacts list query failed", {errorMessage:error.message});
       return [];
     }
 
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listTopContacts", "crm_contacts list query completed", {rows:data?.length ?? 0});
     return (data ?? []).map((row) => ({
       id: row.id as string,
       name: row.name as string,
@@ -127,6 +149,7 @@ async function listTopContacts(
     }));
   } catch (error) {
     console.error("[dashboard] listTopContacts exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listTopContacts", "crm_contacts list query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return [];
   }
 }
@@ -147,9 +170,11 @@ async function listAutomationPreviews(
 
     if (workflowError) {
       console.error("[dashboard] listAutomationPreviews workflows failed:", workflowError.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:listAutomationPreviews", "workflows list query failed", {errorMessage:workflowError.message});
       return [];
     }
 
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listAutomationPreviews", "workflows list query completed", {rows:workflows?.length ?? 0});
     const workflowIds = (workflows ?? []).map((w) => w.id as string);
     if (workflowIds.length === 0) return [];
 
@@ -162,6 +187,7 @@ async function listAutomationPreviews(
 
     if (runsError) {
       console.error("[dashboard] listAutomationPreviews runs failed:", runsError.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:listAutomationPreviews", "workflow_runs list query failed", {errorMessage:runsError.message});
     }
 
     const runsTodayByWorkflow = new Map<string, number>();
@@ -180,6 +206,7 @@ async function listAutomationPreviews(
       runsToday: runsTodayByWorkflow.get(workflow.id as string) ?? 0,
     }));
   } catch {
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:listAutomationPreviews", "automation preview loader caught exception", {});
     return [];
   }
 }
@@ -196,11 +223,14 @@ async function countAutomations(userId: string): Promise<number> {
 
     if (error) {
       console.error("[dashboard] countAutomations failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:countAutomations", "workflows count query failed", {errorMessage:error.message});
       return 0;
     }
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countAutomations", "workflows count query completed", {count:count ?? 0});
     return count ?? 0;
   } catch (error) {
     console.error("[dashboard] countAutomations exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countAutomations", "workflows count query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return 0;
   }
 }
@@ -218,11 +248,14 @@ async function countActiveWorkflows(userId: string): Promise<number> {
 
     if (error) {
       console.error("[dashboard] countActiveWorkflows failed:", error.message);
+      debugDashboardLog("H3", "lib/dashboard/stats.ts:countActiveWorkflows", "active workflows count query failed", {errorMessage:error.message});
       return 0;
     }
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countActiveWorkflows", "active workflows count query completed", {count:count ?? 0});
     return count ?? 0;
   } catch (error) {
     console.error("[dashboard] countActiveWorkflows exception:", error);
+    debugDashboardLog("H3", "lib/dashboard/stats.ts:countActiveWorkflows", "active workflows count query threw", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return 0;
   }
 }
@@ -238,6 +271,7 @@ async function getEmailCountFromAccounts(
 }
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
+  debugDashboardLog("H2,H3,H4", "lib/dashboard/stats.ts:getDashboardData", "dashboard data loader entered", {hasUserId:Boolean(userId)});
   try {
     const [
       gmailAccounts,
@@ -276,6 +310,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     };
   } catch (error) {
     console.error("[dashboard] Failed to load stats:", error);
+    debugDashboardLog("H2,H3,H4", "lib/dashboard/stats.ts:getDashboardData", "dashboard data loader caught exception", {errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)});
     return EMPTY_DASHBOARD_DATA;
   }
 }

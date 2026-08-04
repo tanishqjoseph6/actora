@@ -90,30 +90,31 @@ export function AiCreditUsageAlerts({ onUpgradePlan }: AiCreditUsageAlertsProps)
     void pollEvents();
     const id = window.setInterval(() => void pollEvents(), 20_000);
     return () => window.clearInterval(id);
-  }, [pollEvents, subscription?.usage.aiActionsUsed]);
+  }, [pollEvents, subscription?.usage?.aiActionsUsed]);
 
   useEffect(() => {
     if (!subscription) return;
     const allotment =
-      subscription.usage.aiCreditsAllotment ??
-      subscription.limits.aiActionsPerMonth;
+      subscription.usage?.aiCreditsAllotment ??
+      subscription.limits?.aiActionsPerMonth ??
+      0;
     if (isUnlimited(allotment)) return;
 
-    const monthlyRemaining = subscription.usage.monthlyCreditsRemaining ?? 0;
+    const monthlyRemaining = subscription.usage?.monthlyCreditsRemaining ?? 0;
     const purchasedRemaining =
-      subscription.usage.purchasedCreditsRemaining ?? 0;
+      subscription.usage?.purchasedCreditsRemaining ?? 0;
     const totalRemaining =
-      subscription.usage.aiCreditsRemaining ??
+      subscription.usage?.aiCreditsRemaining ??
       monthlyRemaining + purchasedRemaining;
-    const cycleKey = subscription.usage.cycleKey ?? "default";
+    const cycleKey = subscription.usage?.cycleKey ?? "default";
     const modalKey = `actora-credits-exhausted-${cycleKey}`;
     if (
       Number.isFinite(totalRemaining) &&
       totalRemaining <= 0 &&
       !sessionStorage.getItem(modalKey)
     ) {
-      setExhaustedOpen(true);
       sessionStorage.setItem(modalKey, "1");
+      queueMicrotask(() => setExhaustedOpen(true));
     }
   }, [subscription]);
 

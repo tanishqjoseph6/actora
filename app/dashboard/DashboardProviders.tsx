@@ -16,6 +16,7 @@ import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 import { RoxxProvider } from "@/providers/RoxxProvider";
 import { KeyboardShortcutsModal } from "@/components/dashboard/nav/KeyboardShortcutsModal";
 import { useDashboardKeyboardShortcuts } from "@/hooks/useDashboardKeyboardShortcuts";
+import { ComponentErrorBoundary } from "@/components/ui/ComponentErrorBoundary";
 
 function DashboardKeyboardLayer({ children }: { children: React.ReactNode }) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -48,16 +49,26 @@ export function DashboardProviders({ children }: { children: React.ReactNode }) 
                 <Suspense fallback={null}>
                   <GrowthBootstrap />
                 </Suspense>
-                <PlanActivationToastListener />
-                <AiCreditUsageAlerts />
+                <ComponentErrorBoundary name="PlanActivationToastListener">
+                  <PlanActivationToastListener />
+                </ComponentErrorBoundary>
+                <ComponentErrorBoundary name="AiCreditUsageAlerts">
+                  <AiCreditUsageAlerts />
+                </ComponentErrorBoundary>
                 <div className="bg-[#0A0A0A] px-5 pt-4 sm:px-8 lg:px-10">
-                  <TrialBanner />
+                  <ComponentErrorBoundary name="TrialBanner">
+                    <TrialBanner />
+                  </ComponentErrorBoundary>
                 </div>
                 <DashboardKeyboardLayer>
                   <DashboardShellLayout>{children}</DashboardShellLayout>
                 </DashboardKeyboardLayer>
-                <RoxxFloatingButton />
-                <DashboardOnboarding />
+                <ComponentErrorBoundary name="RoxxFloatingButton">
+                  <RoxxFloatingButton />
+                </ComponentErrorBoundary>
+                <ComponentErrorBoundary name="DashboardOnboarding">
+                  <DashboardOnboarding />
+                </ComponentErrorBoundary>
               </RoxxProvider>
             </ToastProvider>
           </NotificationsProvider>

@@ -14,6 +14,29 @@ type Usage = {
   activeKeys: number;
 };
 
+function normalizeUsage(value: unknown): Usage | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Partial<Usage>;
+  return {
+    planName: typeof raw.planName === "string" ? raw.planName : "Free",
+    callsUsed: Number(raw.callsUsed) || 0,
+    callsRemaining:
+      raw.callsRemaining === null
+        ? null
+        : Number(raw.callsRemaining) || 0,
+    monthlyLimit:
+      raw.monthlyLimit === null || raw.monthlyLimit === undefined
+        ? null
+        : Number(raw.monthlyLimit) || 0,
+    rateLimit: Number(raw.rateLimit) || 0,
+    nextResetAt:
+      typeof raw.nextResetAt === "string"
+        ? raw.nextResetAt
+        : new Date().toISOString(),
+    activeKeys: Number(raw.activeKeys) || 0,
+  };
+}
+
 export function ApiUsageCard() {
   const [usage, setUsage] = useState<Usage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +48,7 @@ export function ApiUsageCard() {
         return response.json();
       })
       .then((body) => {
-        if (active) setUsage(body.usage ?? null);
+        if (active) setUsage(normalizeUsage(body.usage));
       })
       .catch(() => {
         if (active) setUsage(null);

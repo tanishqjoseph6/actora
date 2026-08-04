@@ -27,7 +27,7 @@ export function DashboardHero() {
       ? {
           href: "/dashboard/connect-gmail",
           label: primaryAccount
-            ? `Gmail · ${primaryAccount.email.split("@")[0]}`
+            ? `Gmail · ${primaryAccount.email?.split("@")[0] ?? "Connected"}`
             : "Gmail Connected",
           primary: true,
           disabled: false,
@@ -60,7 +60,7 @@ export function DashboardHero() {
         Turn conversations into tasks, CRM updates, and workflows — automatically.
       </p>
 
-      {!gmailLoading && connected && primaryAccount && (
+      {!gmailLoading && connected && primaryAccount?.email && (
         <p className={`text-xs ${dashboard.accent} mt-3`}>
           Gmail connected as {primaryAccount.email}
         </p>

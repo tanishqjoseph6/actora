@@ -227,6 +227,9 @@ export const authOptions: NextAuthOptions = {
       const applySubscriptionToToken = async () => {
         if (!email) return;
         try {
+          // #region agent log
+          fetch("http://127.0.0.1:7591/ingest/ba758f26-6384-42d0-bcfa-81310e1b9c4c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"5e59d5"},body:JSON.stringify({sessionId:"5e59d5",runId:"initial",hypothesisId:"H1",location:"lib/auth/auth-options.ts:218",message:"JWT subscription loading entered",data:{hasAccount:Boolean(account),hasUser:Boolean(user),hasEmail:Boolean(email)},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
           if (account || user) {
             try {
               await provisionTrialOnSignIn(email);
@@ -243,11 +246,17 @@ export const authOptions: NextAuthOptions = {
           token.trialExpired = stored.trialExpired;
           token.subscriptionStatus = stored.status;
           token.currentPeriodEnd = stored.currentPeriodEnd;
+          // #region agent log
+          fetch("http://127.0.0.1:7591/ingest/ba758f26-6384-42d0-bcfa-81310e1b9c4c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"5e59d5"},body:JSON.stringify({sessionId:"5e59d5",runId:"initial",hypothesisId:"H1",location:"lib/auth/auth-options.ts:236",message:"JWT subscription loading completed",data:{planId:stored.planId,status:stored.status,isTrial:stored.isTrial},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
         } catch (error) {
           console.error("[next-auth] Failed to load subscription plan:", error);
           if (error instanceof Error) {
             console.error(error.stack);
           }
+          // #region agent log
+          fetch("http://127.0.0.1:7591/ingest/ba758f26-6384-42d0-bcfa-81310e1b9c4c",{method:"POST",headers:{"Content-Type":"application/json","X-Debug-Session-Id":"5e59d5"},body:JSON.stringify({sessionId:"5e59d5",runId:"initial",hypothesisId:"H1",location:"lib/auth/auth-options.ts:242",message:"JWT subscription loading failed",data:{errorName:error instanceof Error?error.name:"unknown",errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
           applyDefaultSubscriptionToToken();
         }
       };

@@ -13,6 +13,15 @@ import type { BillingInterval, SubscriptionSnapshot } from "@/lib/subscription";
 const CACHE_KEY = "subscription";
 const CACHE_TTL_MS = 5 * 60_000;
 
+function readCachedSubscription(): SubscriptionSnapshot | null {
+  const cached = getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS);
+  if (!cached || typeof cached !== "object") return null;
+  if (!cached.usage || !cached.limits || typeof cached.planId !== "string") {
+    return null;
+  }
+  return cached;
+}
+
 type UseSubscriptionResult = {
   subscription: SubscriptionSnapshot | null;
   loading: boolean;
@@ -25,10 +34,10 @@ type UseSubscriptionResult = {
 export function useSubscription(): UseSubscriptionResult {
   const { data: session, status, update: updateSession } = useSession();
   const [subscription, setSubscription] = useState<SubscriptionSnapshot | null>(
-    () => getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS)
+    readCachedSubscription
   );
   const [loading, setLoading] = useState(
-    () => !getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS)
+    () => !readCachedSubscription()
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +66,7 @@ export function useSubscription(): UseSubscriptionResult {
 
     setError(null);
 
-    const cached = getCachedData<SubscriptionSnapshot>(CACHE_KEY, CACHE_TTL_MS);
+    const cached = readCachedSubscription();
     if (cached) {
       setSubscription(cached);
       setLoading(false);
@@ -73,6 +82,14 @@ export function useSubscription(): UseSubscriptionResult {
           const body = await res.json();
           if (!res.ok) {
             throw new Error(body.error ?? "Failed to load subscription");
+          }
+          if (
+            !body.subscription ||
+            typeof body.subscription !== "object" ||
+            !body.subscription.usage ||
+            !body.subscription.limits
+          ) {
+            throw new Error("Subscription response was incomplete.");
           }
           return body.subscription as SubscriptionSnapshot;
         },
