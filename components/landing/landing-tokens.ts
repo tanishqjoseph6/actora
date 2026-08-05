@@ -15,6 +15,12 @@ export const landing = {
     "border border-white/[0.08] bg-[#111111]/60 backdrop-blur-xl",
   glassHover:
     "hover:border-[#2563EB]/30 hover:bg-[#111111]/80 hover:shadow-[0_8px_32px_rgba(37,99,235,0.12)]",
+  neonBorder:
+    "border border-[#2563EB]/25 shadow-[0_0_0_1px_rgba(37,99,235,0.08),0_20px_70px_rgba(0,0,0,0.32)]",
+  neonBorderHover:
+    "hover:border-[#3B82F6]/45 hover:shadow-[0_0_0_1px_rgba(59,130,246,0.18),0_24px_80px_rgba(37,99,235,0.14)]",
+  grid:
+    "bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:56px_56px]",
   section: "py-16 sm:py-24 md:py-28 lg:py-32",
   container: "mx-auto max-w-6xl px-4 sm:px-6 md:px-8",
   containerTight: "mx-auto max-w-6xl px-4 sm:px-6",

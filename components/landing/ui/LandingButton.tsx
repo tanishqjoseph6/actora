@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type LandingButtonProps = {
@@ -19,8 +19,9 @@ export function LandingButton({
   children,
   className,
 }: LandingButtonProps) {
+  const reducedMotion = useReducedMotion();
   const base =
-    "inline-flex h-12 min-h-[44px] w-full items-center justify-center rounded-xl px-7 text-sm font-semibold transition-all active:scale-[0.98] sm:min-w-[180px] sm:w-auto";
+    "inline-flex h-12 min-h-[44px] w-full items-center justify-center rounded-xl px-7 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60A5FA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0A] active:scale-[0.98] sm:min-w-[180px] sm:w-auto";
 
   const styles =
     variant === "primary"
@@ -31,7 +32,10 @@ export function LandingButton({
 
   if (href) {
     return (
-      <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+      <motion.div
+        whileHover={reducedMotion ? undefined : { y: -2 }}
+        whileTap={reducedMotion ? undefined : { scale: 0.98 }}
+      >
         <Link href={href} className={classes}>
           {children}
         </Link>
@@ -43,8 +47,8 @@ export function LandingButton({
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={reducedMotion ? undefined : { y: -2 }}
+      whileTap={reducedMotion ? undefined : { scale: 0.98 }}
       className={classes}
     >
       {children}

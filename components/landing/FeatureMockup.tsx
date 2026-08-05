@@ -2,14 +2,22 @@
 
 import { motion } from "framer-motion";
 import type { LandingFeatureId } from "./landing-data";
+import { useTiltStyle } from "./motion";
 
 type FeatureMockupProps = {
   featureId: LandingFeatureId;
 };
 
 export function FeatureMockup({ featureId }: FeatureMockupProps) {
+  const tilt = useTiltStyle(4);
+
   return (
-    <div className="relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111]/80 p-1 shadow-[0_24px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+    <motion.div
+      style={tilt.style}
+      onPointerMove={tilt.onPointerMove}
+      onPointerLeave={tilt.onPointerLeave}
+      className="relative overflow-hidden rounded-[20px] border border-[#2563EB]/20 bg-[#111111]/80 p-1 shadow-[0_24px_80px_rgba(0,0,0,0.4),0_0_0_1px_rgba(59,130,246,0.05)] backdrop-blur-xl will-change-transform"
+    >
       <div className="flex items-center gap-1.5 border-b border-white/[0.06] px-3 py-2">
         <span className="h-2 w-2 rounded-full bg-white/15" />
         <span className="h-2 w-2 rounded-full bg-white/15" />
@@ -21,7 +29,7 @@ export function FeatureMockup({ featureId }: FeatureMockupProps) {
         className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#2563EB]/10 blur-3xl"
         aria-hidden
       />
-    </div>
+    </motion.div>
   );
 }
 

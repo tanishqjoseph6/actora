@@ -2,7 +2,7 @@
 
 import { LANDING_FEATURE_SECTIONS } from "./landing-data";
 import { FeatureMockup } from "./FeatureMockup";
-import { FadeUp } from "./motion";
+import { FadeUp, MotionDivider } from "./motion";
 import { landing } from "./landing-tokens";
 
 export function FeatureShowcaseSection() {
@@ -30,6 +30,7 @@ export function FeatureShowcaseSection() {
                 id={feature.id}
                 className="scroll-mt-28"
               >
+                {index > 0 && <MotionDivider className="mb-24 sm:mb-32 lg:mb-40" />}
                 <div
                   className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-16 ${
                     reversed ? "lg:[direction:rtl]" : ""

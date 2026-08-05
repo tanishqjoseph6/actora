@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { BRAND_TAGLINE, landing } from "./landing-tokens";
 import { LandingButton } from "./ui/LandingButton";
 import { HeroWorkflowVisual } from "./HeroWorkflowVisual";
@@ -26,9 +27,47 @@ function FloatingOrb({
   );
 }
 
+function AnimatedStat({
+  value,
+  suffix = "",
+}: {
+  value: number;
+  suffix?: string;
+}) {
+  const reducedMotion = useReducedMotion();
+  const [count, setCount] = useState(reducedMotion ? value : 0);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      queueMicrotask(() => setCount(value));
+      return;
+    }
+    let frame = 0;
+    const startedAt = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / 900);
+      setCount(Math.round(value * (1 - Math.pow(1 - progress, 3))));
+      if (progress < 1) frame = window.requestAnimationFrame(animate);
+    };
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, [reducedMotion, value]);
+
+  return (
+    <motion.span
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45 }}
+    >
+      {count}
+      {suffix}
+    </motion.span>
+  );
+}
+
 export function HeroSection({ onTryDemo }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24 md:pt-36 md:pb-28 lg:pt-40 lg:pb-32">
+    <section className="relative flex min-h-[92svh] items-center overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24 md:pt-36 md:pb-28 lg:pt-40 lg:pb-32">
       {/* Animated gradient background */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <motion.div
@@ -123,9 +162,9 @@ export function HeroSection({ onTryDemo }: HeroSectionProps) {
           className="mx-auto mt-8 grid max-w-2xl grid-cols-1 gap-3 min-[400px]:grid-cols-3 sm:mt-10 sm:gap-4"
         >
           {[
-            { label: "AI surfaces", value: "8+" },
-            { label: "Setup time", value: "<5 min" },
-            { label: "Free trial", value: "14 days" },
+            { label: "AI surfaces", value: 8, suffix: "+" },
+            { label: "Setup time", value: 5, prefix: "<", suffix: " min" },
+            { label: "Free trial", value: 14, suffix: " days" },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -135,7 +174,8 @@ export function HeroSection({ onTryDemo }: HeroSectionProps) {
               className="rounded-2xl border border-white/[0.08] bg-[#111111]/50 px-3 py-3 text-center backdrop-blur-md sm:px-4 sm:py-4"
             >
               <p className="text-lg font-bold tabular-nums text-white sm:text-xl">
-                {stat.value}
+                {stat.prefix}
+                <AnimatedStat value={stat.value} suffix={stat.suffix} />
               </p>
               <p className="mt-0.5 text-[10px] uppercase tracking-wider text-[#71717A] sm:text-xs">
                 {stat.label}

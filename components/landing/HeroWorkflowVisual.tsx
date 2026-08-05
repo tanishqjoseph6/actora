@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
   useInView,
 } from "framer-motion";
 import {
@@ -33,12 +36,27 @@ type HeroWorkflowVisualProps = {
 export function HeroWorkflowVisual({ onTryDemo }: HeroWorkflowVisualProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const reducedMotion = useReducedMotion();
+  const rotateX = useSpring(useMotionValue(0), { stiffness: 180, damping: 22 });
+  const rotateY = useSpring(useMotionValue(0), { stiffness: 180, damping: 22 });
   const [stageIndex, setStageIndex] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
 
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (reducedMotion) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    rotateX.set(-((event.clientY - bounds.top) / bounds.height - 0.5) * 4);
+    rotateY.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 6);
+  };
+
+  const handlePointerLeave = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+  };
+
   useEffect(() => {
     if (!inView || hasStarted) return;
-    setHasStarted(true);
+    queueMicrotask(() => setHasStarted(true));
   }, [inView, hasStarted]);
 
   useEffect(() => {
@@ -56,18 +74,58 @@ export function HeroWorkflowVisual({ onTryDemo }: HeroWorkflowVisualProps) {
   const currentStage = STAGES[stageIndex]?.id ?? "inbox";
 
   return (
-    <div ref={ref} className="relative w-full">
+    <div
+      ref={ref}
+      className="relative w-full [perspective:1400px]"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
       <div
         className="pointer-events-none absolute -inset-8 rounded-[32px] bg-[#2563EB]/15 blur-3xl"
         aria-hidden
       />
 
       <motion.div
+        aria-hidden="true"
+        animate={reducedMotion ? undefined : { y: [0, -8, 0] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none absolute -left-5 top-16 z-20 hidden rounded-2xl border border-[#3B82F6]/25 bg-[#111111]/75 px-3 py-2 shadow-[0_18px_45px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:block"
+        style={{ transform: "translateZ(50px)" }}
+      >
+        <p className="text-[9px] uppercase tracking-wider text-[#71717A]">Roxx AI</p>
+        <p className="mt-1 text-xs font-medium text-[#93C5FD]">3 actions ready</p>
+      </motion.div>
+      <motion.div
+        aria-hidden="true"
+        animate={reducedMotion ? undefined : { y: [0, 9, 0] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+        className="pointer-events-none absolute -right-5 bottom-20 z-20 hidden rounded-2xl border border-white/[0.1] bg-[#111111]/75 px-3 py-2 shadow-[0_18px_45px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:block"
+        style={{ transform: "translateZ(45px)" }}
+      >
+        <p className="text-[9px] uppercase tracking-wider text-[#71717A]">Workspace</p>
+        <p className="mt-1 text-xs font-medium text-white">Loop closed</p>
+      </motion.div>
+
+      <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-[20px] border border-white/[0.08] bg-[#111111]/80 shadow-[0_32px_100px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+        style={{
+          rotateX: reducedMotion ? 0 : rotateX,
+          rotateY: reducedMotion ? 0 : rotateY,
+          transformStyle: "preserve-3d",
+        }}
+        className="relative overflow-hidden rounded-[20px] border border-[#2563EB]/20 bg-[#111111]/80 shadow-[0_32px_100px_rgba(0,0,0,0.5),0_0_0_1px_rgba(59,130,246,0.06)] backdrop-blur-xl will-change-transform"
       >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 z-10 h-full w-full opacity-40"
+        >
+          <path d="M8 36 C 28 22, 28 78, 52 50 S 76 20, 94 36" fill="none" stroke="#3B82F6" strokeDasharray="1 4" strokeWidth=".25" />
+          <path d="M8 68 C 30 84, 34 28, 52 50 S 72 80, 94 64" fill="none" stroke="#93C5FD" strokeDasharray="1 5" strokeWidth=".2" />
+        </svg>
         {/* Window chrome */}
         <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#0A0A0A]/60 px-4 py-2.5 backdrop-blur-md">
           <div className="flex items-center gap-2">
