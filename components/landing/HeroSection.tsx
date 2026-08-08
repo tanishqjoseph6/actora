@@ -1,10 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { BRAND_TAGLINE, landing } from "./landing-tokens";
 import { LandingButton } from "./ui/LandingButton";
 import { HeroWorkflowVisual } from "./HeroWorkflowVisual";
+
+const Hero3DScene = dynamic(
+  () => import("./Hero3DScene").then((module) => module.Hero3DScene),
+  { ssr: false }
+);
 
 type HeroSectionProps = {
   onTryDemo?: () => void;
@@ -66,8 +72,11 @@ function AnimatedStat({
 }
 
 export function HeroSection({ onTryDemo }: HeroSectionProps) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <section className="relative flex min-h-[92svh] items-center overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-24 md:pt-36 md:pb-28 lg:pt-40 lg:pb-32">
+      <Hero3DScene reducedMotion={reducedMotion} />
       {/* Animated gradient background */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <motion.div

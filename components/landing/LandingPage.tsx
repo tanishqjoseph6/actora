@@ -9,6 +9,7 @@ import { AiCommandBar } from "./AiCommandBar";
 import { AmbientLayer } from "./AmbientLayer";
 import { FeatureShowcaseSection } from "./FeatureShowcaseSection";
 import { FinalCtaSection } from "./FinalCtaSection";
+import { FounderSection } from "./FounderSection";
 import { HeroSection } from "./HeroSection";
 import { HowActoraWorksSection } from "./HowActoraWorksSection";
 import { LandingFaq } from "./LandingFaq";
@@ -82,6 +83,7 @@ export function LandingPage() {
         <LinearComparisonSection />
         <TestimonialsSection />
         <LandingFaq limit={6} useHomeFaq />
+        <FounderSection />
         <FinalCtaSection onTryDemo={openDemo} />
 
         <p className="mx-auto -mt-8 max-w-3xl px-5 pb-28 text-center text-sm text-[#71717A] sm:px-8 sm:pb-32">
